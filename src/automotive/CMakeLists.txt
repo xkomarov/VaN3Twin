@@ -606,7 +606,7 @@ Set(source_files
     model/ASN1/full-v1-v2/LowerTriangularPositiveSemidefiniteMatrix.c
     model/ASN1/full-v1-v2/LowerTriangularPositiveSemidefiniteMatrixColumns.c
     model/ASN1/full-v1-v2/MAPEM.c
-    model/ASN1/full-v1-v2/MCM.c
+    # model/ASN1/full-v1-v2/MCM.c
     model/ASN1/full-v1-v2/ManagementContainer.c
     model/ASN1/full-v1-v2/ManagementContainerCPM.c
     model/ASN1/full-v1-v2/ManagementContainerV1.c
@@ -628,7 +628,8 @@ Set(source_files
     model/ASN1/full-v1-v2/McmAutomationState.c
     model/ASN1/full-v1-v2/McmCategory.c
     model/ASN1/full-v1-v2/McmCategoryType.c
-    model/ASN1/full-v1-v2/McmContainer.c
+    # model/ASN1/full-v1-v2/McmContainer.c
+    model/ASN1/MCM/McmContainer.c
     model/ASN1/full-v1-v2/McmStartPoint.c
     model/ASN1/full-v1-v2/McmTrajectory.c
     model/ASN1/full-v1-v2/MergeDivergeNodeAngle.c
@@ -1319,6 +1320,7 @@ Set(source_files
     model/ASN1/full-v1-v2/xer_encoder.c
     model/ASN1/full-v1-v2/xer_support.c
 
+    model/ASN1/MCM/MCM.c
     model/ASN1/MCM/AcknowledgmentContainer.c
     model/ASN1/MCM/AdvisedTrrContainer.c
     model/ASN1/MCM/CurrentStateAdvisedChange.c
@@ -1961,7 +1963,7 @@ model/ASN1/full-v1-v2/LowerTriangularPositiveSemidefiniteMatrices.h
 model/ASN1/full-v1-v2/LowerTriangularPositiveSemidefiniteMatrix.h
 model/ASN1/full-v1-v2/LowerTriangularPositiveSemidefiniteMatrixColumns.h
 model/ASN1/full-v1-v2/MAPEM.h
-model/ASN1/full-v1-v2/MCM.h
+# model/ASN1/full-v1-v2/MCM.h
 model/ASN1/full-v1-v2/ManagementContainer.h
 model/ASN1/full-v1-v2/ManagementContainerCPM.h
 model/ASN1/full-v1-v2/ManagementContainerV1.h
@@ -1983,7 +1985,7 @@ model/ASN1/full-v1-v2/MaxNoOfVehicles.h
 model/ASN1/full-v1-v2/McmAutomationState.h
 model/ASN1/full-v1-v2/McmCategory.h
 model/ASN1/full-v1-v2/McmCategoryType.h
-model/ASN1/full-v1-v2/McmContainer.h
+# model/ASN1/full-v1-v2/McmContainer.h
 model/ASN1/full-v1-v2/McmStartPoint.h
 model/ASN1/full-v1-v2/McmTrajectory.h
 model/ASN1/full-v1-v2/MergeDivergeNodeAngle.h
@@ -2589,6 +2591,7 @@ model/ASN1/full-v1-v2/uper_support.h
 model/ASN1/full-v1-v2/xer_decoder.h
 model/ASN1/full-v1-v2/xer_encoder.h
 model/ASN1/full-v1-v2/xer_support.h
+        model/ASN1/MCM/MCM.h
         model/ASN1/MCM/AcknowledgmentContainer.h
         model/ASN1/MCM/AdvisedTrrContainer.h
         model/ASN1/MCM/CurrentStateAdvisedChange.h
@@ -2628,6 +2631,7 @@ model/ASN1/full-v1-v2/xer_support.h
         model/ASN1/MCM/WayPoint.h
         model/ASN1/MCM/WayPointType.h
         model/ASN1/MCM/WrappedMcmInformationBlocks.h
+        model/ASN1/MCM/McmContainer.h
 
         #model/ASN1/asn1-v2/IssuerIdentifier.h
 )
@@ -3179,7 +3183,8 @@ model/ASN1/full-v1-v2/MaxNoOfVehicles.c
 model/ASN1/full-v1-v2/McmAutomationState.c
 model/ASN1/full-v1-v2/McmCategory.c
 model/ASN1/full-v1-v2/McmCategoryType.c
-model/ASN1/full-v1-v2/McmContainer.c
+# model/ASN1/full-v1-v2/McmContainer.c
+model/ASN1/MCM/McmContainer.c
 model/ASN1/full-v1-v2/McmStartPoint.c
 model/ASN1/full-v1-v2/McmTrajectory.c
 model/ASN1/full-v1-v2/MergeDivergeNodeAngle.c

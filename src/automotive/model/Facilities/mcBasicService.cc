@@ -355,10 +355,12 @@ namespace ns3
     }
   }
 
-  /*
+
   void
   MCBasicService::vLDM_handler(asn1cpp::Seq<MCM> decodedMCM)
   {
+    return;
+    /*
       vehicleData_t vehdata;
       LDM::LDM_error_t db_retval;
       bool lowFreq_ok;
@@ -398,8 +400,8 @@ namespace ns3
       if(db_retval!=LDM::LDM_OK && db_retval!=LDM::LDM_UPDATED) {
           std::cerr << "Warning! Insert on the database for vehicle " << asn1cpp::getField(decodedMCM->header.stationId,int) << "failed!" << std::endl;
       }
+      */
   }
-   */
 
   void
   MCBasicService::initDissemination()
@@ -468,6 +470,7 @@ namespace ns3
       {
 
         MCM_mandatory_data = m_vdp->getMCMMandatoryData();
+        // MCM_message->payload.basicContainer.concept
         // asn1cpp::setField(MCM_message->mcm.mcmContainer.choice.vehicleManoeuvreContainer.);
 
         /* Fill the basicContainer */

@@ -58,8 +58,6 @@ namespace ns3
     m_T_GenMCM_ms=T_GenMCMMax_ms;
 
     lastMCMGen=-1;
-    lastMCMGenLowFrequency=-1;
-    lastMCMGenSpecialVehicle=-1;
 
     m_vehicle=true;
 
@@ -82,8 +80,6 @@ namespace ns3
     m_T_GenMCM_ms=T_GenMCMMax_ms;
 
     lastMCMGen=-1;
-    lastMCMGenLowFrequency=-1;
-    lastMCMGenSpecialVehicle=-1;
 
     // MCM generation interval for RSU ITS-Ss (default: 1 s)
     m_RSU_GenMCM_ms=1000;
@@ -406,14 +402,16 @@ namespace ns3
   void
   MCBasicService::initDissemination()
   {
-    generateAndEncodeMCM();
+    generateAndEncodeMCM(0, 0, 0, 0);
+    // TODO start the state machine for vehicle
     m_event_MCMCheckConditions = Simulator::Schedule (MilliSeconds(m_T_CheckMCMGen_ms), &MCBasicService::checkMCMConditions, this);
   }
 
   void
   MCBasicService::RSUDissemination()
   {
-    generateAndEncodeMCM();
+    generateAndEncodeMCM(0, 0, 0, 0);
+    // TODO
     m_event_MCMRsuDissemination = Simulator::Schedule (MilliSeconds(m_RSU_GenMCM_ms), &MCBasicService::RSUDissemination, this);
   }
 
@@ -431,7 +429,7 @@ namespace ns3
   }
 
   MCBasicService_error_t
-  MCBasicService::generateAndEncodeMCM()
+  MCBasicService::generateAndEncodeMCM(long mcm_type, long maneuver_id, long mcm_status, long mcm_concept, long mcm_goal, long mcm_cost)
   {
     VDP::MCM_mandatory_data_t MCM_mandatory_data;
     MCBasicService_error_t errval=MCM_NO_ERROR;
@@ -455,6 +453,8 @@ namespace ns3
     asn1cpp::setField(MCM_message->header.protocolVersion, 1);
     asn1cpp::setField(MCM_message->header.stationId, m_station_id);
 
+    /* Fill the basicContainer */
+
     /*
      * Compute the generationDeltaTime, "computed as the time corresponding to the
      * time of the reference position in the MCM, considered as time of the MCM generation.
@@ -464,26 +464,43 @@ namespace ns3
     */
     asn1cpp::setField(MCM_message->payload.basicContainer.generationDeltaTime, compute_timestampIts (m_real_time) % 65536);
 
-    /* Fill the basicContainer's station type */
     asn1cpp::setField(MCM_message->payload.basicContainer.stationType, m_stationtype);
+    asn1cpp::setField(MCM_message->payload.basicContainer.stationID, m_station_id);
     if(m_vehicle==true)
       {
-
         MCM_mandatory_data = m_vdp->getMCMMandatoryData();
-        // MCM_message->payload.basicContainer.concept
-        // asn1cpp::setField(MCM_message->mcm.mcmContainer.choice.vehicleManoeuvreContainer.);
-
-        /* Fill the basicContainer */
-
+        asn1cpp::setField(MCM_message->payload.basicContainer.position.latitude, MCM_mandatory_data.latitude);
+        asn1cpp::setField(MCM_message->payload.basicContainer.position.longitude, MCM_mandatory_data.longitude);
+        asn1cpp::setField(MCM_message->payload.basicContainer.position.altitude.altitudeValue, MCM_mandatory_data.altitude.getValue());
+        asn1cpp::setField(MCM_message->payload.basicContainer.position.altitude.altitudeConfidence, MCM_mandatory_data.altitude.getConfidence());
+        asn1cpp::setField(MCM_message->payload.basicContainer.position.positionConfidenceEllipse.semiMajorAxisLength, MCM_mandatory_data.posConfidenceEllipse.semiMajorConfidence);
+        asn1cpp::setField(MCM_message->payload.basicContainer.position.positionConfidenceEllipse.semiMinorAxisLength, MCM_mandatory_data.posConfidenceEllipse.semiMinorConfidence);
+        asn1cpp::setField(MCM_message->payload.basicContainer.position.positionConfidenceEllipse.semiMajorAxisOrientation, MCM_mandatory_data.posConfidenceEllipse.semiMajorOrientation);
+        asn1cpp::setField(MCM_message->payload.basicContainer.concept, mcm_concept);
+        auto rational = (ManoeuvreCoordinationRational_t*)calloc(1, sizeof(ManoeuvreCoordinationRational_t));
+        if (mcm_concept == 0) {
+            rational->present = ManoeuvreCoordinationRational_PR_manoeuvreCooperationGoal;
+            asn1cpp::setField(rational->choice.manoeuvreCooperationGoal, mcm_goal);
+          } else {
+            rational->present = ManoeuvreCoordinationRational_PR_manoeuvreCooperationCost;
+            asn1cpp::setField(rational->choice.manoeuvreCooperationCost, mcm_cost);
+          }
+        MCM_message->payload.basicContainer.rational = rational;
+        asn1cpp::setField(MCM_message->payload.basicContainer.mcmType, mcm_type);
+        if (mcm_type == 4 || mcm_type == 7)
+          asn1cpp::setField(MCM_message->payload.basicContainer.executionStatus, mcm_status);
+        asn1cpp::setField(MCM_message->payload.basicContainer.itssRole, 0); // Unavailable for the moment
+        asn1cpp::setField(MCM_message->payload.basicContainer.manoeuvreId, maneuver_id);
       }
    else
      {
-       /* Fill the basicContainer */
+       /* Fill the basicContainer for RSU*/
+       // TODO
      }
 
-   // TODO
-    //std::string encode_result = asn1cpp::uper::encode(MCM_message);
-   std::string encode_result;
+   // TODO fill the other containers
+
+   std::string encode_result = asn1cpp::uper::encode(MCM_message);
 
     if(encode_result.size()<1)
     {
@@ -493,7 +510,7 @@ namespace ns3
     packet = Create<Packet> ((uint8_t*) encode_result.c_str(), encode_result.size());
 
     dataRequest.BTPType = BTP_B; //!< BTP-B
-    dataRequest.destPort = CA_PORT;
+    dataRequest.destPort = MC_PORT;
     dataRequest.destPInfo = 0;
     dataRequest.GNType = TSB;
     dataRequest.GNCommProfile = UNSPECIFIED;

@@ -1,6 +1,6 @@
 /** @file */
-#ifndef CABASICSERVICE_H
-#define CABASICSERVICE_H
+#ifndef MCBASICSERVICE_H
+#define MCBASICSERVICE_H
 
 #include "ns3/socket.h"
 #include "ns3/core-module.h"
@@ -166,8 +166,8 @@ namespace ns3
      *
      * @param rx_callback   The callback function to be called when a MCM message is received
      */
-    void addMARxCallback(std::function<void(asn1cpp::Seq<MCM>, Address)> rx_callback) {m_MCReceiveCallback=rx_callback;}
-    void addMARxCallbackExtended(std::function<void(asn1cpp::Seq<MCM>, Address, StationId_t, StationType_t, SignalInfo)> rx_callback) {m_MCReceiveCallbackExtended=rx_callback;}
+    void addMCRxCallback(std::function<void(asn1cpp::Seq<MCM>, Address)> rx_callback) {m_MCReceiveCallback=rx_callback;}
+    void addMCRxCallbackExtended(std::function<void(asn1cpp::Seq<MCM>, Address, StationId_t, StationType_t, SignalInfo)> rx_callback) {m_MCReceiveCallbackExtended=rx_callback;}
     void setRealTime(bool real_time){m_real_time=real_time;}
 
     /**
@@ -218,7 +218,7 @@ namespace ns3
      *
      * @return CABasicService_error_t   The error code
      */
-    MCBasicService_error_t generateAndEncodeMCM();
+    MCBasicService_error_t generateAndEncodeMCM(long mcm_type, long maneuver_id, long mcm_status, long mcm_concept = 1, long mcm_goal = 0, long mcm_cost = 0);
     int64_t computeTimestampUInt64();
     /**
      * @brief Update the LDM with the received MCM message information
@@ -240,9 +240,6 @@ namespace ns3
     long m_RSU_GenMCM_ms; //! MCM generation interval for RSU ITS-Ss
 
     int64_t lastMCMGen; //! Last MCM generation timestamp
-
-    int64_t lastMCMGenLowFrequency; //! Last MCM generation timestamp for low frequency MCMs
-    int64_t lastMCMGenSpecialVehicle;
 
 
     bool m_real_time; //! If true, the MC Basic Service will generate MCM messages using real time timestamps
@@ -295,4 +292,4 @@ namespace ns3
   };
 }
 
-#endif // CABASICSERVICE_H
+#endif // MCBASICSERVICE_H

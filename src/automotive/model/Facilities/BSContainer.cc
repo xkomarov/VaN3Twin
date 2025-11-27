@@ -118,8 +118,8 @@ namespace ns3
   }
 
   void
-  BSContainer::setupContainer(bool CABasicService_enabled,bool DENBasicService_enabled,bool VRUBasicService_enabled,bool CPMBasicService_enabled) {
-    if(CABasicService_enabled==false && DENBasicService_enabled==false && VRUBasicService_enabled==false && CPMBasicService_enabled==false) {
+  BSContainer::setupContainer(bool CABasicService_enabled,bool DENBasicService_enabled,bool VRUBasicService_enabled,bool CPMBasicService_enabled,bool MCMBasicService_enabled) {
+    if(CABasicService_enabled==false && DENBasicService_enabled==false && VRUBasicService_enabled==false && CPMBasicService_enabled==false && MCMBasicService_enabled) {
       NS_FATAL_ERROR("Error. Called setupContainer() asking for enabling zero Basic Services. Aborting simulation.");
     }
 
@@ -180,6 +180,10 @@ namespace ns3
         if (CPMBasicService_enabled==true)
           {
             m_cpbs.setVDP (m_vdp_ptr);
+          }
+        if (MCMBasicService_enabled==true)
+          {
+            m_mcbs.setVDP (m_vdp_ptr);
           }
       }
 
@@ -250,6 +254,22 @@ namespace ns3
           }
 
         m_CPMs_enabled = true;
+      }
+
+    if(MCMBasicService_enabled==true) {
+        m_mcbs.setBTP (m_btp);
+        m_mcbs.setSocketTx (m_socket);
+        m_mcbs.setSocketRx (m_socket);
+        m_mcbs.setLDM (m_LDM);
+
+        // Remember that setStationProperties() must always be called *after* setBTP()
+        m_mcbs.setStationProperties (m_station_id, m_stationtype);
+
+        if(m_MCMReceiveCallbackExtended!=nullptr) {
+            m_mcbs.addMCRxCallbackExtended (m_MCMReceiveCallbackExtended);
+          }
+
+        m_MCMs_enabled = true;
       }
 
     m_is_configured = true;

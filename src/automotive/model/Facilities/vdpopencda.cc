@@ -180,6 +180,76 @@ namespace ns3 {
 
   }
 
+  VDPOpenCDA::MCM_mandatory_data_t
+  VDPOpenCDA::getMCMMandatoryData ()
+  {
+
+    MCM_mandatory_data_t MCMdata;
+    carla::Vehicle egoVehicle = m_opencda_client->GetManagedActorById (m_id);
+
+    /* Speed [0.01 m/s] */
+    MCMdata.speed = VDPValueConfidence<>(sqrt(pow(egoVehicle.speed ().x (),2) + pow(egoVehicle.speed ().y (),2))*CENTI,
+                                          SpeedConfidence_unavailable);
+
+    /* Position */
+    // longitude WGS84 [0,1 microdegree]
+    MCMdata.longitude=(Longitude_t)(egoVehicle.longitude ()*DOT_ONE_MICRO);
+    // latitude WGS84 [0,1 microdegree]
+    MCMdata.latitude=(Latitude_t)(egoVehicle.latitude ()*DOT_ONE_MICRO);
+
+    /* Altitude [0,01 m] */
+    MCMdata.altitude = VDPValueConfidence<>(AltitudeValue_unavailable,
+                                             AltitudeConfidence_unavailable);
+
+    /* Position Confidence Ellipse */
+    MCMdata.posConfidenceEllipse.semiMajorConfidence=SemiAxisLength_unavailable;
+    MCMdata.posConfidenceEllipse.semiMinorConfidence=SemiAxisLength_unavailable;
+    MCMdata.posConfidenceEllipse.semiMajorOrientation=HeadingValue_unavailable;
+
+    /* Longitudinal acceleration [0.1 m/s^2] */
+    double acc = sqrt(pow(egoVehicle.acceleration ().x (),2)+pow(egoVehicle.acceleration ().y (),2));
+    if ((acc*DECI) > AccelerationValue_unavailable)
+      MCMdata.longAcceleration = VDPValueConfidence<>(AccelerationValue_unavailable,
+                                                       AccelerationConfidence_unavailable);
+    else
+      MCMdata.longAcceleration = VDPValueConfidence<>(acc * DECI,
+                                                       AccelerationConfidence_unavailable);
+
+
+    /* Heading WGS84 north [0.1 degree] */
+    double heading = egoVehicle.heading ();
+    if (heading < 0)
+      heading += 360;
+    MCMdata.heading = VDPValueConfidence<>(heading * DECI,
+                                            HeadingConfidence_unavailable);
+
+    /* Drive direction TODO */
+    MCMdata.driveDirection = DriveDirection_unavailable;
+
+    /* Curvature and CurvatureCalculationMode */
+    MCMdata.curvature = VDPValueConfidence<>(CurvatureValue_unavailable,
+                                              CurvatureConfidence_unavailable);
+    MCMdata.curvature_calculation_mode = CurvatureCalculationMode_unavailable;
+
+    /* Length and Width [0.1 m] */
+    if(egoVehicle.length () != 0)
+      MCMdata.VehicleLength = VDPValueConfidence<long,long>(egoVehicle.length ()*DECI,
+                                                              VehicleLengthConfidenceIndication_unavailable);
+    else
+      MCMdata.VehicleLength = VDPValueConfidence<long,long>(m_length,
+                                                              VehicleLengthConfidenceIndication_unavailable);
+
+    if(egoVehicle.width ()!=0)
+      MCMdata.VehicleWidth = (int) (egoVehicle.width ()*DECI);
+    else
+      MCMdata.VehicleWidth = (int) (m_width);
+
+    /* Yaw Rate */
+    MCMdata.yawRate = VDPValueConfidence<>(YawRateValue_unavailable,
+                                            YawRateConfidence_unavailable);
+
+    return MCMdata;
+  }
   VDP::VDP_position_latlon_t
   VDPOpenCDA::getPosition ()
   {

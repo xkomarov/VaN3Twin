@@ -13,6 +13,7 @@ namespace ns3 {
 
     CAM_mandatory_data_t getCAMMandatoryData();
     CPM_mandatory_data_t getCPMMandatoryData();
+    MCM_mandatory_data_t getMCMMandatoryData();
 
     double getSpeedValue() {return m_gps_trace_client->getSpeedms ();}
     double getTravelledDistance() {return m_gps_trace_client->getTravelledDistance ();}

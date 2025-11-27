@@ -44,7 +44,7 @@ namespace ns3
 
   }
 
-  VDPTraCI::VDPTraCI(Ptr<TraciClient> traci_client, std::string node_id)
+  VDPTraCI:: VDPTraCI(Ptr<TraciClient> traci_client, std::string node_id)
   {
     m_traci_client=traci_client;
 
@@ -190,6 +190,69 @@ namespace ns3
     pos1 = m_traci_client->TraCIAPI::simulation.convertLonLattoXY(lon1,lat1);
     pos2 = m_traci_client->TraCIAPI::simulation.convertLonLattoXY(lon2,lat2);
     return sqrt((pow((pos1.x-pos2.x),2)+pow((pos1.y-pos2.y),2)));
+  }
+
+  VDPTraCI::MCM_mandatory_data_t
+  VDPTraCI::getMCMMandatoryData ()
+  {
+    MCM_mandatory_data_t MCMdata;
+
+    /* Speed [0.01 m/s] */
+    if (!m_isStatic)
+      MCMdata.speed = VDPValueConfidence<> (m_traci_client->TraCIAPI::vehicle.getSpeed (m_id) * CENTI,
+                                            SpeedConfidence_unavailable);
+
+    /* Position */
+    libsumo::TraCIPosition pos;
+    if (!m_isStatic)
+      pos=m_traci_client->TraCIAPI::vehicle.getPosition(m_id);
+    else
+      pos = m_traci_client->TraCIAPI::poi.getPosition(m_id);
+    pos=m_traci_client->TraCIAPI::simulation.convertXYtoLonLat (pos.x,pos.y);
+
+    // longitude WGS84 [0,1 microdegree]
+    MCMdata.longitude=(Longitude_t)(pos.x*DOT_ONE_MICRO);
+    // latitude WGS84 [0,1 microdegree]
+    MCMdata.latitude=(Latitude_t)(pos.y*DOT_ONE_MICRO);
+
+    /* Altitude [0,01 m] */
+    MCMdata.altitude = VDPValueConfidence<>(AltitudeValue_unavailable,
+                                             AltitudeConfidence_unavailable);
+
+    /* Position Confidence Ellipse */
+    MCMdata.posConfidenceEllipse.semiMajorConfidence=SemiAxisLength_unavailable;
+    MCMdata.posConfidenceEllipse.semiMinorConfidence=SemiAxisLength_unavailable;
+    MCMdata.posConfidenceEllipse.semiMajorOrientation=HeadingValue_unavailable;
+
+    /* Longitudinal acceleration [0.1 m/s^2] */
+    if (!m_isStatic)
+      MCMdata.longAcceleration = VDPValueConfidence<>(m_traci_client->TraCIAPI::vehicle.getAcceleration (m_id) * DECI,
+                                                       AccelerationConfidence_unavailable);
+
+    /* Heading WGS84 north [0.1 degree] */
+    if (!m_isStatic)
+      MCMdata.heading = VDPValueConfidence<>(m_traci_client->TraCIAPI::vehicle.getAngle (m_id) * DECI,
+                                              HeadingConfidence_unavailable);
+
+    /* Drive direction (backward driving is not fully supported by SUMO, at the moment */
+    MCMdata.driveDirection = DriveDirection_unavailable;
+
+    /* Curvature and CurvatureCalculationMode */
+    MCMdata.curvature = VDPValueConfidence<>(CurvatureValue_unavailable,
+                                              CurvatureConfidence_unavailable);
+    MCMdata.curvature_calculation_mode = CurvatureCalculationMode_unavailable;
+
+    /* Length and Width [0.1 m] */
+    if (!m_isStatic) {
+        MCMdata.VehicleLength = m_vehicle_length;
+        MCMdata.VehicleWidth = m_vehicle_width;
+      }
+
+    /* Yaw Rate */
+    MCMdata.yawRate = VDPValueConfidence<>(YawRateValue_unavailable,
+                                            YawRateConfidence_unavailable);
+
+    return MCMdata;
   }
 
   VDPTraCI::CAM_mandatory_data_t

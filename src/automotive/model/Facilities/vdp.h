@@ -100,6 +100,28 @@ namespace ns3
         VDPValueConfidence<> yawRate;
       } CAM_mandatory_data_t;
 
+      /**
+     * @struct MCM_mandatory_data
+     * @brief Struct representing the mandatory data in a MCM message.
+     *
+     * This includes various parameters like speed, position, acceleration, heading, etc.
+     */
+      typedef struct MCM_mandatory_data {
+        VDPValueConfidence<> speed;
+        long longitude;
+        long latitude;
+        VDPValueConfidence<> altitude;
+        VDP_PosConfidenceEllipse_t posConfidenceEllipse;
+        VDPValueConfidence<> longAcceleration;
+        VDPValueConfidence<> heading;
+        int driveDirection; // enum
+        VDPValueConfidence<> curvature;
+        int curvature_calculation_mode; // enum
+        VDPValueConfidence<long,long> VehicleLength;
+        int VehicleWidth;
+        VDPValueConfidence<> yawRate;
+      } MCM_mandatory_data_t;
+
     /**
      * @struct CPM_mandatory_data
      * @brief Mandatory data for Collective Perception Messages.
@@ -200,6 +222,7 @@ namespace ns3
 
       virtual CAM_mandatory_data_t getCAMMandatoryData() = 0;
       virtual CPM_mandatory_data_t getCPMMandatoryData() = 0;
+      virtual MCM_mandatory_data_t getMCMMandatoryData() = 0;
 
       // These methods are used by the CAM generation frequency management mechanism,
       // as mandated by ETSI, and they should return values which are not already

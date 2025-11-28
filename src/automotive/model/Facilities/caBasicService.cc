@@ -404,7 +404,6 @@ namespace ns3
       vehdata.vehicleWidth = OptionalDataItem<long>(asn1cpp::getField(decodedCAM->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.vehicleWidth,long));
       vehdata.vehicleLength = OptionalDataItem<long>(asn1cpp::getField(decodedCAM->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.vehicleLength.vehicleLengthValue,long));
 
-
       auto lowFreqContainer = asn1cpp::getSeqOpt(decodedCAM->cam.camParameters.lowFrequencyContainer,LowFrequencyContainer,&lowFreq_ok);
       if(lowFreq_ok)
       {

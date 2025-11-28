@@ -175,7 +175,7 @@ namespace ns3
      *
      * This function starts the MCM dissemination process.
      */
-    void startMCMDissemination();
+    void startMCMDisseminationFORESEEMobilityModel();
     /**
      * @brief Start the MCM dissemination with a desynchronization interval
      *
@@ -183,7 +183,7 @@ namespace ns3
      *
      * @param desync_s   The desynchronization interval in seconds
      */
-    void startMCMDissemination(double desync_s);
+    void startMCMDisseminationFORESEEMobilityModel(double desync_s);
 
     /**
      * @brief Stop the MCM dissemination
@@ -203,8 +203,8 @@ namespace ns3
   private:
     const size_t m_MaxPHLength = 23;
 
-    void initDissemination();
-    void RSUDissemination();
+    void initDisseminationFORESEEMobilityModel();
+    void FORESEEMobilityModel();
     /**
      * @brief Check the conditions to generate a MCM message
      *
@@ -287,6 +287,8 @@ namespace ns3
     uint64_t m_speed_sent = 0;
     uint64_t m_head_sent = 0;
     uint64_t m_time_sent = 0;
+
+    long m_FORESEE_check_ms = 1000;
 
     long m_T_next_dcc = -1;
   };

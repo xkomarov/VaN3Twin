@@ -209,7 +209,7 @@ int main (int argc, char *argv[])
       std::srand(Simulator::Now().GetNanoSeconds ()*2); // Seed based on the simulation time to give each vehicle a different random seed
       double desync = ((double)std::rand()/RAND_MAX);
       bs_container->getCABasicService ()->startCamDissemination (desync);
-      bs_container->getMCBasicService()->startMCMDissemination(desync);
+      bs_container->getMCBasicService()->startMCMDisseminationFORESEEMobilityModel(desync);
 
       return c.Get(nodeID);
     };

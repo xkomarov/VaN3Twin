@@ -243,28 +243,20 @@ namespace ns3
   }
 
   void
-  MCBasicService::startMCMDissemination()
+  MCBasicService::startMCMDisseminationFORESEEMobilityModel()
   {
     if(m_vehicle)
       {
-        m_event_MCMDisseminationStart = Simulator::Schedule (Seconds(0), &MCBasicService::initDissemination, this);
-      }
-    else
-      {
-        m_event_MCMDisseminationStart = Simulator::Schedule (Seconds (0), &MCBasicService::RSUDissemination, this);
+        Simulator::Schedule (MilliSeconds(0), &MCBasicService::FORESEEMobilityModel, this);
       }
   }
 
   void
-  MCBasicService::startMCMDissemination(double desync_s)
+  MCBasicService::startMCMDisseminationFORESEEMobilityModel(double desync_s)
   {
     if(m_vehicle)
       {
-        m_event_MCMDisseminationStart = Simulator::Schedule (Seconds (desync_s), &MCBasicService::initDissemination, this);
-      }
-    else
-      {
-        m_event_MCMDisseminationStart = Simulator::Schedule (Seconds (desync_s), &MCBasicService::RSUDissemination, this);
+        Simulator::Schedule (MilliSeconds(0), &MCBasicService::FORESEEMobilityModel, this);
       }
   }
 
@@ -400,20 +392,33 @@ namespace ns3
   }
 
   void
-  MCBasicService::initDissemination()
+  MCBasicService::FORESEEMobilityModel ()
   {
-    generateAndEncodeMCM(0, 0, 0, 0);
-    // TODO start the state machine for vehicle
-    m_event_MCMCheckConditions = Simulator::Schedule (MilliSeconds(m_T_CheckMCMGen_ms), &MCBasicService::checkMCMConditions, this);
+    std::vector<LDM::returnedVehicleData_t> vehicles;
+    bool res = m_LDM->getAllPOs (vehicles);
+    if (res == false)
+      {
+        // TODO automatically move vehicle
+        Simulator::Schedule (MilliSeconds(m_FORESEE_check_ms), &MCBasicService::FORESEEMobilityModel, this);
+        return;
+      }
+    std::unordered_map<uint8_t, std::vector<float>> speeds_per_lane;
+    double my_x = m_vdp->getPositionXY().x;
+    double my_y = m_vdp->getPositionXY().y;
+    double my_heading = m_vdp->getHeadingValue();
+    for(auto it = vehicles.begin(); it != vehicles.end(); ++it)
+      {
+        if (it->vehData.heading != my_heading) continue;
+        VDP::VDP_position_cartesian_t pos = m_vdp->getXY(it->vehData.lon, it->vehData.lat);
+        double x = pos.x;
+        double y = pos.y;
+        double dx = my_x - x;
+        double dy = my_y - y;
+        // TODO check the heading and the dx-dy
+      }
+    Simulator::Schedule (MilliSeconds(m_FORESEE_check_ms), &MCBasicService::FORESEEMobilityModel, this);
   }
 
-  void
-  MCBasicService::RSUDissemination()
-  {
-    generateAndEncodeMCM(0, 0, 0, 0);
-    // TODO
-    m_event_MCMRsuDissemination = Simulator::Schedule (MilliSeconds(m_RSU_GenMCM_ms), &MCBasicService::RSUDissemination, this);
-  }
 
   void
   MCBasicService::checkMCMConditions()
@@ -477,15 +482,16 @@ namespace ns3
         asn1cpp::setField(MCM_message->payload.basicContainer.position.positionConfidenceEllipse.semiMinorAxisLength, MCM_mandatory_data.posConfidenceEllipse.semiMinorConfidence);
         asn1cpp::setField(MCM_message->payload.basicContainer.position.positionConfidenceEllipse.semiMajorAxisOrientation, MCM_mandatory_data.posConfidenceEllipse.semiMajorOrientation);
         asn1cpp::setField(MCM_message->payload.basicContainer.concept, mcm_concept);
-        auto rational = (ManoeuvreCoordinationRational_t*)calloc(1, sizeof(ManoeuvreCoordinationRational_t));
+        MCM_message->payload.basicContainer.rational = (ManoeuvreCoordinationRational_t*)CALLOC(1, sizeof(ManoeuvreCoordinationRational_t));
         if (mcm_concept == 0) {
-            rational->present = ManoeuvreCoordinationRational_PR_manoeuvreCooperationGoal;
-            asn1cpp::setField(rational->choice.manoeuvreCooperationGoal, mcm_goal);
+            //rational->present = ManoeuvreCoordinationRational_PR_manoeuvreCooperationGoal;
+            asn1cpp::setField(MCM_message->payload.basicContainer.rational->present, ManoeuvreCoordinationRational_PR_manoeuvreCooperationGoal);
+            asn1cpp::setField(MCM_message->payload.basicContainer.rational->choice.manoeuvreCooperationGoal, mcm_goal);
           } else {
-            rational->present = ManoeuvreCoordinationRational_PR_manoeuvreCooperationCost;
-            asn1cpp::setField(rational->choice.manoeuvreCooperationCost, mcm_cost);
+            asn1cpp::setField(MCM_message->payload.basicContainer.rational->present, ManoeuvreCoordinationRational_PR_manoeuvreCooperationCost);
+            asn1cpp::setField(MCM_message->payload.basicContainer.rational->choice.manoeuvreCooperationCost, mcm_cost);
           }
-        MCM_message->payload.basicContainer.rational = rational;
+        //MCM_message->payload.basicContainer.rational = rational;
         asn1cpp::setField(MCM_message->payload.basicContainer.mcmType, mcm_type);
         if (mcm_type == 4 || mcm_type == 7)
           asn1cpp::setField(MCM_message->payload.basicContainer.executionStatus, mcm_status);

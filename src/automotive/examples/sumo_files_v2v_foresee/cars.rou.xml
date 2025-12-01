@@ -3,7 +3,7 @@
 <routes>
   <route id="0" edges="ne_to_nw"/>
   <route id="1" edges="nw_to_ne"/>
-
+  <!--lcKeepRight="0" lcContRight="0" lcSpeedGain="0" lcCooperative="-1" lcStrategic="-1"-->
   <vType accel="4" decel="7.5" emergencyDecel="10" minGap="1.0" id="Car0" maxSpeed="40" lcKeepRight="0" lcContRight="0" lcSpeedGain="0" lcCooperative="-1" lcStrategic="-1"/>
   <vType accel="2" decel="7.5" emergencyDecel="10" minGap="1.0" id="Truck" maxSpeed="40" lcKeepRight="0" lcContRight="0" lcSpeedGain="0" lcCooperative="-1" lcStrategic="-1"/>
 

@@ -171,10 +171,6 @@ int main (int argc, char *argv[])
   packetSocket.Install(c);
 
   std::unordered_map<ulong, foresee> lc_model;
-  for(uint8_t i = 0; i < c.GetN(); i++)
-    {
-      lc_model[i] = foresee();
-    }
 
   std::cout << "A transmission power of " << txPower << " dBm  will be used." << std::endl;
 

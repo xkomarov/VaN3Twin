@@ -24,6 +24,7 @@ foresee::FORESEEMobilityModel ()
   double my_heading = m_vdp->getHeadingValue();
   for(auto it = vehicles.begin(); it != vehicles.end(); ++it)
     {
+      // TODO check better the lane (exclude the lane after the adiacent)
       if (it->vehData.heading != my_heading) continue; // Not the same direction
       VDP::VDP_position_cartesian_t pos = m_vdp->getXY(it->vehData.lon, it->vehData.lat);
       double x = pos.x;
@@ -38,8 +39,8 @@ foresee::FORESEEMobilityModel ()
       std::string lane;
       double speed = it->vehData.speed_ms;
       // Determines the lane
-      if ((my_heading == 270 && dy < 0) || (my_heading == 90 && dy > 0)) lane = "right";
-      else if ((my_heading == 270 && dy > 0) || (my_heading == 90 && dy < 0)) lane = "left";
+      if ((my_heading == 270 && dy < -0.5) || (my_heading == 90 && dy > 0.5)) lane = "right";
+      else if ((my_heading == 270 && dy > 0.5) || (my_heading == 90 && dy < -0.5)) lane = "left";
       else lane = "mine";
       speeds_per_lane[lane].push_back (speed);
       veh_per_lane[lane].push_back (std::to_string (it->vehData.stationID));
@@ -101,13 +102,19 @@ foresee::FORESEEMobilityModel ()
     {
       // {-1=right, 1=left}
       bool could = m_traci->vehicle.couldChangeLane (m_vehicle_id, 1);
-      std::cout << "Turn Left " << could << std::endl;
+      if (could == false)
+        {
+          std::cout << "Turn Left " << could << std::endl;
+        }
     }
-  else if (right_criterion)
+  if (right_criterion)
     {
       // {-1=right, 1=left}
       bool could = m_traci->vehicle.couldChangeLane (m_vehicle_id, -1);
-      std::cout << "Turn Right " << could << std::endl;
+      if (could == false)
+        {
+          std::cout << "Turn Right " << could << std::endl;
+        }
     }
   else
     {

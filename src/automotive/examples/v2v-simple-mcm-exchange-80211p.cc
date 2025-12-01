@@ -63,14 +63,14 @@ int main (int argc, char *argv[])
   bool verbose = false; // Set to true to get a lot of verbose output from the IEEE 802.11p PHY model (leave this to false)
   int numberOfNodes; // Total number of vehicles, automatically filled in by reading the XML file
   double m_baseline_prr = 150.0; // PRR baseline value (default: 150 m)
-  int txPower = 23.0; // IEEE 802.11p transmission power in dBm (default: 23 dBm)
+  int txPower = 33.0; // IEEE 802.11p transmission power in dBm (default: 23 dBm)
   xmlDocPtr rou_xml_file;
   double simTime = 100.0; // Total simulation time (default: 100 seconds)
 
   // Set here the path to the SUMO XML files
-  std::string sumo_folder = "src/automotive/examples/sumo_files_v2v_map/";
-  std::string mob_trace = "cars_2.rou.xml";
-  std::string sumo_config ="src/automotive/examples/sumo_files_v2v_map/map_2.sumo.cfg";
+  std::string sumo_folder = "src/automotive/examples/sumo_files_v2v_foresee/";
+  std::string mob_trace = "cars.rou.xml";
+  std::string sumo_config ="src/automotive/examples/sumo_files_v2v_foresee/map.sumo.cfg";
 
   // Read the command line options
   CommandLine cmd (__FILE__);
@@ -138,7 +138,7 @@ int main (int argc, char *argv[])
   NetDeviceContainer devices = wifi80211p.Install (wifiPhy, wifi80211pMac, c);
 
   // Enable saving to Wireshark PCAP traces
-  wifiPhy.EnablePcap ("v2v-80211p-student-application", devices);
+  // wifiPhy.EnablePcap ("v2v-80211p-mcm", devices);
 
   // Set up the link between SUMO and ns-3, to make each node "mobile" (i.e., linking each ns-3 node to each moving vehicle in ns-3,
   // which corresponds to installing the network stack to each SUMO vehicle)
@@ -157,7 +157,7 @@ int main (int argc, char *argv[])
   sumoClient->SetAttribute ("SumoLogFile", BooleanValue (false));
   sumoClient->SetAttribute ("SumoStepLog", BooleanValue (false));
   sumoClient->SetAttribute ("SumoSeed", IntegerValue (10));
-  sumoClient->SetAttribute ("SumoWaitForSocket", TimeValue (Seconds (1.0)));
+  sumoClient->SetAttribute ("SumoWaitForSocket", TimeValue (Seconds (1.5)));
 
   // Set up a Metricsupervisor
   // This module enables a trasparent and seamless collection of one-way latency (in ms) and PRR metrics
@@ -173,13 +173,30 @@ int main (int argc, char *argv[])
 
   std::cout << "Starting simulation... " << std::endl;
 
-  // Important: what you write inside setupNewWifiNode() will be executed every time a new vehicle enters the simulation in SUMO
-  // This kind of "std::function" is called lambda function, and it can access all variables outside its scope, thanks to the [&] capture
-  // We setup here the ETSI stack for each vehicle (except the one generating interfering traffic), thanks to the BSContainer object
-  // Furthermore, we schedule the transmission of interfering traffic for vehicle 3 only ("veh3")
+  double avg_speed_cars = 33.3;  // m/s
+  double avg_speed_trucks = 22.2;  // m/s
+  double deviation = 0.2;   // 20%
+
+  double min_speed_cars = avg_speed_cars * (1.0 - deviation);
+  double min_speed_trucks = avg_speed_trucks * (1.0 - deviation);
+  double max_speed_cars = avg_speed_cars * (1.0 + deviation);
+  double max_speed_trucks = avg_speed_trucks * (1.0 + deviation);
+
+  // Random number generator
+  std::random_device rd;
+  std::mt19937 gen(rd());  // Mersenne Twister engine
+  std::uniform_real_distribution<double> dist1(min_speed_cars, max_speed_cars);
+  std::uniform_real_distribution<double> dist2(min_speed_trucks, max_speed_trucks);
+
   STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID,TraciClient::StationTypeTraCI_t stationType) -> Ptr<Node>
     {
       unsigned long nodeID = std::stol(vehicleID.substr (3))-1;
+
+      std::string type = sumoClient->vehicle.getTypeID (vehicleID);
+
+      double speed = type == "Car0" ? dist1(gen) : dist2(gen);
+
+      // sumoClient->vehicle.setSpeed (vehicleID, speed);
 
       // Create a new ETSI GeoNetworking socket, thanks to the GeoNet::createGNPacketSocket() function, accepting as argument a pointer to the current node
       Ptr<Socket> sock;
@@ -210,6 +227,7 @@ int main (int argc, char *argv[])
       double desync = ((double)std::rand()/RAND_MAX);
       bs_container->getCABasicService ()->startCamDissemination (desync);
       bs_container->getMCBasicService()->startMCMDisseminationFORESEEMobilityModel(desync);
+      bs_container->getMCBasicService()->setDesiredSpeed(speed);
 
       return c.Get(nodeID);
     };
@@ -243,17 +261,6 @@ int main (int argc, char *argv[])
   std::cout << "Run terminated..." << std::endl;
 
   std::cout << "Average PRR: " << metSup->getAveragePRR_overall () << std::endl;
-  std::cout << "Average latency (ms): " << metSup->getAverageLatency_overall () << std::endl;
-
-  std::cout << "Average latency veh 1 (ms): " << metSup->getAverageLatency_vehicle (1) << std::endl;
-  std::cout << "Average latency veh 2 (ms): " << metSup->getAverageLatency_vehicle (2) << std::endl;
-  std::cout << "Average latency veh 3 (ms): " << metSup->getAverageLatency_vehicle (3) << std::endl; // Should return 0, as this vehicle generated only interfering traffic, and it is ignored by the PRRsupervisor
-  std::cout << "Average latency veh 4 (ms): " << metSup->getAverageLatency_vehicle (4) << std::endl;
-
-  std::cout << "RX packet count: " << packet_count << std::endl;
-  std::cout << "RX packet count (from PRR Supervisor): " << metSup->getNumberRx_overall () << std::endl;
-  std::cout << "TX packet count (from PRR Supervisor): " << metSup->getNumberTx_overall () << std::endl;
-  std::cout << "Average number of vehicle within the " << m_baseline_prr << " m baseline: " << metSup->getAverageNumberOfVehiclesInBaseline_overall () << std::endl;
 
   Simulator::Destroy ();
 

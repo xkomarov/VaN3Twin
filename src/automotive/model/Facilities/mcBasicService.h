@@ -197,6 +197,8 @@ namespace ns3
 
     void SetLogTriggering(bool log, std::string log_filename) {m_log_triggering = log; m_log_filename = log_filename;};
 
+    void setDesiredSpeed(double speed) {m_desired_speed = speed;};
+
     // void write_log_triggering(bool condition_verified, float head_diff, float pos_diff, float speed_diff, long time_difference, std::string data_head, std::string data_pos, std::string data_speed, std::string data_time, std::string data_dcc);
 
 
@@ -291,6 +293,12 @@ namespace ns3
     long m_FORESEE_check_ms = 1000;
 
     long m_T_next_dcc = -1;
+
+    double m_delta_ls = 0.5;
+    double m_delta_ds = 0.5;
+    double m_offset = 0.3;
+    double m_desired_speed;
+    uint8_t m_max_reception_mcs = 1000;
   };
 }
 

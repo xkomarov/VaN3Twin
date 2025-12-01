@@ -97,98 +97,6 @@ namespace ns3
     m_vehicle=is_vehicle;
   }
 
-  /*
-  void MCBasicService::write_log_triggering(bool condition_verified, float head_diff, float pos_diff, float speed_diff, long time_difference, std::string data_head, std::string data_pos, std::string data_speed, std::string data_time, std::string data_dcc)
-  {
-    if (m_log_triggering && m_log_filename != "")
-      {
-        std::string data = "";
-        std::string sent = "false";
-        std::string motivation;
-        std::string joint = "";
-        int numConditions = 0;
-        motivation = "";
-
-        long time = Simulator::Now().GetMilliSeconds();
-
-        // Check the motivation of the MCM sent
-        if (!condition_verified)
-          {
-            motivation = "none";
-          }
-        else
-          {
-            data = "[MCM] MCM sent\n";
-            sent = "true";
-
-            if (head_diff > 4.0 || head_diff < -4.0)
-              {
-                motivation = "heading";
-                joint = joint + "H";
-                numConditions++;
-              }
-
-            if ((pos_diff > 4.0 || pos_diff < -4.0))
-              {
-                motivation = "position";
-                joint = joint + "P";
-                numConditions++;
-              }
-
-            if (speed_diff > 0.5 || speed_diff < -0.5)
-              {
-                motivation = "speed";
-                joint = joint + "S";
-                numConditions++;
-              }
-
-            if (abs (time_difference - m_T_GenMCM_ms) <= 10 ||
-                (m_T_GenMCM_ms - time_difference) <= 0)
-              {
-                motivation = "time";
-                joint = joint + "T";
-                numConditions++;
-              }
-
-            // When joint with a single other motivation, the joint motivation should not be considered
-            if (numConditions > 1)
-              {
-                motivation = "joint(" + joint + ")";
-                if (joint == "HT")
-                  {
-                    motivation = "heading";
-                  }
-                if (joint == "PT")
-                  {
-                    motivation = "position";
-                  }
-                if (joint == "ST")
-                  {
-                    motivation = "speed";
-                  }
-              }
-
-            if (condition_verified && motivation.empty ())
-              {
-                motivation = "numPkt";
-              }
-          }
-
-        // Create the data for the log print
-        data += "[LOG] Timestamp=" + std::to_string (time) + " MCMSend=" + sent +
-                " Motivation=" + motivation + " HeadDiff=" + std::to_string (head_diff) +
-                " PosDiff=" + std::to_string (pos_diff) +
-                " SpeedDiff=" + std::to_string (speed_diff) +
-                " TimeDiff=" + std::to_string (time_difference) + "\n";
-        data = data + data_head + data_pos + data_speed + data_time + data_dcc;
-
-        data = data + "\n";
-
-        std::ofstream file (m_log_filename, std::ios::app);
-        file << data;
-      }
-  }
-   */
 
   MCBasicService::MCBasicService(unsigned long fixed_stationid,long fixed_stationtype,VDP* vdp, bool real_time, bool is_vehicle, Ptr<Socket> socket_tx)
   {
@@ -240,6 +148,12 @@ namespace ns3
   {
     m_btp->setSocketRx(socket_rx);
     m_btp->addMCMRxCallback (std::bind(&MCBasicService::receiveMCM,this,std::placeholders::_1,std::placeholders::_2));
+  }
+
+  void
+  MCBasicService::vLDM_handler (asn1cpp::Seq<MCM> decodedMCM)
+  {
+    return;
   }
 
   void
@@ -345,76 +259,107 @@ namespace ns3
 
 
   void
-  MCBasicService::vLDM_handler(asn1cpp::Seq<MCM> decodedMCM)
-  {
-    return;
-    /*
-      vehicleData_t vehdata;
-      LDM::LDM_error_t db_retval;
-      bool lowFreq_ok;
-      vehdata.detected = false;
-      vehdata.stationType = asn1cpp::getField(decodedMCM->MCM.MCMParameters.basicContainer.stationType,long);
-      vehdata.stationID = asn1cpp::getField(decodedMCM->header.stationId,uint64_t);
-      vehdata.lat = asn1cpp::getField(decodedMCM->MCM.MCMParameters.basicContainer.referencePosition.latitude,double)/(double)DOT_ONE_MICRO;
-      vehdata.lon = asn1cpp::getField(decodedMCM->MCM.MCMParameters.basicContainer.referencePosition.longitude,double)/(double)DOT_ONE_MICRO;
-      vehdata.elevation = asn1cpp::getField(decodedMCM->MCM.MCMParameters.basicContainer.referencePosition.altitude.altitudeValue,double)/(double)CENTI;
-      vehdata.heading = asn1cpp::getField(decodedMCM->MCM.MCMParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.heading.headingValue,double)/(double)DECI;
-      vehdata.speed_ms = asn1cpp::getField(decodedMCM->MCM.MCMParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.speed.speedValue,double)/(double)CENTI;
-      vehdata.Timestamp = asn1cpp::getField(decodedMCM->MCM.generationDeltaTime,long);
-      vehdata.timestamp_us = Simulator::Now ().GetMicroSeconds ();
-
-      vehdata.vehicleWidth = OptionalDataItem<long>(asn1cpp::getField(decodedMCM->MCM.MCMParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.vehicleWidth,long));
-      vehdata.vehicleLength = OptionalDataItem<long>(asn1cpp::getField(decodedMCM->MCM.MCMParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.vehicleLength.vehicleLengthValue,long));
-
-
-      auto lowFreqContainer = asn1cpp::getSeqOpt(decodedMCM->MCM.MCMParameters.lowFrequencyContainer,LowFrequencyContainer,&lowFreq_ok);
-      if(lowFreq_ok)
-      {
-          vehdata.exteriorLights = OptionalDataItem<uint8_t>(asn1cpp::bitstring::getterByteMask(lowFreqContainer->choice.basicVehicleContainerLowFrequency.exteriorLights,0));
-      }
-      else
-      {
-          LDM::returnedVehicleData_t retveh;
-
-         if(m_LDM->lookup(vehdata.stationID,retveh) == LDM::LDM_OK){
-             vehdata.exteriorLights = retveh.vehData.exteriorLights;
-         }
-         else{
-             vehdata.exteriorLights = OptionalDataItem<uint8_t>(false);
-         }
-      }
-
-      db_retval=m_LDM->insert(vehdata);
-      if(db_retval!=LDM::LDM_OK && db_retval!=LDM::LDM_UPDATED) {
-          std::cerr << "Warning! Insert on the database for vehicle " << asn1cpp::getField(decodedMCM->header.stationId,int) << "failed!" << std::endl;
-      }
-      */
-  }
-
-  void
   MCBasicService::FORESEEMobilityModel ()
   {
     std::vector<LDM::returnedVehicleData_t> vehicles;
-    bool res = m_LDM->getAllPOs (vehicles);
+    bool res = m_LDM->getAllCVs (vehicles);
     if (res == false)
       {
         // TODO automatically move vehicle
         Simulator::Schedule (MilliSeconds(m_FORESEE_check_ms), &MCBasicService::FORESEEMobilityModel, this);
         return;
       }
-    std::unordered_map<uint8_t, std::vector<float>> speeds_per_lane;
+    std::unordered_map<std::string, std::vector<double>> speeds_per_lane;
+    std::unordered_map<std::string, std::vector<std::string>> veh_per_lane;
     double my_x = m_vdp->getPositionXY().x;
     double my_y = m_vdp->getPositionXY().y;
     double my_heading = m_vdp->getHeadingValue();
     for(auto it = vehicles.begin(); it != vehicles.end(); ++it)
       {
-        if (it->vehData.heading != my_heading) continue;
+        if (it->vehData.heading != my_heading) continue; // Not the same direction
         VDP::VDP_position_cartesian_t pos = m_vdp->getXY(it->vehData.lon, it->vehData.lat);
         double x = pos.x;
         double y = pos.y;
         double dx = my_x - x;
         double dy = my_y - y;
-        // TODO check the heading and the dx-dy
+        // Filter behind vehicles
+        if (my_heading == 270 && dx < 0) continue;
+        if (my_heading == 90 && dx > 0) continue;
+        // Filter too far vehicles
+        if (std::abs(dx) > m_max_reception_mcs) continue;
+        std::string lane;
+        double speed = it->vehData.speed_ms;
+        // Determines the lane
+        if ((my_heading == 270 && dy < 0) || (my_heading == 90 && dy > 0)) lane = "right";
+        else if ((my_heading == 270 && dy > 0) || (my_heading == 90 && dy < 0)) lane = "left";
+        else lane = "mine";
+        speeds_per_lane[lane].push_back (speed);
+        veh_per_lane[lane].push_back (std::to_string (it->vehData.stationID));
+      }
+    bool left_has_veh  = !speeds_per_lane["left"].empty();
+    bool right_has_veh = !speeds_per_lane["right"].empty();
+    double min_speed_mine, min_speed_left, min_speed_right;
+    bool mine_has_veh  = !speeds_per_lane["mine"].empty();
+    if (mine_has_veh)
+      min_speed_mine = *std::min_element(speeds_per_lane["mine"].begin(), speeds_per_lane["mine"].end());
+    else
+      min_speed_mine = m_desired_speed;  // assume ego is driving at desired speed
+
+    if (left_has_veh)
+      min_speed_left = *std::min_element(speeds_per_lane["left"].begin(), speeds_per_lane["left"].end());
+
+    if (right_has_veh)
+      min_speed_right = *std::min_element(speeds_per_lane["right"].begin(), speeds_per_lane["right"].end());
+    bool right_criterion = false;
+    bool left_criterion = false;
+    if (right_has_veh)
+      {
+        if (std::abs(min_speed_right - min_speed_mine) > m_delta_ls)
+          {
+            if (min_speed_right > min_speed_mine)
+              {
+                right_criterion = true;
+              }
+            else
+              {
+                double DSth_right = min_speed_right * (1 - m_offset);
+                if (m_desired_speed < DSth_right - m_delta_ds)
+                  {
+                    right_criterion = true;
+                  }
+              }
+          }
+      }
+    if (left_has_veh)
+      {
+        if (std::abs(min_speed_left - min_speed_mine) > m_delta_ls)
+          {
+            if (min_speed_left > min_speed_mine)
+              {
+                left_criterion = true;
+              }
+            else
+              {
+                double DSth_left = min_speed_mine * (1 - m_offset);
+                if (m_desired_speed > DSth_left + m_delta_ds)
+                  {
+                    left_criterion = true;
+                  }
+              }
+          }
+      }
+
+    if (left_criterion)
+      {
+        std::cout << "Turn Left" << std::endl;
+      }
+    else if (right_criterion)
+      {
+        std::cout << "Turn Right" << std::endl;
+      }
+    else
+      {
+        // std::cout << "Keep lane" << std::endl;
       }
     Simulator::Schedule (MilliSeconds(m_FORESEE_check_ms), &MCBasicService::FORESEEMobilityModel, this);
   }

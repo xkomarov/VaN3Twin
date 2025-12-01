@@ -12,6 +12,7 @@
 #include "ns3/Getter.hpp"
 #include "ns3/LDM.h"
 #include "signalInfoUtils.h"
+#include "ns3/foresee.h"
 
 extern "C" {
   #include "ns3/MCM.h"
@@ -175,7 +176,7 @@ namespace ns3
      *
      * This function starts the MCM dissemination process.
      */
-    void startMCMDisseminationFORESEEMobilityModel();
+    void startMCMDissemination();
     /**
      * @brief Start the MCM dissemination with a desynchronization interval
      *
@@ -183,7 +184,7 @@ namespace ns3
      *
      * @param desync_s   The desynchronization interval in seconds
      */
-    void startMCMDisseminationFORESEEMobilityModel(double desync_s);
+    void startMCMDissemination(double desync_s);
 
     /**
      * @brief Stop the MCM dissemination
@@ -197,16 +198,12 @@ namespace ns3
 
     void SetLogTriggering(bool log, std::string log_filename) {m_log_triggering = log; m_log_filename = log_filename;};
 
-    void setDesiredSpeed(double speed) {m_desired_speed = speed;};
-
     // void write_log_triggering(bool condition_verified, float head_diff, float pos_diff, float speed_diff, long time_difference, std::string data_head, std::string data_pos, std::string data_speed, std::string data_time, std::string data_dcc);
 
 
   private:
     const size_t m_MaxPHLength = 23;
 
-    void initDisseminationFORESEEMobilityModel();
-    void FORESEEMobilityModel();
     /**
      * @brief Check the conditions to generate a MCM message
      *
@@ -294,11 +291,6 @@ namespace ns3
 
     long m_T_next_dcc = -1;
 
-    double m_delta_ls = 0.5;
-    double m_delta_ds = 0.5;
-    double m_offset = 0.3;
-    double m_desired_speed;
-    uint8_t m_max_reception_mcs = 1000;
   };
 }
 

@@ -41,6 +41,7 @@
 #include "ns3/packet-socket-helper.h"
 #include "ns3/gn-utils.h"
 #include "ns3/csv-utils.h"
+#include "ns3/foresee.h"
 
 using namespace ns3;
 
@@ -169,6 +170,12 @@ int main (int argc, char *argv[])
   PacketSocketHelper packetSocket;
   packetSocket.Install(c);
 
+  std::unordered_map<ulong, foresee> lc_model;
+  for(uint8_t i = 0; i < c.GetN(); i++)
+    {
+      lc_model[i] = foresee();
+    }
+
   std::cout << "A transmission power of " << txPower << " dBm  will be used." << std::endl;
 
   std::cout << "Starting simulation... " << std::endl;
@@ -226,9 +233,13 @@ int main (int argc, char *argv[])
       std::srand(Simulator::Now().GetNanoSeconds ()*2); // Seed based on the simulation time to give each vehicle a different random seed
       double desync = ((double)std::rand()/RAND_MAX);
       bs_container->getCABasicService ()->startCamDissemination (desync);
-      bs_container->getMCBasicService()->startMCMDisseminationFORESEEMobilityModel(desync);
-      bs_container->getMCBasicService()->setDesiredSpeed(speed);
-
+      bs_container->getMCBasicService()->startMCMDissemination(desync);
+      lc_model[nodeID].setDesiredSpeed (speed);
+      lc_model[nodeID].setLDM (bs_container->getLDM());
+      lc_model[nodeID].setVDP (bs_container->getVDP());
+      lc_model[nodeID].setTraciAPI(sumoClient);
+      lc_model[nodeID].setVehicleID (vehicleID);
+      lc_model[nodeID].FORESEEMobilityModel();
       return c.Get(nodeID);
     };
 

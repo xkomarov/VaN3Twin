@@ -67,6 +67,7 @@ Set(source_files
     model/Facilities/VRUdp.cc
     model/Facilities/VRUBasicService.cc
     model/Facilities/mcBasicService.cc
+    model/Foresee/foresee.cc
 
     model/BTP/btp.cc
     model/BTP/btpHeader.cc
@@ -1412,6 +1413,7 @@ set(header_files
     model/Applications/v2xEmulator.h
 	model/utilities/csv-utils.h
     model/Facilities/mcBasicService.h
+    model/Foresee/foresee.h
 
     model/Facilities/signalInfoUtils.h
     model/DCC/DCC.h

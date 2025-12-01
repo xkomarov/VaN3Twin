@@ -81,6 +81,10 @@ namespace ns3
 
     Ptr<GeoNet> getGeoNet() {return m_gn;};
 
+    Ptr<LDM> getLDM() {return m_LDM;};
+
+    VDP* getVDP() {return m_vdp_ptr;};
+
   private:
     // Message reception callbacks
     std::function<void(asn1cpp::Seq<CAM>, Address, StationID_t, StationType_t, SignalInfo)> m_CAReceiveCallbackExtended;

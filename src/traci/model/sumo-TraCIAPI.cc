@@ -2710,6 +2710,25 @@ TraCIAPI::VehicleScope::changeTarget(const std::string& vehicleID, const std::st
     myParent.check_resultState(inMsg, CMD_SET_VEHICLE_VARIABLE);
 }
 
+bool
+TraCIAPI::VehicleScope::couldChangeLane(const std::string& vehicleID, int direction) const {
+  std::pair<int, int> generalState = this->getLaneChangeState(vehicleID, direction);
+  int state = std::get<0>(generalState);
+  int stateTraCI = std::get<1>(generalState);
+  bool wantsAndCould = false;
+  if ((stateTraCI & LCA_BLOCKED) == 0) {
+      if (direction == -1)
+        wantsAndCould = (stateTraCI & LCA_RIGHT) != 0;
+      else if (direction == 1)
+        wantsAndCould = (stateTraCI & LCA_LEFT) != 0;
+    }
+
+  if (wantsAndCould) {
+      return false;
+    }
+
+  return state != LCA_UNKNOWN && (state & LCA_BLOCKED) == 0;
+}
 
 void
 TraCIAPI::VehicleScope::changeLane(const std::string& vehicleID, int laneIndex, double duration) const {

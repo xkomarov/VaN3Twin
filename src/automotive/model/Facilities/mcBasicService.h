@@ -217,7 +217,7 @@ namespace ns3
      *
      * @return CABasicService_error_t   The error code
      */
-    MCBasicService_error_t generateAndEncodeMCM(long mcm_type, long maneuver_id, long mcm_status, long mcm_concept = 1, long mcm_goal = 0, long mcm_cost = 0);
+    MCBasicService_error_t generateAndEncodeMCM(long mcm_type, long maneuver_id, long mcm_status, long mcm_concept = 1, long mcm_goal = 0, long mcm_cost = 0, bool vehicle_maneuver_container = true, bool vehicle_advise_container = false);
     int64_t computeTimestampUInt64();
     /**
      * @brief Update the LDM with the received MCM message information

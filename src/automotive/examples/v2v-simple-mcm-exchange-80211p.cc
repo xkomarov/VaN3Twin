@@ -199,7 +199,7 @@ int main (int argc, char *argv[])
 
       double speed = type == "Car0" ? dist1(gen) : dist2(gen);
 
-      // sumoClient->vehicle.setSpeed (vehicleID, speed);
+      sumoClient->vehicle.setMaxSpeed(vehicleID, speed);
 
       // Create a new ETSI GeoNetworking socket, thanks to the GeoNet::createGNPacketSocket() function, accepting as argument a pointer to the current node
       Ptr<Socket> sock;
@@ -233,9 +233,10 @@ int main (int argc, char *argv[])
       lc_model[nodeID].setDesiredSpeed (speed);
       lc_model[nodeID].setLDM (bs_container->getLDM());
       lc_model[nodeID].setVDP (bs_container->getVDP());
-      lc_model[nodeID].setTraciAPI(sumoClient);
       lc_model[nodeID].setVehicleID (vehicleID);
-      lc_model[nodeID].FORESEEMobilityModel();
+      lc_model[nodeID].setTraciAPI(sumoClient);
+      lc_model[nodeID].setNumberOfLanes();
+      lc_model[nodeID].WrapperFORESEEMobilityModel();
       return c.Get(nodeID);
     };
 

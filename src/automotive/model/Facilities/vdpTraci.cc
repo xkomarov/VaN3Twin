@@ -315,6 +315,14 @@ namespace ns3
     CAMdata.yawRate = VDPValueConfidence<>(YawRateValue_unavailable,
                                            YawRateConfidence_unavailable);
 
+    int lanes = m_traci_client->TraCIAPI::edge.getLaneNumber (m_traci_client->TraCIAPI::vehicle.getRoadID (m_id));
+    int current_lane = m_traci_client->TraCIAPI::vehicle.getLaneIndex (m_id);
+    // ETSI enumeration policy is the opposite of SUMO's one
+    // For SUMO: lanes counting starts from 0 from the right most lane
+    // For ETSI: lanes counting starts from 1 from the left most lane
+    current_lane = lanes - current_lane;
+    CAMdata.lane = current_lane;
+
     return CAMdata;
   }
 
@@ -386,16 +394,12 @@ namespace ns3
   {
     if (m_isStatic)
       return VDPDataItem<int>((int)NULL);
-    int laneIndex;
     int lanePosition;
 
-    laneIndex=m_traci_client->TraCIAPI::vehicle.getLaneIndex (m_id);
+    int lanes = m_traci_client->TraCIAPI::edge.getLaneNumber (m_traci_client->TraCIAPI::vehicle.getRoadID (m_id));
+    lanePosition = lanes - m_traci_client->TraCIAPI::vehicle.getLaneIndex (m_id);
 
-    // We add '1' as sumo lane indeces start from '0', while
-    // LanePosition_t uses '1' as the index for the first rightmost
-    // lane ('0' would be reserved to 'hardShoulder')
-    lanePosition = laneIndex+1;
-    if (laneIndex < 0 || laneIndex > 14)
+    if (lanePosition < 0 || lanePosition > 14)
       {
         lanePosition = LanePosition_offTheRoad;
       }

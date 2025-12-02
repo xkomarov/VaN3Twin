@@ -88,6 +88,7 @@ namespace ns3
         VDPValueConfidence<> speed;
         long longitude;
         long latitude;
+        long lane;
         VDPValueConfidence<> altitude;
         VDP_PosConfidenceEllipse_t posConfidenceEllipse;
         VDPValueConfidence<> longAcceleration;
@@ -110,6 +111,7 @@ namespace ns3
         VDPValueConfidence<> speed;
         long longitude;
         long latitude;
+        long lane;
         VDPValueConfidence<> altitude;
         VDP_PosConfidenceEllipse_t posConfidenceEllipse;
         VDPValueConfidence<> longAcceleration;

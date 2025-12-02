@@ -254,7 +254,7 @@ namespace ns3
   }
 
   MCBasicService_error_t
-  MCBasicService::generateAndEncodeMCM(long mcm_type, long maneuver_id, long mcm_status, long mcm_concept, long mcm_goal, long mcm_cost)
+  MCBasicService::generateAndEncodeMCM(long mcm_type, long maneuver_id, long mcm_status, long mcm_concept, long mcm_goal, long mcm_cost, bool vehicle_maneuver_container, bool vehicle_advise_container)
   {
     VDP::MCM_mandatory_data_t MCM_mandatory_data;
     MCBasicService_error_t errval=MCM_NO_ERROR;
@@ -324,7 +324,33 @@ namespace ns3
        // TODO
      }
 
-   // TODO fill the other containers
+   if (vehicle_maneuver_container)
+     {
+       // Select this choice
+       asn1cpp::setField(MCM_message->payload.mcmContainer.present, McmContainer_PR_vehicleManoeuvreContainer);
+
+       // Allocate + fill VehicleManoeuvreContainer
+       auto &veh = MCM_message->payload.mcmContainer.choice.vehicleManoeuvreContainer;
+
+       asn1cpp::setField(veh.currentPoint.present, McmStartPoint_PR_NOTHING); // No Fill
+
+       asn1cpp::setField(veh.automationState->lateralAutomated, true);
+       asn1cpp::setField(veh.automationState->longitudinalAutomated, true);
+
+       auto trajectory = asn1cpp::makeSeq (McmTrajectory);
+       asn1cpp::setField(trajectory->trajectoryID, trajectory->trajectoryID);
+       // TODO do trajectory prediction
+       asn1cpp::sequenceof::pushList(veh.mcmTrajectories, trajectory);
+       // TODO from here
+     }
+   else if (vehicle_advise_container)
+     {
+       // Select this choice
+       asn1cpp::setField(MCM_message->payload.mcmContainer.present, McmContainer_PR_advisedManoeuvreContainer);
+       auto &adv = MCM_message->payload.mcmContainer.choice.advisedManoeuvreContainer;
+
+       // TODO
+     }
 
    std::string encode_result = asn1cpp::uper::encode(MCM_message);
 

@@ -38,14 +38,14 @@
     <location netOffset="-394175.96,-4989734.74" convBoundary="-2500.00,-5.45,2500.00,-5.45" origBoundary="7.655664,45.053168,7.678963,45.076295" projParameter="+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"/>
 
     <edge id="ne_to_nw" from="ne" to="nw" priority="-1" length="5000.00">
-        <lane id="ne_to_nw_0" index="0" speed="30.00" length="5000.00" width="3.00" shape="2500.00,2.05 -2500.00,2.05"/>
-        <lane id="ne_to_nw_1" index="1" speed="30.00" length="5000.00" width="3.00" shape="2500.00,-0.95 -2500.00,-0.95"/>
-        <lane id="ne_to_nw_2" index="2" speed="30.00" length="5000.00" width="3.00" shape="2500.00,-3.95 -2500.00,-3.95"/>
+        <lane id="ne_to_nw_0" index="0" speed="40.00" length="5000.00" width="3.00" shape="2500.00,2.05 -2500.00,2.05"/>
+        <lane id="ne_to_nw_1" index="1" speed="40.00" length="5000.00" width="3.00" shape="2500.00,-0.95 -2500.00,-0.95"/>
+        <lane id="ne_to_nw_2" index="2" speed="40.00" length="5000.00" width="3.00" shape="2500.00,-3.95 -2500.00,-3.95"/>
     </edge>
     <edge id="nw_to_ne" from="nw" to="ne" priority="-1" length="5000.00">
-        <lane id="nw_to_ne_0" index="0" speed="30.00" length="5000.00" width="3.00" shape="-2500.00,-12.95 2500.00,-12.95"/>
-        <lane id="nw_to_ne_1" index="1" speed="30.00" length="5000.00" width="3.00" shape="-2500.00,-9.95 2500.00,-9.95"/>
-        <lane id="nw_to_ne_2" index="2" speed="30.00" length="5000.00" width="3.00" shape="-2500.00,-6.95 2500.00,-6.95"/>
+        <lane id="nw_to_ne_0" index="0" speed="40.00" length="5000.00" width="3.00" shape="-2500.00,-12.95 2500.00,-12.95"/>
+        <lane id="nw_to_ne_1" index="1" speed="40.00" length="5000.00" width="3.00" shape="-2500.00,-9.95 2500.00,-9.95"/>
+        <lane id="nw_to_ne_2" index="2" speed="40.00" length="5000.00" width="3.00" shape="-2500.00,-6.95 2500.00,-6.95"/>
     </edge>
 
     <junction id="ne" type="dead_end" x="2500.00" y="-5.45" incLanes="nw_to_ne_0 nw_to_ne_1 nw_to_ne_2" intLanes="" shape="2500.00,-5.45 2500.00,-14.45 2500.00,-5.45"/>

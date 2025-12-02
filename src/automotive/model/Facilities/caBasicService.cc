@@ -401,6 +401,8 @@ namespace ns3
       vehdata.camTimestamp = asn1cpp::getField(decodedCAM->cam.generationDeltaTime,long);
       vehdata.timestamp_us = Simulator::Now ().GetMicroSeconds ();
 
+      vehdata.lanePosition = OptionalDataItem<long>(asn1cpp::getField(decodedCAM->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.lanePosition,long));
+
       vehdata.vehicleWidth = OptionalDataItem<long>(asn1cpp::getField(decodedCAM->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.vehicleWidth,long));
       vehdata.vehicleLength = OptionalDataItem<long>(asn1cpp::getField(decodedCAM->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.vehicleLength.vehicleLengthValue,long));
 
@@ -654,6 +656,7 @@ namespace ns3
         asn1cpp::setField(cam->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.curvatureCalculationMode, cam_mandatory_data.curvature_calculation_mode);
         asn1cpp::setField(cam->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.yawRate.yawRateValue, cam_mandatory_data.yawRate.getValue ());
         asn1cpp::setField(cam->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.yawRate.yawRateConfidence, cam_mandatory_data.yawRate.getConfidence ());
+        asn1cpp::setField(cam->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.lanePosition, cam_mandatory_data.lane);
 
         // Manage optional data
         auto accControl = m_vdp->getAccelerationControl ();

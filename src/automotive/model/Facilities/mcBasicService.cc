@@ -254,7 +254,7 @@ namespace ns3
   }
 
   MCBasicService_error_t
-  MCBasicService::generateAndEncodeMCM(long mcm_type, long maneuver_id, long mcm_status, long mcm_concept, long mcm_goal, long mcm_cost, bool vehicle_maneuver_container, bool vehicle_advise_container)
+  MCBasicService::generateAndEncodeMCM(MCSpecification specification)
   {
     VDP::MCM_mandatory_data_t MCM_mandatory_data;
     MCBasicService_error_t errval=MCM_NO_ERROR;
@@ -301,22 +301,22 @@ namespace ns3
         asn1cpp::setField(MCM_message->payload.basicContainer.position.positionConfidenceEllipse.semiMajorAxisLength, MCM_mandatory_data.posConfidenceEllipse.semiMajorConfidence);
         asn1cpp::setField(MCM_message->payload.basicContainer.position.positionConfidenceEllipse.semiMinorAxisLength, MCM_mandatory_data.posConfidenceEllipse.semiMinorConfidence);
         asn1cpp::setField(MCM_message->payload.basicContainer.position.positionConfidenceEllipse.semiMajorAxisOrientation, MCM_mandatory_data.posConfidenceEllipse.semiMajorOrientation);
-        asn1cpp::setField(MCM_message->payload.basicContainer.concept, mcm_concept);
+        asn1cpp::setField(MCM_message->payload.basicContainer.concept, specification.mcm_concept);
         MCM_message->payload.basicContainer.rational = (ManoeuvreCoordinationRational_t*)CALLOC(1, sizeof(ManoeuvreCoordinationRational_t));
-        if (mcm_concept == 0) {
+        if (specification.mcm_concept == 0) {
             //rational->present = ManoeuvreCoordinationRational_PR_manoeuvreCooperationGoal;
             asn1cpp::setField(MCM_message->payload.basicContainer.rational->present, ManoeuvreCoordinationRational_PR_manoeuvreCooperationGoal);
-            asn1cpp::setField(MCM_message->payload.basicContainer.rational->choice.manoeuvreCooperationGoal, mcm_goal);
+            asn1cpp::setField(MCM_message->payload.basicContainer.rational->choice.manoeuvreCooperationGoal, specification.mcm_goal);
           } else {
             asn1cpp::setField(MCM_message->payload.basicContainer.rational->present, ManoeuvreCoordinationRational_PR_manoeuvreCooperationCost);
-            asn1cpp::setField(MCM_message->payload.basicContainer.rational->choice.manoeuvreCooperationCost, mcm_cost);
+            asn1cpp::setField(MCM_message->payload.basicContainer.rational->choice.manoeuvreCooperationCost, specification.mcm_cost);
           }
         //MCM_message->payload.basicContainer.rational = rational;
-        asn1cpp::setField(MCM_message->payload.basicContainer.mcmType, mcm_type);
-        if (mcm_type == 4 || mcm_type == 7)
-          asn1cpp::setField(MCM_message->payload.basicContainer.executionStatus, mcm_status);
+        asn1cpp::setField(MCM_message->payload.basicContainer.mcmType, specification.mcm_type);
+        if (specification.mcm_type == 4 || specification.mcm_type == 7)
+          asn1cpp::setField(MCM_message->payload.basicContainer.executionStatus, specification.mcm_status);
         asn1cpp::setField(MCM_message->payload.basicContainer.itssRole, 0); // Unavailable for the moment
-        asn1cpp::setField(MCM_message->payload.basicContainer.manoeuvreId, maneuver_id);
+        asn1cpp::setField(MCM_message->payload.basicContainer.manoeuvreId, specification.maneuver_id);
       }
    else
      {
@@ -324,7 +324,7 @@ namespace ns3
        // TODO
      }
 
-   if (vehicle_maneuver_container)
+   if (specification.vehicle_maneuver_container)
      {
        // Select this choice
        asn1cpp::setField(MCM_message->payload.mcmContainer.present, McmContainer_PR_vehicleManoeuvreContainer);
@@ -343,7 +343,7 @@ namespace ns3
        asn1cpp::sequenceof::pushList(veh.mcmTrajectories, trajectory);
        // TODO from here
      }
-   else if (vehicle_advise_container)
+   else if (specification.vehicle_advise_container)
      {
        // Select this choice
        asn1cpp::setField(MCM_message->payload.mcmContainer.present, McmContainer_PR_advisedManoeuvreContainer);
@@ -420,14 +420,6 @@ namespace ns3
         int_tstamp=tv.tv_sec*1e9+tv.tv_nsec;
       }
     return int_tstamp;
-  }
-  void
-  MCBasicService::startMCMDissemination ()
-  {
-  }
-  void
-  MCBasicService::startMCMDissemination (double desync_s)
-  {
   }
 
   }

@@ -171,6 +171,11 @@ int main (int argc, char *argv[])
   packetSocket.Install(c);
 
   std::unordered_map<ulong, foresee> lc_model;
+  // Create the Lane Change data structure shared with the environment
+  // No need for a mutex since we are not in multi threading programming
+  std::unordered_map<ulong, std::tuple<float, float, float>> lc_data_structure;
+  // Set the coordination avoidance range to check ahead of ego vehicle (in meters)
+  float ca_range = 200;
 
   std::cout << "A transmission power of " << txPower << " dBm  will be used." << std::endl;
 
@@ -199,7 +204,10 @@ int main (int argc, char *argv[])
 
       double speed = type == "Car0" ? dist1(gen) : dist2(gen);
 
+      // Set the desired speed
       sumoClient->vehicle.setMaxSpeed(vehicleID, speed);
+      // Prevent uncontrolled lane change
+      sumoClient->vehicle.setParameter(vehicleID, "laneChangeMode", "0");
 
       // Create a new ETSI GeoNetworking socket, thanks to the GeoNet::createGNPacketSocket() function, accepting as argument a pointer to the current node
       Ptr<Socket> sock;
@@ -229,14 +237,20 @@ int main (int argc, char *argv[])
       std::srand(Simulator::Now().GetNanoSeconds ()*2); // Seed based on the simulation time to give each vehicle a different random seed
       double desync = ((double)std::rand()/RAND_MAX);
       bs_container->getCABasicService ()->startCamDissemination (desync);
-      bs_container->getMCBasicService()->startMCMDissemination(desync);
+      // bs_container->getMCBasicService()->startMCMDissemination(desync);
+
       lc_model[nodeID].setDesiredSpeed (speed);
       lc_model[nodeID].setLDM (bs_container->getLDM());
       lc_model[nodeID].setVDP (bs_container->getVDP());
       lc_model[nodeID].setVehicleID (vehicleID);
       lc_model[nodeID].setTraciAPI(sumoClient);
       lc_model[nodeID].setNumberOfLanes();
+      lc_model[nodeID].setCurrentLCData(&lc_data_structure);
+      lc_model[nodeID].setCoordinationAvoidanceRange(ca_range);
+      lc_model[nodeID].setMCBasicService(bs_container->getMCBasicService());
+      lc_model[nodeID].setStartTime(30);
       lc_model[nodeID].WrapperFORESEEMobilityModel();
+
       return c.Get(nodeID);
     };
 

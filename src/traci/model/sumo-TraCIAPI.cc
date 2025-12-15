@@ -2716,6 +2716,7 @@ TraCIAPI::VehicleScope::couldChangeLane(const std::string& vehicleID, int direct
   int state = std::get<0>(generalState);
   int stateTraCI = std::get<1>(generalState);
   bool wantsAndCould = false;
+  // {-1=right, 1=left}
   if ((stateTraCI & LCA_BLOCKED) == 0) {
       if (direction == -1)
         wantsAndCould = (stateTraCI & LCA_RIGHT) != 0;

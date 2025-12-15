@@ -159,7 +159,7 @@ namespace ns3
     if (!m_isStatic)
       pos=m_traci_client->TraCIAPI::vehicle.getPosition(m_id);
     else
-      pos = m_traci_client->TraCIAPI::poi.getPosition(m_id);
+      pos=m_traci_client->TraCIAPI::poi.getPosition(m_id);
 
     vdppos.x=pos.x;
     vdppos.y=pos.y;

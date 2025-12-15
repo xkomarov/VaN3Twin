@@ -240,7 +240,7 @@ namespace ns3
     m_sumoCommand += " " + m_sumoAddCmdOpt;
     m_sumoCommand += " --start --quit-on-end &";
 
-    m_sumoCommand += " --lanechange.duration 1.5";
+    // m_sumoCommand += " --lanechange.duration 1.5";
 
     return m_sumoCommand;
   }

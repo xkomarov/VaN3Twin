@@ -12,11 +12,22 @@
 #include "ns3/Getter.hpp"
 #include "ns3/LDM.h"
 #include "signalInfoUtils.h"
-#include "ns3/foresee.h"
 
 extern "C" {
   #include "ns3/MCM.h"
 }
+
+
+typedef struct {
+  long mcm_type;
+  long maneuver_id;
+  long mcm_status;
+  long mcm_concept;
+  long mcm_goal;
+  long mcm_cost;
+  bool vehicle_maneuver_container;
+  bool vehicle_advise_container;
+}MCSpecification;
 
 //#define CURRENT_VDP_TYPE VDPTraCI
 
@@ -200,6 +211,15 @@ namespace ns3
 
     // void write_log_triggering(bool condition_verified, float head_diff, float pos_diff, float speed_diff, long time_difference, std::string data_head, std::string data_pos, std::string data_speed, std::string data_time, std::string data_dcc);
 
+    /**
+     * @brief Generate and encode a MCM message
+     *
+     * This function generates and encodes a MCM message.
+     *
+     * @return MCBasicService_error_t   The error code
+     */
+    MCBasicService_error_t generateAndEncodeMCM(MCSpecification specification);
+
 
   private:
     const size_t m_MaxPHLength = 23;
@@ -210,14 +230,6 @@ namespace ns3
      * This is function periodically checks the conditions to generate a MCM message according to the ETSI TS 103 561 V0.0.10 (2025-01) standard.
      */
     void checkMCMConditions();
-    /**
-     * @brief Generate and encode a MCM message
-     *
-     * This function generates and encodes a MCM message.
-     *
-     * @return CABasicService_error_t   The error code
-     */
-    MCBasicService_error_t generateAndEncodeMCM(long mcm_type, long maneuver_id, long mcm_status, long mcm_concept = 1, long mcm_goal = 0, long mcm_cost = 0, bool vehicle_maneuver_container = true, bool vehicle_advise_container = false);
     int64_t computeTimestampUInt64();
     /**
      * @brief Update the LDM with the received MCM message information
@@ -286,8 +298,6 @@ namespace ns3
     uint64_t m_speed_sent = 0;
     uint64_t m_head_sent = 0;
     uint64_t m_time_sent = 0;
-
-    long m_FORESEE_check_ms = 1000;
 
     long m_T_next_dcc = -1;
 

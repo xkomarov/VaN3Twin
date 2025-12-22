@@ -48,8 +48,8 @@ def write_init(f,options):
     f.write('  <route id="1" edges="nw_to_ne"/>\n')
  
     f.write('\n')
-    f.write('  <vType accel="4" decel="7.5" emergencyDecel="10" minGap="1.0" id="Car0" maxSpeed="40" lcKeepRight="0" lcContRight="0" lcSpeedGain="0" lcCooperative="-1" lcStrategic="-1"/>\n')
-    f.write('  <vType accel="2" decel="7.5" emergencyDecel="10" minGap="1.0" id="Truck" maxSpeed="40" lcKeepRight="0" lcContRight="0" lcSpeedGain="0" lcCooperative="-1" lcStrategic="-1"/>\n')
+    f.write('  <vType carFollowModel="IDM" tau="0.8" lcDuration="1.5" accel="1.5" decel="2" emergencyDecel="7" minGap="2.0" id="Car0" maxSpeed="40" lcKeepRight="0" lcContRight="0" lcSpeedGain="0" lcCooperative="-1" lcStrategic="-1"/>\n')
+    f.write('  <vType carFollowModel="IDM" tau="1.0" lcDuration="1.5" accel="1,5" decel="2" emergencyDecel="7" minGap="2.0" id="Truck" maxSpeed="40" lcKeepRight="0" lcContRight="0" lcSpeedGain="0" lcCooperative="-1" lcStrategic="-1"/>\n')
     f.write('\n')
 
 def write_veh(f, name, car_type, index, depart, route_var, departLane, desired_speed):

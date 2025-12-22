@@ -767,6 +767,7 @@ public:
         void changeTarget(const std::string& vehicleID, const std::string& edgeID) const;
         void changeLane(const std::string& vehicleID, int laneIndex, double duration) const;
         bool couldChangeLane(const std::string& vehicleID, int direction) const;
+        std::vector<uint8_t> getLaneChangeFailureReasons(int state, int stateTraCI, int direction);
         void changeLaneRelative(const std::string& vehicleID, int laneChange, double duration) const;
         void changeSublane(const std::string& vehicleID, double latDist) const;
         void setRouteID(const std::string& vehicleID, const std::string& routeID) const;

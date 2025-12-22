@@ -35,6 +35,68 @@ foresee::setNumberOfLanes ()
   m_num_lanes = lanes;
 }
 
+double IDMAcceleration(double v,
+                 double v_lead,
+                 double gap,
+                 double v0,
+                 double a_max,
+                 double b,
+                 double s0,
+                 double T,
+                 double delta = 4.0
+)
+{
+  gap = std::max(gap, 0.1); // avoid singularities
+
+  double delta_v = v - v_lead;
+  double s_star = s0 + v * T + (v * delta_v) / (2.0 * std::sqrt(a_max * b));
+
+  return a_max * (1.0 - std::pow(v / v0, delta) - std::pow(s_star / gap, 2.0));
+}
+
+double
+foresee::estimateTimeFromPredictionIDM(
+    std::vector<foresee::TrajectoryItem> leader,
+    std::vector<foresee::TrajectoryItem> follower,
+    double comfort_decel,
+    double a_max,
+    double desired_speed,
+    double b,
+    double s0,
+    double T)
+{
+  size_t N = std::min(leader.size(), follower.size());
+
+  for (size_t k = 0; k < N; ++k)
+    {
+      auto lead = leader[k];
+      auto foll = follower[k];
+
+      // Future gap (RV behind HV assumed)
+      double gap = lead.x - foll.x;
+
+      // Required braking if lane change happens at this timestep
+      double a_required_RV = IDMAcceleration(
+          foll.speed,   // follower
+          lead.speed,   // leader
+          gap,
+          desired_speed,
+          a_max,
+          b,
+          s0,
+          T
+      );
+
+      // Comfort check (IDM can exceed prediction decel!)
+      if (a_required_RV >= -comfort_decel)
+        {
+          return (k + 1) * STEP_TIME; // EstimatedTime found
+        }
+    }
+
+  return -1.0; // no feasible coordination in horizon
+}
+
 void
 foresee::FORESEEMobilityModel ()
 {
@@ -51,6 +113,8 @@ foresee::FORESEEMobilityModel ()
   double my_heading = m_vdp->getHeadingValue();
   double my_x = m_vdp->getPositionXY().x;
   double my_y = m_vdp->getPositionXY().y;
+  double my_speed = m_vdp->getSpeedValue();
+  std::string my_type = m_traci->vehicle.getTypeID (m_vehicle_id);
   VDPDataItem<int> my_lane = m_vdp->getLanePosition();
   for(auto it = vehicles.begin(); it != vehicles.end(); ++it)
     {
@@ -164,6 +228,8 @@ foresee::FORESEEMobilityModel ()
         }
       else
         {
+          auto [state, stateTraCI] = m_traci->vehicle.getLaneChangeState(m_vehicle_id, lc_direction);
+          std::vector<uint8_t> reasons = m_traci->vehicle.getLaneChangeFailureReasons (state, stateTraCI, lc_direction);
           // Check the coordination avoidance range
           bool found = false;
           // Take the four roles, target, ahead ego, ahead target
@@ -189,6 +255,9 @@ foresee::FORESEEMobilityModel ()
             {
               // Initiate the MCM process
               startManeuver = true;
+              double x_RV, x_RVAhead, x_HVAhead;
+              double y_RV, y_RVAhead, y_HVAhead;
+              double speed_RV, speed_RVAhead, speed_HVAhead;
               double min_dist_hv_ahead = 10000;
               double min_dist_rv_ahead = 10000;
               double min_dist_rv = 10000;
@@ -216,6 +285,9 @@ foresee::FORESEEMobilityModel ()
                         {
                           min_dist_hv_ahead = dist;
                           HVAhead = "veh" + std::to_string (it->vehData.stationID);
+                          x_HVAhead = pos.x;
+                          y_HVAhead = pos.y;
+                          speed_HVAhead = it->vehData.speed_ms;
                         }
                     }
                   else
@@ -233,6 +305,9 @@ foresee::FORESEEMobilityModel ()
                             {
                               min_dist_rv_ahead = dist;
                               RVAhead = "veh" + std::to_string (it->vehData.stationID);
+                              x_RVAhead = pos.x;
+                              y_RVAhead = pos.y;
+                              speed_RVAhead = it->vehData.speed_ms;
                             }
                         }
                       else
@@ -245,14 +320,53 @@ foresee::FORESEEMobilityModel ()
                                 {
                                   min_dist_rv = dist;
                                   RV = "veh" + std::to_string (it->vehData.stationID);
+                                  x_RV = pos.x;
+                                  y_RV = pos.y;
+                                  speed_RV = it->vehData.speed_ms;
                                 }
                             }
                         }
                     }
                 }
               m_actors = {RV, HVAhead, RVAhead};
+              std::vector<TrajectoryItem> mp_RV;
+              std::vector<TrajectoryItem> mp_RVAhead;
+              std::vector<TrajectoryItem> mp_HVAhead;
+              uint8_t sign = my_heading == 270 ? -1 : 1;
+              if(!RV.empty()) mp_RV = predictConstantSpeed (x_RV, y_RV, speed_RV, sign, true);
+              if(!RVAhead.empty()) mp_RVAhead = predictConstantSpeed (x_RVAhead, y_RVAhead, speed_RVAhead, sign);
+              if(!HVAhead.empty()) mp_HVAhead = predictConstantSpeed (x_HVAhead, y_HVAhead, speed_HVAhead, sign);
+              std::vector<TrajectoryItem> mp_HV = predictConstantSpeed (my_x, my_y, my_speed, sign);
+              double estimated_time_hv_rv = -1, estimated_time_hv_rvahead = -1;
+              if(!mp_RV.empty())
+                {
+                  estimated_time_hv_rv = estimateTimeFromPredictionIDM (
+                      mp_HV,
+                      mp_RV,
+                      std::abs(COMFORT_DECELERATION), // comfort threshold
+                      m_desired_speed,
+                      m_traci->vehicletype.getAccel (my_type),
+                      std::abs(SAFE_DECELERATION),
+                      m_traci->vehicletype.getMinGap (my_type),
+                      m_traci->vehicletype.getTau (my_type)
+                  );
+                }
+              if (!mp_RVAhead.empty())
+                {
+                   estimated_time_hv_rvahead = estimateTimeFromPredictionIDM (
+                      mp_RVAhead,
+                      mp_HV,
+                      std::abs(COMFORT_DECELERATION), // comfort threshold
+                      m_desired_speed,
+                      m_traci->vehicletype.getAccel (my_type),
+                      std::abs(SAFE_DECELERATION),
+                      m_traci->vehicletype.getMinGap (my_type),
+                      m_traci->vehicletype.getTau (my_type)
+                  );
+                }
+              std::cout << "HERE" << std::endl;
               (*m_lc_data_structure)[m_vehicle_id_int] = std::make_tuple (my_heading, my_x, my_y);
-              Simulator::Schedule (MilliSeconds(0), &foresee::doCoordination, this);
+              // Simulator::Schedule (MilliSeconds(0), &foresee::doCoordination, this);
             }
         }
     }
@@ -272,4 +386,45 @@ foresee::terminateCoordination ()
   (*m_lc_data_structure).erase(m_vehicle_id_int);
   Simulator::Schedule (MilliSeconds(m_FORESEE_check_ms), &foresee::FORESEEMobilityModel, this);
 }
+
+std::vector<foresee::TrajectoryItem>
+foresee::predictConstantSpeed(double x, double y, double speed, uint8_t sign, bool is_RV)
+{
+  std::vector<foresee::TrajectoryItem> motion_plan;
+  if (!is_RV)
+    {
+      float t = 0.1;
+      while (t <= HORIZON_TIME)
+      {
+        TrajectoryItem item {x + speed * STEP_TIME, y, speed};
+        motion_plan.push_back (item);
+        x = sign * (x + speed * STEP_TIME);
+        t += STEP_TIME;
+      }
+    }
+  else
+    {
+      float t = 0.1;
+      while (t <= HORIZON_TIME)
+        {
+          if (t <= NEGOTIATION_TIME || t > NEGOTIATION_TIME + DECELERATION_TIME)
+            {
+              x = sign * (x + speed * STEP_TIME);
+              TrajectoryItem item {x, y, speed};
+              motion_plan.push_back (item);
+              t += STEP_TIME;
+            }
+          else if (t > NEGOTIATION_TIME && t <= NEGOTIATION_TIME + DECELERATION_TIME)
+            {
+              x = sign * (x + speed * STEP_TIME + 0.5 * COMFORT_DECELERATION * std::pow(STEP_TIME, 2));
+              speed = speed + COMFORT_DECELERATION * STEP_TIME;
+              TrajectoryItem item {x, y, speed};
+              motion_plan.push_back (item);
+              t += STEP_TIME;
+            }
+        }
+    }
+  return motion_plan;
+}
+
 }

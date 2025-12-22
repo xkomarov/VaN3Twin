@@ -9,6 +9,13 @@
 // #include "ns3/LDM.h"
 #include "ns3/mcBasicService.h"
 
+#define HORIZON_TIME 8
+#define NEGOTIATION_TIME 1
+#define DECELERATION_TIME 1
+#define STEP_TIME .5
+#define COMFORT_DECELERATION -2
+#define SAFE_DECELERATION -4
+
 namespace ns3
 {
 class foresee
@@ -19,6 +26,12 @@ public:
     std::string HVAhead;
     std::string RVAhead;
   }FORESEEActors;
+
+  typedef struct {
+    double x;
+    double y;
+    double speed;
+  }TrajectoryItem;
 
   foresee() = default;
   ~foresee() = default;
@@ -36,6 +49,16 @@ public:
   void setStartTime(uint8_t startTime) {m_start_time = startTime;};
   void terminateCoordination ();
   void doCoordination ();
+  std::vector<TrajectoryItem> predictConstantSpeed(double x, double y, double speed, uint8_t sign, bool is_RV = false);
+  double estimateTimeFromPredictionIDM(
+    std::vector<foresee::TrajectoryItem> leader,
+    std::vector<foresee::TrajectoryItem> follower,
+    double comfort_decel,
+    double a_max,
+    double desired_speed,
+    double b,
+    double s0,
+    double T);
 private:
   std::string m_vehicle_id;
   uint64_t m_vehicle_id_int;

@@ -2731,6 +2731,60 @@ TraCIAPI::VehicleScope::couldChangeLane(const std::string& vehicleID, int direct
   return state != LCA_UNKNOWN && (state & LCA_BLOCKED) == 0;
 }
 
+std::vector<uint8_t>
+TraCIAPI::VehicleScope::getLaneChangeFailureReasons(
+    int state,
+    int stateTraCI,
+    int direction // {-1 = right, 1 = left}
+) {
+  std::vector<uint8_t> reasons;
+
+  // --- A. Unknown state ---
+  if (state == LCA_UNKNOWN) {
+      reasons.push_back(0);
+      return reasons; // nothing else is meaningful
+    }
+
+  // --- B. Wants to change but TraCI says blocked ---
+  bool wantsRight = (stateTraCI & LCA_RIGHT) != 0;
+  bool wantsLeft  = (stateTraCI & LCA_LEFT)  != 0;
+
+  if ((stateTraCI & LCA_BLOCKED) != 0) {
+      if ((direction == -1 && wantsRight) ||
+          (direction ==  1 && wantsLeft)) {
+          reasons.push_back(1);
+        }
+    }
+
+  // --- C. Specific blocking reasons (TraCI) ---
+  if (stateTraCI & LCA_BLOCKED_LEFT)
+    reasons.push_back(2);
+  if (stateTraCI & LCA_BLOCKED_RIGHT)
+    reasons.push_back(3);
+  if (stateTraCI & LCA_INSUFFICIENT_SPACE)
+    reasons.push_back(4);
+  if (stateTraCI & LCA_INSUFFICIENT_SPEED)
+    reasons.push_back(5);
+
+  // --- D. Internal SUMO blocking reasons ---
+  if (state & LCA_BLOCKED_LEFT)
+    reasons.push_back(6);
+  if (state & LCA_BLOCKED_RIGHT)
+    reasons.push_back(7);
+  if (state & LCA_INSUFFICIENT_SPACE)
+    reasons.push_back(8);
+  if (state & LCA_INSUFFICIENT_SPEED)
+    reasons.push_back(9);
+
+  // --- E. Catch-all ---
+  if (reasons.empty()) {
+      reasons.push_back(10);
+    }
+
+  return reasons;
+}
+
+
 void
 TraCIAPI::VehicleScope::changeLane(const std::string& vehicleID, int laneIndex, double duration) const {
     tcpip::Storage content;

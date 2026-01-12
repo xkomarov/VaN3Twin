@@ -45,6 +45,7 @@ namespace ns3
     m_denm_ReceiveCallback = nullptr;
     m_ivim_ReceiveCallback = nullptr;
     m_vam_ReceiveCallback = nullptr;
+    m_spatem_ReceiveCallback = nullptr;
   }
 
   void
@@ -140,6 +141,10 @@ namespace ns3
     } else if(btpDataIndication.destPort == IVIM_PORT) {
       if(m_ivim_ReceiveCallback!=nullptr) {
         m_ivim_ReceiveCallback(btpDataIndication,address);
+      }
+    } else if(btpDataIndication.destPort == SPATEM_PORT) {
+      if(m_spatem_ReceiveCallback!=nullptr) {
+        m_spatem_ReceiveCallback(btpDataIndication,address);
       }
     }
     else if(btpDataIndication.destPort == CP_PORT){

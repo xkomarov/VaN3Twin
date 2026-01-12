@@ -198,8 +198,24 @@ namespace ns3
         VDPDataItem<long> speedLimit; // optional speed limit (in km/h - the ASN.1 unit is already km/h)
       } VDP_SafetyCarContainerData_t;
 
+
+      typedef struct SPATEM_SignalGroupState {
+          int signalGroupID;      
+          int eventState;         
+          long minEndTime;        
+      } SPATEM_SignalGroupState_t;
+
+      typedef struct SPATEM_mandatory_data {
+          long intersectionId;            
+          unsigned long status;           
+          unsigned long moy;              
+          unsigned long timeStamp;        
+          std::vector<SPATEM_SignalGroupState_t> states; 
+      } SPATEM_mandatory_data_t;
+
       virtual CAM_mandatory_data_t getCAMMandatoryData() = 0;
       virtual CPM_mandatory_data_t getCPMMandatoryData() = 0;
+      virtual SPATEM_mandatory_data_t getSPATEMMandatoryData() = 0;
 
       // These methods are used by the CAM generation frequency management mechanism,
       // as mandated by ETSI, and they should return values which are not already

@@ -48,6 +48,12 @@ namespace ns3 {
     void setProperties(Ptr<TraciClient> traci_client,std::string node_id) {m_traci_client=traci_client; m_id=node_id;}
 
     /**
+   * @brief This function returns the mandatory data of the SPATEM message.
+   * @return The mandatory data of the SPATEM message.
+   */
+    SPATEM_mandatory_data_t getSPATEMMandatoryData();
+    
+    /**
      * @brief This function returns the mandatory data of the CAM message.
      *
      * This method returns the mandatory data of the CAM message in the units used for the ASN.1 encoding.

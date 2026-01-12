@@ -19,6 +19,9 @@
 */
 
 #include "vdpTraci.h"
+#include <functional> 
+#include <vector>
+#include <cmath>
 
 extern "C" {
   #include "ns3/CAM.h"
@@ -316,6 +319,65 @@ namespace ns3
                                            YawRateConfidence_unavailable);
 
     return CPMdata;
+  }
+
+  VDPTraCI::SPATEM_mandatory_data_t
+  VDPTraCI::getSPATEMMandatoryData()
+  {
+      SPATEM_mandatory_data_t spatData;
+
+      try {
+              spatData.intersectionId = (long)std::hash<std::string>{}(m_id);
+          } catch (...) {
+              spatData.intersectionId = 0;
+          }
+
+      spatData.status = 0;
+
+      std::string stateString = m_traci_client->TraCIAPI::trafficlights.getRedYellowGreenState(m_id);
+      double nextSwitch = m_traci_client->TraCIAPI::trafficlights.getNextSwitch(m_id);
+      double simTime = m_traci_client->TraCIAPI::simulation.getTime();
+      double timeLeft = nextSwitch - simTime;
+      if (timeLeft < 0) timeLeft = 0.0;
+      long timeLeftDeciSeconds = (long)(timeLeft * 10.0);      
+
+      for (size_t i = 0; i < stateString.length(); ++i) {
+          SPATEM_SignalGroupState_t groupState;
+          groupState.signalGroupID = (int)i + 1; 
+          groupState.minEndTime = timeLeftDeciSeconds;
+
+          char s = stateString[i];
+          
+          switch (s) {
+                      case 'r': 
+                      case 'R': 
+                          groupState.eventState = 3; // stop-And-Remain
+                          break;
+                      case 'y': 
+                      case 'Y': 
+                          groupState.eventState = 7; // intersection-clearance
+                          break;
+                      case 'g': 
+                          groupState.eventState = 5; // permissive-Movement-Allowed
+                          break;
+                      case 'G': 
+                          groupState.eventState = 6; // protected-Movement-Allowed
+                          break;
+                      case 'u': 
+                          groupState.eventState = 3; 
+                          break; 
+                      case 'o': 
+                          groupState.eventState = 1; // unavailable / off
+                          break;
+                      default:
+                          groupState.eventState = 1; // unavailable
+                          break;
+                  }
+
+          spatData.states.push_back(groupState);
+      }
+      
+      return spatData;
   }
 
   VDPDataItem<int>

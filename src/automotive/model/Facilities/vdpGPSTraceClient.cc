@@ -149,6 +149,18 @@ namespace ns3
     return CPMdata;
   }
 
+  VDP::SPATEM_mandatory_data_t
+  VDPGPSTraceClient::getSPATEMMandatoryData()
+  {
+    VDP::SPATEM_mandatory_data_t emptyData;
+    emptyData.intersectionId = 0;
+    emptyData.status = 0;
+    emptyData.moy = 0;
+    emptyData.timeStamp = 0;    
+    
+    return emptyData;
+  }
+
   VDP::VDP_position_latlon_t
   VDPGPSTraceClient::getPosition()
   {

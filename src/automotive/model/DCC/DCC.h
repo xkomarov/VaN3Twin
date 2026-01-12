@@ -64,7 +64,6 @@ public:
   void enqueue(int priority, QueuePacket p);
   std::tuple<bool, QueuePacket> dequeue(int priority);
 
-  float getTonpp();
   void updateTgoAfterStateCheck(uint32_t Toff);
   void updateTonpp(ssize_t pktSize);
   bool checkGateOpen(int64_t now);
@@ -73,6 +72,17 @@ public:
   std::string getModality() {return m_modality;}
   void setBitRate(long bitrate) {m_bitrate_bps = bitrate;}
   void setSendCallback(std::function<void(const QueuePacket&)> cb);
+  void setCBRGCallback(std::function<void()> cb);
+  Ptr<WifiPhy> GetPhy();
+  double getCBRTarget() const {return m_CBR_target;};
+  void setCBRG(double cbr_g);
+  void setNewCBRL0Hop (double cbr);
+  double getCBRR0 () {return m_CBR_L0_Hop[0];}
+  double getCBRL0Prev () {return m_CBR_L0_Hop[1];}
+  void setCBRL1 (double cbr_r1) {m_CBR_L1_Hop = cbr_r1;};
+  void setCBRL2 (double cbr_r2) { m_CBR_L2_Hop = cbr_r2;};
+  double getCBRR1 () {return m_CBR_L1_Hop;};
+  double getCBRR2 () {return m_CBR_L2_Hop;};
 
 private:
 
@@ -128,6 +138,8 @@ private:
    */
   void adaptiveDCCcheckCBR();
 
+  void DCCcheckCBRG();
+
   void checkQueue();
 
   std::unordered_map<ReactiveState, ReactiveParameters> getConfiguration(double Ton, double currentCBR);
@@ -142,7 +154,7 @@ private:
   double m_CBR_its = -1;
   double m_alpha = 0.016;
   double m_beta = 0.0012;
-  double m_CBR_target = 0.68;
+  double m_CBR_target = 0.62;
   double m_delta_max = 0.03;
   double m_delta_min = 0.0006;
   double m_Gmax = 0.0005;
@@ -171,7 +183,15 @@ private:
   uint32_t m_dropped_by_gate = 0;
   std::string m_log_file = "";
   std::function<void(const QueuePacket&)> m_send_callback;
+  std::function<void()> m_cbr_g_callback;
 
+  double m_current_cbr = 0;
+
+  uint8_t m_T_DCC_NET_Trig = 100;
+  std::vector<double> m_CBR_G = {-1, -1};
+  std::vector<double> m_CBR_L0_Hop = {0, 0};
+  double m_CBR_L1_Hop = 0.0;
+  double m_CBR_L2_Hop = 0.0;
 };
 
 }

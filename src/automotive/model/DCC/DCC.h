@@ -31,7 +31,8 @@ namespace ns3 {
  */
 
 typedef struct QueuePacket {
-  int time;
+  float time;
+  int priority;
   GNBasicHeader bh;
   GNCommonHeader ch;
   GNlpv_t long_PV;
@@ -54,19 +55,19 @@ public:
   /**
     * \brief Setup DCC
     */
-  void SetupDCC(std::string item_id, Ptr<MetricSupervisor> met_sup, Ptr<Node> node, std::string modality, uint32_t dcc_interval, float cbr_target=0.63, int queue_length=0, int max_lifetime=100, std::string log_file="");
+  void SetupDCC(std::string item_id, Ptr<MetricSupervisor> met_sup, Ptr<Node> node, std::string modality, uint32_t dcc_interval, float cbr_target=0.63, int queue_length=0, int max_lifetime=100, std::string log_file="", std::string profile_DCC="etsi");
 
   void StartDCC();
 
   void setMetricSupervisor(MetricSupervisor *met_sup_ptr) {m_metric_supervisor = met_sup_ptr;}
   void setLastTx(float t) {m_last_tx = t;}
-  void cleanQueues(int now);
+  void cleanQueues(float now);
   void enqueue(int priority, QueuePacket p);
   std::tuple<bool, QueuePacket> dequeue(int priority);
 
   void updateTgoAfterStateCheck(uint32_t Toff);
   void updateTonpp(ssize_t pktSize);
-  bool checkGateOpen(int64_t now);
+  bool checkGateOpen(float now);
   void updateTgoAfterDeltaUpdate();
   void updateTgoAfterTransmission();
   std::string getModality() {return m_modality;}
@@ -80,9 +81,12 @@ public:
   double getCBRR0 () {return m_CBR_L0_Hop[0];}
   double getCBRL0Prev () {return m_CBR_L0_Hop[1];}
   void setCBRL1 (double cbr_r1) {m_CBR_L1_Hop = cbr_r1;};
-  void setCBRL2 (double cbr_r2) { m_CBR_L2_Hop = cbr_r2;};
+  void setCBRL2 (double cbr_r2) {m_CBR_L2_Hop = cbr_r2;};
   double getCBRR1 () {return m_CBR_L1_Hop;};
   double getCBRR2 () {return m_CBR_L2_Hop;};
+  void updateAoI (int priority, double time);
+  void updatePktToSend() {m_pkt_to_send ++;};
+  void updatePktReceived() {m_pkt_received ++;};
 
 private:
 
@@ -176,11 +180,22 @@ private:
   struct GNDataIndication_t; // forward declaration to avoid circular import with geonet.h
 
   std::vector<QueuePacket> m_dcc_queue_dp0;
+  uint64_t m_packet_sent_dp0 = 0;
+  double m_cumulative_time_dp0 = 0;
   std::vector<QueuePacket> m_dcc_queue_dp1;
+  uint64_t m_packet_sent_dp1 = 0;
+  double m_cumulative_time_dp1 = 0;
   std::vector<QueuePacket> m_dcc_queue_dp2;
+  uint64_t m_packet_sent_dp2 = 0;
+  double m_cumulative_time_dp2 = 0;
   std::vector<QueuePacket> m_dcc_queue_dp3;
+  uint64_t m_packet_sent_dp3 = 0;
+  double m_cumulative_time_dp3 = 0;
 
-  uint32_t m_dropped_by_gate = 0;
+  uint32_t m_dropped_full_queue = 0;
+  uint32_t m_dropped_lifetime = 0;
+  uint32_t m_pkt_to_send = 0;
+  uint32_t m_pkt_received = 0;
   std::string m_log_file = "";
   std::function<void(const QueuePacket&)> m_send_callback;
   std::function<void()> m_cbr_g_callback;
@@ -192,6 +207,8 @@ private:
   std::vector<double> m_CBR_L0_Hop = {0, 0};
   double m_CBR_L1_Hop = 0.0;
   double m_CBR_L2_Hop = 0.0;
+
+  std::string m_profile;
 };
 
 }

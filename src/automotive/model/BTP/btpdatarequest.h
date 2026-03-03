@@ -52,7 +52,8 @@ namespace ns3 {
     UNSUPPORTED_TRA_CLASS = 4,
     MAX_GEOAREA_EXCEEDED = 5,
     UNSPECIFIED_ERROR =6,
-    BLOCKED_BY_GK = 7
+    BLOCKED_BY_GK = 7,
+    CONFIRM_UNKNOWN = 8,
   }GNDataConfirm_t;
 
   typedef struct _btpdataRequest {

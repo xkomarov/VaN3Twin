@@ -41,6 +41,7 @@ public:
    * This constructor initializes the CPBasicService object.
    */
   CPBasicService();
+  ~CPBasicService();
   /**
    * @brief Set the station ID of the ITS-S.
    * @param fixed_stationid  The station ID to be set.
@@ -121,6 +122,8 @@ public:
   void setRedundancyMitigation(bool choice){m_redundancy_mitigation = choice;}
   void disableRedundancyMitigation(){m_redundancy_mitigation = false;}
 
+  uint64_t getWannabeSent() {return m_wannabe_sent;}
+
   const long T_GenCpmMin_ms = 100;
   const long T_GenCpm_ms = 100;
   const long T_GenCpmMax_ms = 1000;
@@ -192,6 +195,8 @@ private:
   double m_last_transmission = 0;
 
   long m_T_next_dcc = -1;
+
+  uint64_t m_wannabe_sent = 0;
 };
 }
 #endif // CPBASICSERVICE_H

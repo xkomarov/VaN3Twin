@@ -219,7 +219,6 @@ void receiveCPM(asn1cpp::Seq<CollectivePerceptionMessage> cpm, Address from, Sta
     {
       sinr = snr;
     }
-
   libsumo::TraCIPosition pos = basicServices.get(my_stationID)->getTraCIclient ()->TraCIAPI::vehicle.getPosition("veh" + std::to_string(my_stationID));
   libsumo::TraCIPosition pos_lat_lon = basicServices.get(my_stationID)->getTraCIclient ()->TraCIAPI::simulation.convertXYtoLonLat(pos.x,pos.y);
 

@@ -1,0 +1,8 @@
+CBR last values for each node:
+Node veh7: 92.91%
+Node veh6: 92.91%
+Node veh5: 93.17%
+Node veh3: 95.88%
+Node veh4: 93.18%
+Node veh2: 93.17%
+Node veh1: 93.17%

@@ -73,7 +73,7 @@ foresee::estimateTimeFromPredictionIDM(
       auto foll = follower[k];
 
       // Future gap (RV behind HV assumed)
-      double gap = lead.x - foll.x;
+      double gap = std::abs(lead.x - foll.x);
 
       // Required braking if lane change happens at this timestep
       double a_required_RV = IDMAcceleration(

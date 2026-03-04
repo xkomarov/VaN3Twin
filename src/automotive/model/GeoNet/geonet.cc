@@ -327,9 +327,9 @@ namespace ns3 {
     longPV.speed = (int16_t) (m_egoPV.S_EPV*100); // [m/s] to [0.01 m/s]
     longPV.heading = (uint16_t) (m_egoPV.H_EPV*10);// [degrees] to [0.1 degrees]
 
-    auto now = static_cast<int>(Simulator::Now().GetMilliSeconds());
+    float now = static_cast<float>(Simulator::Now().GetMilliSeconds());
     bool gate_open = false;
-    QueuePacket pkt = { now, basicHeader, commonHeader, longPV, dataRequest, message_id};
+    QueuePacket pkt = {now, priority, basicHeader, commonHeader, longPV, dataRequest, message_id};
     bool check_message_id = (message_id == MessageId_cam || message_id == MessageId_vam || message_id == MessageId_cpm);
     if (m_dcc != nullptr && check_message_id)
       {
@@ -345,6 +345,7 @@ namespace ns3 {
           {
             // Gate is opened
             std::tuple<bool, QueuePacket> value = m_dcc->dequeue(priority);
+            float aoi;
             if (std::get<0>(value) == true)
               {
                 // Found a packet in queue with higher priority
@@ -355,12 +356,15 @@ namespace ns3 {
                 longPV = pkt_to_send.long_PV;
                 dataRequest = pkt_to_send.dataRequest;
                 message_id = pkt.message_id;
+                aoi = now - pkt_to_send.time;
                 // std::cout << "[DEQUEUE]" << std::endl;
               }
             else
               {
                 // std::cout << "[ORIGINAL]" << std::endl;
+                aoi = 0;
               }
+            m_dcc->updateAoI (priority, aoi);
             m_dcc->setLastTx(now);
           }
       }
@@ -389,10 +393,10 @@ namespace ns3 {
       NS_LOG_ERROR("GeoNet packet not supported");
       dataConfirm = UNSPECIFIED_ERROR;
     }
-    return std::tuple<GNDataConfirm_t, MessageId_t>(dataConfirm, message_id);
+    return {dataConfirm, message_id};
   }
 
-  void GeoNet::attachDCC()
+  void GeoNet::attachSendFromDCCQueue()
   {
     if (m_dcc == nullptr) return;
     m_dcc->setSendCallback([this](const QueuePacket& pkt){
@@ -402,10 +406,21 @@ namespace ns3 {
       GNDataRequest_t dataRequest = pkt.dataRequest;
       MessageId_t message_id = pkt.message_id;
 
-      GNDataConfirm_t dataConfirm;
+      GNDataConfirm_t dataConfirm = GNDataConfirm_t::CONFIRM_UNKNOWN;
 
-      auto now = Simulator::Now().GetMilliSeconds();
+      float now = static_cast<float>(Simulator::Now().GetMilliSeconds());
       m_dcc->setLastTx(now);
+      float aoi = now - pkt.time;
+      std::string use_dcc;
+      if (m_dcc != nullptr) use_dcc = m_dcc->getModality();
+      else use_dcc = "";
+
+      if (use_dcc == "adaptive")
+        {
+          m_dcc->updateTgoAfterTransmission();
+        }
+
+      m_dcc->updateAoI(pkt.priority, aoi);
 
       // set last tx etc. is handled by DCC; here we just call the appropriate send
       switch(dataRequest.GNType)
@@ -419,6 +434,13 @@ namespace ns3 {
         default:
           std::cerr << "GeoNet: unsupported GNType in DCC callback." << std::endl;
         }
+      if (dataConfirm == ACCEPTED)
+        {
+          uint8_t *buffer = new uint8_t[dataRequest.data->GetSize ()];
+          dataRequest.data->CopyData (buffer,dataRequest.data->GetSize ());
+          int messagetype = get_messageID_from_BTP_port (dataRequest._messagePort);
+          m_metric_supervisor_ptr->signalSentPacket (MetricSupervisor::bufToString (buffer, dataRequest.data->GetSize ()),m_egoPV.POS_EPV.lat,m_egoPV.POS_EPV.lon,m_station_id, static_cast<MetricSupervisor::messageType_e>(messagetype));
+        }
     });
   }
 
@@ -426,6 +448,12 @@ namespace ns3 {
   GeoNet::sendSHB (GNDataRequest_t dataRequest,GNCommonHeader commonHeader, GNBasicHeader basicHeader,GNlpv_t longPV)
   {
     SHBheader header;
+    header.setDCC (m_dcc);
+    if (m_dcc != nullptr)
+      {
+        header.setPhy (m_dcc->GetPhy ());
+      }
+
     //1) Create SHB GN-PDU with SHB header setting according to ETSI EN 302 636-4-1 [10.3.10.2]
     //a) and b) already done
     //c) SHB extended header
@@ -555,6 +583,8 @@ namespace ns3 {
     double T_beacon = m_GnBeaconServiceRetransmitTimer + (rand()% m_GnBeaconServiceMaxJItter);
     m_event_Beacon = Simulator::Schedule(MilliSeconds(T_beacon),&GeoNet::setBeacon,this);
 
+    size_t pktSize = dataRequest.data->GetSize () + IEEE80211_DATA_PKT_HDR_LEN + IEEE80211_FCS_LEN + 8; // 8 = bytes layer LLC
+    if (m_dcc != nullptr) m_dcc->updateTonpp(pktSize);
     //Update sequence number
     m_seqNumber = (m_seqNumber+1)% SN_MAX;
     return ACCEPTED;
@@ -918,7 +948,7 @@ namespace ns3 {
     std::set<uint16_t>::iterator it = m_GNLocT[address].DPL.find(seqNumber);
     if(it == m_GNLocT[address].DPL.end ())
     {
-      //If entry doesnt exist, the packet is not a duplicate and should be added to the list
+      //If entry doesn't exist, the packet is not a duplicate and should be added to the list
       m_GNLocT[address].DPL.insert (seqNumber);
       return false;
     }
@@ -933,6 +963,7 @@ namespace ns3 {
   {
     SHBheader shbHeader;
     BeaconHeader beaconHeader;
+    double cbrr0, cbrr1;
     if(dataIndication.GNType == BEACON)
     {
       dataIndication.data->RemoveHeader (beaconHeader, 24);
@@ -942,6 +973,8 @@ namespace ns3 {
     {
       dataIndication.data->RemoveHeader (shbHeader, 28);
       dataIndication.SourcePV = shbHeader.GetLongPositionV ();
+      cbrr0 = shbHeader.GetCBRR0Hop();
+      cbrr1 = shbHeader.GetCBRR1Hop();
     }
     // SHB Processing according to ETSI EN 302 636-4-1 [10.3.10.3] or Beacon processing according to [10.3.6.3]
     //3)execute DAD
@@ -968,6 +1001,12 @@ namespace ns3 {
       //6)Set IS_NEIGHBOUR flag to true
       entry_map_it->second.IS_NEIGHBOUR = true;
     }
+    if (dataIndication.GNType != BEACON)
+      {
+        // Save the CBR values read from the SHB header
+        m_GNLocT[dataIndication.SourcePV.GnAddress].cbr_extension.CBR_R0_Hop.push_back (std::make_tuple(Simulator::Now().GetMilliSeconds(), cbrr0));
+        m_GNLocT[dataIndication.SourcePV.GnAddress].cbr_extension.CBR_R1_Hop.push_back (std::make_tuple(Simulator::Now().GetMilliSeconds(), cbrr1));
+      }
     m_LocT_Mutex.unlock ();
     //7) Pass the payload to the upper protocol entity if it's not a beacon packet
     if(dataIndication.GNType != BEACON)
@@ -1069,6 +1108,126 @@ namespace ns3 {
       gn_sock->Connect (remote);
 
       return gn_sock;
+  }
+
+  void GeoNet::attachGlobalCBRCheck ()
+  {
+    if (m_dcc == nullptr) return;
+    m_dcc->setCBRGCallback([this](){
+      struct timespec tv;
+      clock_gettime (CLOCK_MONOTONIC, &tv);
+      double now = static_cast<double>((tv.tv_sec * 1e9 + tv.tv_nsec)/1e6);
+      double mean_cbr_r0_hop = 0.0;
+      long tot_r0 = 0;
+      double max_cbr_r0 = 0.0, second_max_cbr_r0 = 0.0;
+      double mean_cbr_r1_hop = 0.0;
+      long tot_r1 = 0;
+      double max_cbr_r1 = 0.0, second_max_cbr_r1 = 0.0;
+      m_LocT_Mutex.lock ();
+      for(auto it = m_GNLocT.begin(); it != m_GNLocT.end(); ++it)
+        {
+          auto& cbr_data = it->second.cbr_extension;
+          // Clean old data
+          size_t counter = 0;
+          std::vector<size_t> to_delete;
+          for (auto it2 = cbr_data.CBR_R0_Hop.begin(); it2 != cbr_data.CBR_R0_Hop.end(); ++it2)
+            {
+              if(now - m_GNLocTTimerCBR_ms > std::get<0>(*it2)) to_delete.push_back (counter);
+              counter ++;
+            }
+          std::sort(to_delete.begin(), to_delete.end(), std::greater<size_t>());
+          for (size_t idx : to_delete) {
+              if (idx < cbr_data.CBR_R0_Hop.size()) {
+                  cbr_data.CBR_R0_Hop.erase(cbr_data.CBR_R0_Hop.begin() + idx);
+                }
+            }
+
+          counter = 0;
+          to_delete.clear();
+          for (auto it2 = cbr_data.CBR_R1_Hop.begin(); it2 != cbr_data.CBR_R1_Hop.end(); ++it2)
+            {
+              if(now - m_GNLocTTimerCBR_ms > std::get<0>(*it2)) to_delete.push_back (counter);
+              counter ++;
+            }
+          std::sort(to_delete.begin(), to_delete.end(), std::greater<size_t>());
+          for (size_t idx : to_delete) {
+              if (idx < cbr_data.CBR_R1_Hop.size()) {
+                  cbr_data.CBR_R1_Hop.erase(cbr_data.CBR_R1_Hop.begin() + idx);
+                }
+            }
+
+          for (auto it2 = cbr_data.CBR_R0_Hop.begin(); it2 != cbr_data.CBR_R0_Hop.end(); ++it2)
+            {
+              double val = std::get<1>(*it2);
+              mean_cbr_r0_hop += val;
+
+              if (val > max_cbr_r0)
+                {
+                  second_max_cbr_r0 = max_cbr_r0;
+                  max_cbr_r0 = val;
+                }
+              else if (val < max_cbr_r0 && val > second_max_cbr_r0)
+                {
+                  second_max_cbr_r0 = val;
+                }
+            }
+          tot_r0 += cbr_data.CBR_R0_Hop.size();
+
+          for (auto it2 = cbr_data.CBR_R1_Hop.begin(); it2 != cbr_data.CBR_R1_Hop.end(); ++it2)
+            {
+              double val = std::get<1>(*it2);
+              mean_cbr_r1_hop += val;
+
+              if (val > max_cbr_r1)
+                {
+                  second_max_cbr_r1 = max_cbr_r1;
+                  max_cbr_r1 = val;
+                }
+              else if (val < max_cbr_r1 && val > second_max_cbr_r1)
+                {
+                  second_max_cbr_r1 = val;
+                }
+            }
+          tot_r1 += cbr_data.CBR_R1_Hop.size();
+        }
+      m_LocT_Mutex.unlock ();
+      if (tot_r0 == 0) mean_cbr_r0_hop = 0;
+      else mean_cbr_r0_hop /= tot_r0;
+      if (tot_r1 == 0) mean_cbr_r1_hop = 0;
+      else mean_cbr_r1_hop /= tot_r1;
+      double CBR_L1_Hop, CBR_L2_Hop;
+      if (mean_cbr_r0_hop > m_dcc->getCBRTarget())
+        {
+          CBR_L1_Hop = max_cbr_r0;
+        }
+      else
+        {
+          CBR_L1_Hop = second_max_cbr_r0;
+        }
+
+      if (mean_cbr_r1_hop > m_dcc->getCBRTarget())
+        {
+          CBR_L2_Hop = max_cbr_r1;
+        }
+      else
+        {
+          CBR_L2_Hop = second_max_cbr_r1;
+        }
+      double CBR_L0_Hop_prev = m_dcc->getCBRL0Prev();
+      double CBR_G = std::max(CBR_L0_Hop_prev, CBR_L1_Hop);
+      CBR_G = std::max(CBR_G, CBR_L2_Hop);
+      /*
+		std::ofstream file;
+		file.open("CBR_global.txt", std::ios::app);
+		file << std::fixed << std::setprecision(2);
+		file << "\n";
+		file << "[DCC] Global CBR: " << CBR_G << ", Local CBR L1: " << CBR_L1_Hop << ", Local CBR L2: " << CBR_L2_Hop << ", CBR L0 prev: " << CBR_L0_Hop_prev << std::endl;
+		file << "\n";
+		file.close();
+		*/
+      m_dcc->setCBRG(CBR_G);
+      m_dcc->setCBRL1(CBR_L1_Hop);
+    });
   }
 
   int

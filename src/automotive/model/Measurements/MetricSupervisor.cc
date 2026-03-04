@@ -21,6 +21,7 @@
 */
 
 #include "MetricSupervisor.h"
+#include "ns3/csv-utils.h"
 #include <sstream>
 #include <cfloat>
 
@@ -679,6 +680,16 @@ MetricSupervisor::checkCBR ()
     }
 
   lastCBRCheck = Simulator::Now();
+
+  // If enabled, log each CBR value to a CSV file
+  if (m_cbr_csv_log_file!="") {
+      for (auto it = m_average_cbr.begin(); it != m_average_cbr.end(); ++it) {
+          if (!it->second.empty()) {
+              writeDataToCSV(m_cbr_csv_log_file, "timestamp_ms,vehicle_id,CBR,CBR_time_window",
+                static_cast<double>(Simulator::Now().GetNanoSeconds())/1000000.0,it->first,it->second.back(),m_cbr_window);
+          }
+      }
+  }
 
   Simulator::Schedule (MilliSeconds (m_cbr_window), &MetricSupervisor::checkCBR, this);
 }

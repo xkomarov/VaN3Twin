@@ -42,6 +42,7 @@ namespace ns3
   NS_LOG_COMPONENT_DEFINE("CABasicService");
 
   CABasicService::~CABasicService() {
+    // std::cout << "Wannabe Sent: " << m_wannabe_sent << std::endl;
     NS_LOG_INFO("CABasicService object destroyed.");
   }
 
@@ -1000,6 +1001,7 @@ namespace ns3
     std::tuple<GNDataConfirm_t, MessageId_t> status = m_btp->sendBTP(dataRequest, 0, MessageId_cam);
     GNDataConfirm_t dataConfirm = std::get<0>(status);
     MessageId_t message_id = std::get<1>(status);
+    m_wannabe_sent ++;
     /* Update the CAM statistics */
     if(dataConfirm == ACCEPTED) {
         if (message_id == MessageId_cam) m_cam_sent++;

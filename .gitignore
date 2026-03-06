@@ -395,3 +395,4 @@ src/nr/tools/
 src/sionna/sionna_log.csv
 src/sionna/phy_with_sionna_nrv2x.csv
 distance_rssi_int_extra.csv
+VAM_metrics.csv

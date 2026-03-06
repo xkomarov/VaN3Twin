@@ -73,7 +73,7 @@ namespace ns3
             MakeBooleanChecker ())
         .AddAttribute ("EnableSecurity",
              "Enable security on Geonet",
-             BooleanValue(true),
+             BooleanValue(false),
              MakeBooleanAccessor (&emergencyVehicleAlert::m_security),
              MakeBooleanChecker ())
         .AddAttribute ("IpAddr",
@@ -135,6 +135,7 @@ namespace ns3
 
     m_distance_threshold = 75; // Distance used in GeoNet to determine the radius of the circumference arounf the emergency vehicle where the DENMs are valid
     m_heading_threshold = 45; // Max heading angle difference between the normal vehicles and the emergenecy vehicle, that triggers a reaction in the normal vehicles
+    m_security = false;
   }
 
   emergencyVehicleAlert::~emergencyVehicleAlert ()

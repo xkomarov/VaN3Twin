@@ -620,7 +620,7 @@ Security::extractSecurePacket (GNDataIndication_t &dataIndication)
   buffer = (uint8_t *) malloc ((dataIndication.data->GetSize ()) * sizeof (uint8_t));
   dataIndication.data->CopyData (buffer, dataIndication.data->GetSize ());
   std::string packetContent ((char *) buffer, (int) dataIndication.data->GetSize ());
-  ieeeData_decoded = asn1cpp::oer::decode (packetContent, Ieee1609Dot2Data);
+  ieeeData_decoded = asn1cpp::oer::decodeASN (packetContent, Ieee1609Dot2Data);
   free (buffer);
 
   GNsecDP secureDataPacket;

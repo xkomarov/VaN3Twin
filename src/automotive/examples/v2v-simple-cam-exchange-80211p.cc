@@ -116,50 +116,36 @@ static void GenerateTraffic_interfering (Ptr<Socket> socket, uint32_t pktSize,
     }
 }
 
-void startCAMtransmission(Ptr<BSContainer> bs_container) {
-  // Start transmitting CAMs
-  // We randomize the instant in time in which the CAM dissemination is going to start
-  // This simulates different startup times for the OBUs of the different vehicles, and
-  // reduces the risk of multiple vehicles trying to send CAMs are the same time (causing more collisions);
-  // "desync" is a value between 0 and 1 (seconds) after which the CAM dissemination should start
-  std::srand(Simulator::Now().GetNanoSeconds ()*2); // Seed based on the simulation time to give each vehicle a different random seed
-  double desync = ((double)std::rand()/RAND_MAX);
-  bs_container->getCABasicService ()->startCamDissemination (desync);
-}
-
 int main (int argc, char *argv[])
 {
-  std::string phyMode ("OfdmRate6MbpsBW10MHz"); // Default IEEE 802.11p data rate
+  std::string phyMode ("OfdmRate3MbpsBW10MHz"); // Default IEEE 802.11p data rate
   int up=0;
-  bool sumo_gui = true;
   int interfering_up=0;
   bool verbose = false; // Set to true to get a lot of verbose output from the IEEE 802.11p PHY model (leave this to false)
   int numberOfNodes; // Total number of vehicles, automatically filled in by reading the XML file
   double m_baseline_prr = 150.0; // PRR baseline value (default: 150 m)
-  int txPower = 30.0; // IEEE 802.11p transmission power in dBm (default: 23 dBm)
+  int txPower = 23.0; // IEEE 802.11p transmission power in dBm (default: 23 dBm)
   xmlDocPtr rou_xml_file;
-  double startV2XTime = 10.0;
-  double simTime = startV2XTime + 100.0;
-  bool m_security = false;
+  double simTime = 100.0; // Total simulation time (default: 100 seconds)
+  bool security_enabled = false; // V2X security is disabled by default
 
   // Set here the path to the SUMO XML files
   std::string sumo_folder = "src/automotive/examples/sumo_files_v2v_map/";
   std::string mob_trace = "cars.rou.xml";
   std::string sumo_config ="src/automotive/examples/sumo_files_v2v_map/map.sumo.cfg";
+
   // Read the command line options
   CommandLine cmd (__FILE__);
 
   // Syntax to add new options: cmd.addValue (<option>,<brief description>,<destination variable>)
   cmd.AddValue ("phyMode", "Wifi Phy mode", phyMode);
-  cmd.AddValue ("sumo-gui", "Use SUMO gui or not", sumo_gui);
   cmd.AddValue ("verbose", "turn on all WifiNetDevice log components", verbose);
   cmd.AddValue ("userpriority","EDCA User Priority for the ETSI messages",up);
   cmd.AddValue ("interfering-userpriority","User Priority for interfering traffic (default: 0, i.e., AC_BE)",interfering_up);
   cmd.AddValue ("baseline", "Baseline for PRR calculation", m_baseline_prr);
   cmd.AddValue ("tx-power", "OBUs transmission power [dBm]", txPower);
-  cmd.AddValue ("startV2XTime","Duration of simulation without CAM message",startV2XTime);
   cmd.AddValue ("sim-time", "Total duration of the simulation [s]", simTime);
-  cmd.AddValue ("enable-security","Enable security header inside Geonet or not",m_security);
+  cmd.AddValue("enable-security","Enable the transmission of secured V2X packets",security_enabled);
   cmd.Parse (argc, argv);
 
   /* Load the .rou.xml file (SUMO map and scenario) */
@@ -233,7 +219,7 @@ int main (int argc, char *argv[])
   sumoClient->SetAttribute ("SumoBinaryPath", StringValue (""));    // use system installation of sumo
   sumoClient->SetAttribute ("SynchInterval", TimeValue (Seconds (0.01)));
   sumoClient->SetAttribute ("StartTime", TimeValue (Seconds (0.0)));
-  sumoClient->SetAttribute ("SumoGUI", BooleanValue (sumo_gui));
+  sumoClient->SetAttribute ("SumoGUI", BooleanValue (true));
   sumoClient->SetAttribute ("SumoPort", UintegerValue (3400));
   sumoClient->SetAttribute ("PenetrationRate", DoubleValue (1.0));
   sumoClient->SetAttribute ("SumoLogFile", BooleanValue (false));
@@ -268,16 +254,16 @@ int main (int argc, char *argv[])
   local_source_interfering.SetPhysicalAddress (c.Get(2)->GetDevice(0)->GetAddress());
   local_source_interfering.SetProtocol (0x88B5); // Setting the "Local Experimental Ethertype 1" to send interfering traffic
   if (source_interfering->Bind (local_source_interfering) == -1)
-    {
-      NS_FATAL_ERROR ("Failed to bind client socket for BTP + GeoNetworking (802.11p)");
-    }
+  {
+    NS_FATAL_ERROR ("Failed to bind client socket for BTP + GeoNetworking (802.11p)");
+  }
   PacketSocketAddress remote_source_interfering;
   remote_source_interfering.SetSingleDevice (c.Get(2)->GetDevice(0)->GetIfIndex());
   // Set the broadcast MAC address as interfering traffic will be broadcasted by vehicle 3
   remote_source_interfering.SetPhysicalAddress (c.Get(2)->GetDevice(0)->GetBroadcast());
   remote_source_interfering.SetProtocol (0x88B5); // Setting the "Local Experimental Ethertype 1" to send interfering traffic
   source_interfering->Connect (remote_source_interfering);
-  // Important: this line lets you set the AC of the interfering traffic, through a User Priority (UP) value, like in real Linux kernels/OS
+   // Important: this line lets you set the AC of the interfering traffic, through a User Priority (UP) value, like in real Linux kernels/OS
   source_interfering->SetPriority (interfering_up); // Setting the priority of the interfering traffic from vehicle 3
 
   std::cout << "A transmission power of " << txPower << " dBm  will be used." << std::endl;
@@ -328,7 +314,7 @@ int main (int argc, char *argv[])
           // The first parameter is true is you want to setup a CA Basic Service (for sending/receiving CAMs)
           // The second parameter should be true if you want to setup a DEN Basic Service (for sending/receiving DENMs)
           // The third parameter should be true if you want to setup a VRU Basic Service (for sending/receiving VAMs)
-          bs_container->setupContainer(true,false,false,false,m_security);
+          bs_container->setupContainer(true,false,false,false,security_enabled);
 
           // Store the container for this vehicle inside a local global BSMap, i.e., a structure (similar to a hash table) which allows you to easily
           // retrieve the right BSContainer given a vehicle ID
@@ -350,20 +336,20 @@ int main (int argc, char *argv[])
   // Important: what you write here is called every time a node exits the simulation in SUMO
   // You can safely keep this function as it is, and ignore it
   SHUTDOWN_FCN shutdownWifiNode = [] (Ptr<Node> exNode, std::string vehicleID)
-  {
-    /* Set position outside communication range */
-    Ptr<ConstantPositionMobilityModel> mob = exNode->GetObject<ConstantPositionMobilityModel>();
-    mob->SetPosition(Vector(-1000.0+(rand()%25),320.0+(rand()%25),250.0));
+    {
+      /* Set position outside communication range */
+      Ptr<ConstantPositionMobilityModel> mob = exNode->GetObject<ConstantPositionMobilityModel>();
+      mob->SetPosition(Vector(-1000.0+(rand()%25),320.0+(rand()%25),250.0));
 
-    // Turn off the Basic Services and the ETSI ITS-G5 stack for the vehicle
-    // which has exited from the simulated scenario, and should be thus no longer considered
-    // We need to get the right Ptr<BSContainer> based on the station ID (not the nodeID used
-    // as index for the nodeContainer), so we don't use "-1" to compute "intVehicleID" here
-    unsigned long intVehicleID = std::stol(vehicleID.substr (3));
+      // Turn off the Basic Services and the ETSI ITS-G5 stack for the vehicle
+      // which has exited from the simulated scenario, and should be thus no longer considered
+      // We need to get the right Ptr<BSContainer> based on the station ID (not the nodeID used
+      // as index for the nodeContainer), so we don't use "-1" to compute "intVehicleID" here
+      unsigned long intVehicleID = std::stol(vehicleID.substr (3));
 
-    Ptr<BSContainer> bsc = basicServices.get(intVehicleID);
-    bsc->cleanup();
-  };
+      Ptr<BSContainer> bsc = basicServices.get(intVehicleID);
+      bsc->cleanup();
+    };
 
   // Link ns-3 and SUMO
   sumoClient->SumoSetup (setupNewWifiNode, shutdownWifiNode);

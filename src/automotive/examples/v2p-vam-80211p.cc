@@ -1,4 +1,5 @@
-#include "ns3/automotive-module.h"
+#include "ns3/carla-module.h"
+//#include "ns3/automotive-module.h"
 #include "ns3/traci-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/wave-module.h"
@@ -281,7 +282,7 @@ int main (int argc, char *argv[])
   std::cout<<actualPhy->GetTxPowerEnd()<<std::endl;*/
 
   /* callback function for node creation */
-  STARTUP_FCN setupNewWifiNode = [&] (std::string stationID) -> Ptr<Node>
+  STARTUP_FCN setupNewWifiNode = [&] (std::string stationID,TraciClient::StationTypeTraCI_t stationType) -> Ptr<Node>
     {
       unsigned long nodeID = std::stol(stationID.substr (3));
       std::string station_type_ID = stationID.substr(0,3);

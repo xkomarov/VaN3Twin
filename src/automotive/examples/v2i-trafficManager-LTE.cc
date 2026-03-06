@@ -19,7 +19,12 @@
  *  Carlos Mateo Risma Carletti, Politecnico di Torino (carlosrisma@gmail.com)
 */
 
-#include "ns3/automotive-module.h"
+//#include "ns3/automotive-module.h"
+#include "ns3/carla-module.h"
+#include "ns3/trafficManagerClientLTE-helper.h"
+#include "ns3/trafficManagerServerLTE-helper.h"
+#include "ns3/trafficManagerServerLTE.h"
+#include "ns3/trafficManagerClientLTE.h"
 #include "ns3/traci-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/lte-module.h"
@@ -325,7 +330,7 @@ main (int argc, char *argv[])
 
 
   /* callback function for node creation */
-  STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID) -> Ptr<Node>
+  STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID,TraciClient::StationTypeTraCI_t stationType) -> Ptr<Node>
     {
       if (nodeCounter >= ueNodes.GetN())
         NS_FATAL_ERROR("Node Pool empty!: " << nodeCounter << " nodes created.");

@@ -209,6 +209,9 @@ namespace ns3
     // synchronisation interval
     m_sumoCommand += " --step-length " + std::to_string(m_synchInterval.GetSeconds());
 
+    // warnings
+    m_sumoCommand += " --no-warnings";
+
     // sumo log file
     if (m_sumoLogFile)
       {
@@ -241,7 +244,7 @@ namespace ns3
   }
 
   void
-  TraciClient::SumoSetup(std::function<Ptr<Node>(std::string)> includeNode, std::function<void (Ptr<Node>,std::string)> excludeNode)
+  TraciClient::SumoSetup(STARTUP_FCN includeNode, SHUTDOWN_FCN excludeNode)
   {
     NS_LOG_FUNCTION(this);
 
@@ -366,7 +369,7 @@ namespace ns3
             if(it->second.first == StationType_pedestrian)
                pos = this->TraCIAPI::person.getPosition(node_ID);
             else if (it->second.first == StationType_roadSideUnit)
-              return;
+              continue;
             else
                pos = this->TraCIAPI::vehicle.getPosition(node_ID);
 
@@ -375,6 +378,15 @@ namespace ns3
             // set ns3 node position with user defined altitude
             mob->SetPosition(Vector(pos.x, pos.y, m_altitude));
 
+            if (m_sionna == true)
+            {
+              Vector pos_for_sionna = Vector(pos.x, pos.y, m_altitude);
+              double angle_for_sionna = this->TraCIAPI::vehicle.getAngle(node_ID);
+              double speed = this->TraCIAPI::vehicle.getSpeed(node_ID);
+              Vector vel_for_sionna = Vector(speed * cos(angle_for_sionna), speed * sin(angle_for_sionna), 0.0);
+              updateLocationInSionna(node_ID, pos_for_sionna, angle_for_sionna, vel_for_sionna);
+            }
+            
             if (m_vehicle_visualizer!=nullptr && m_vehicle_visualizer->isConnected() && it->second.first != StationType_pedestrian)
             {
                 libsumo::TraCIPosition lonlat = this->TraCIAPI::simulation.convertXYtoLonLat (pos.x,pos.y);
@@ -496,7 +508,7 @@ namespace ns3
                 // create new node by calling the include function
                 std::pair<StationType_t, Ptr<ns3::Node>> inNode;
                 inNode.first = StationType_passengerCar;
-                inNode.second = m_includeNode(veh);
+                inNode.second = m_includeNode(veh,StationTypeTraci_vehicle);
 
                 // register in the map (link vehicle to node!)
                 m_NodeMap.insert(std::pair<std::string, std::pair<StationType_t, Ptr<ns3::Node>>>(veh, inNode));
@@ -523,7 +535,7 @@ namespace ns3
                     // Create the new node by calling the include function
                     std::pair<StationType_t, Ptr<ns3::Node>> inNode_ped;
                     inNode_ped.first = StationType_pedestrian;
-                    inNode_ped.second = m_includeNode(ped);
+                    inNode_ped.second = m_includeNode(ped,StationTypeTraci_pedestrian);
 
                     // Register the new node in the map
                     m_NodeMap.insert(std::pair<std::string, std::pair<StationType_t, Ptr<ns3::Node>>>(ped, inNode_ped));

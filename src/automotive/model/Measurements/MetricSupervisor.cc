@@ -17,9 +17,11 @@
     *  Marco Malinverno, Politecnico di Torino (marco.malinverno1@gmail.com)
     *  Francesco Raviglione, Politecnico di Torino (francescorav.es483@gmail.com)
     *  Diego Gasco, Politecnico di Torino (diego.gasco@polito.it, diego.gasco99@gmail.com)
+    *  Carlos Mateo Risma Carletti, Politecnico di Torino (carlosrisma@gmail.com)
 */
 
 #include "MetricSupervisor.h"
+#include "ns3/csv-utils.h"
 #include <sstream>
 #include <cfloat>
 
@@ -84,50 +86,98 @@ MetricSupervisor::signalSentPacket(std::string buf, double lat, double lon, uint
 {
   EventId computePRR_id;
 
-  if(m_traci_ptr == nullptr)
+  if(m_traci_ptr != nullptr)
     {
-      NS_FATAL_ERROR("Fatal error: TraCI client not set in PRR Supervisor.");
-    }
 
-  // If the packet is sent by an excluded vehicle due to a problem in the configuration of the simulation, ignore it
-  if(m_excluded_vehID_enabled==true && (m_excluded_vehID_list.find(nodeID)!=m_excluded_vehID_list.end()))
-    {
-      return;
-    }
-
-  //std::vector<std::string> ids = m_traci_ptr->TraCIAPI::vehicle.getIDList ();
-  std::map< std::string, std::pair< StationType_t, Ptr<Node> > > node_map = m_traci_ptr->get_NodeMap ();
-
-  for(std::map< std::string, std::pair< StationType_t, Ptr<Node> > >::iterator it=node_map.begin();it!=node_map.end();++it)
-    {
-      StationType_t station_type = it->second.first;
-      uint64_t stationID;
-      if (station_type == StationType_roadSideUnit)
+      // If the packet is sent by an excluded vehicle due to a problem in the configuration of the simulation, ignore it
+      if (m_excluded_vehID_enabled == true &&
+          (m_excluded_vehID_list.find (nodeID) != m_excluded_vehID_list.end ()))
         {
-          uint64_t id = std::stoi(it->first.substr (it->first.find("_") + 1));
-          stationID = m_stationId_baseline + id;
+          return;
         }
-      else
-        stationID = std::stol(it->first.substr (3));
 
-      libsumo::TraCIPosition pos;
-      if(station_type == StationType_pedestrian)
-        pos = m_traci_ptr->TraCIAPI::person.getPosition (it->first);
-      else if(station_type == StationType_roadSideUnit)
-        pos = m_traci_ptr->TraCIAPI::poi.getPosition (it->first);
-      else
-        pos = m_traci_ptr->TraCIAPI::vehicle.getPosition (it->first);
-      pos=m_traci_ptr->TraCIAPI::simulation.convertXYtoLonLat (pos.x,pos.y);
+      //std::vector<std::string> ids = m_traci_ptr->TraCIAPI::vehicle.getIDList ();
+      std::map<std::string, std::pair<StationType_t, Ptr<Node>>> node_map =
+          m_traci_ptr->get_NodeMap ();
 
-      if(stationID == nodeID)
-        m_stationtype_map[buf] = station_type;
-
-      if(m_excluded_vehID_enabled==false || (m_excluded_vehID_list.find(stationID)==m_excluded_vehID_list.end())) {
-          if(MetricSupervisor_haversineDist(lat,lon,pos.y,pos.x)<=m_baseline_m)
+      for (std::map<std::string, std::pair<StationType_t, Ptr<Node>>>::iterator it =
+               node_map.begin ();
+           it != node_map.end (); ++it)
+        {
+          StationType_t station_type = it->second.first;
+          uint64_t stationID;
+          if (station_type == StationType_roadSideUnit)
             {
-              m_packetbuff_map[buf].nodeList.push_back(stationID);
+              uint64_t id = std::stoi (it->first.substr (it->first.find ("_") + 1));
+              stationID = m_stationId_baseline + id;
+            }
+          else
+            {
+              stationID = std::stol (it->first.substr (3));
+            }
+
+          libsumo::TraCIPosition pos;
+          if (station_type == StationType_pedestrian)
+            {
+              pos = m_traci_ptr->TraCIAPI::person.getPosition (it->first);
+            }
+          else if (station_type == StationType_roadSideUnit)
+            {
+              pos = m_traci_ptr->TraCIAPI::poi.getPosition (it->first);
+            }
+          else
+            {
+              pos = m_traci_ptr->TraCIAPI::vehicle.getPosition (it->first);
+            }
+          pos = m_traci_ptr->TraCIAPI::simulation.convertXYtoLonLat (pos.x, pos.y);
+
+          if (stationID == nodeID)
+            m_stationtype_map[buf] = station_type;
+
+          if (m_excluded_vehID_enabled == false ||
+              (m_excluded_vehID_list.find (stationID) == m_excluded_vehID_list.end ()))
+            {
+              if (MetricSupervisor_haversineDist (lat, lon, pos.y, pos.x) <= m_baseline_m)
+                {
+                  m_packetbuff_map[buf].nodeList.push_back (stationID);
+                }
             }
         }
+    }
+  else if(m_carla_ptr != nullptr)
+    {
+
+      // If the packet is sent by an excluded vehicle due to a problem in the configuration of the simulation, ignore it
+      if (m_excluded_vehID_enabled == true &&
+          (m_excluded_vehID_list.find (nodeID) != m_excluded_vehID_list.end ()))
+        {
+          return;
+        }
+
+
+      std::map<std::basic_string<char>, std::basic_string<char>> ids = m_carla_ptr->getManagedConnectedNodes();
+      for (auto it = ids.begin(); it != ids.end(); ++it)
+        {
+          std::string stationID = it->first;
+
+          carla::Vehicle vehicle = m_carla_ptr->GetManagedActorById(std::stoi(stationID));
+
+          if (std::stoi(stationID) == nodeID)
+            m_stationtype_map[buf] = StationType_passengerCar;
+
+          if(m_excluded_vehID_enabled==false || (m_excluded_vehID_list.find(std::stoi(stationID))==m_excluded_vehID_list.end())) {
+              if(MetricSupervisor_haversineDist(lat,lon,vehicle.latitude (),vehicle.longitude ())<=m_baseline_m)
+                {
+                  m_packetbuff_map[buf].nodeList.push_back(std::stoi(stationID));
+                }
+            }
+        }
+    }
+  else
+    {
+      // TODO handle the PRR for gps-tc module
+      if (!m_v_gpstc.empty()) return;
+      NS_FATAL_ERROR("Fatal error: mobility client not set in PRR Supervisor.");
     }
 
   computePRR_id = Simulator::Schedule(MilliSeconds (m_pprcomp_timeout*1000.0), &MetricSupervisor::computePRR, this, buf);
@@ -157,9 +207,11 @@ MetricSupervisor::signalReceivedPacket(std::string buf, uint64_t nodeID)
   baselineVehicleData_t currBaselineData;
   double curr_latency_ms = DBL_MAX;
 
-  if(m_traci_ptr == nullptr)
+  if(m_traci_ptr == nullptr && m_carla_ptr == nullptr)
     {
-      NS_FATAL_ERROR("Fatal error: TraCI client not set in PRR Supervisor.");
+      // TODO handle the PRR for gps-tc module
+      if (!m_v_gpstc.empty()) return;
+      NS_FATAL_ERROR("Fatal error: mobility client not set in PRR Supervisor.");
     }
 
   // If the packet was received by an excluded vehicle due to a problem in the configuration of the simulation, ignore it
@@ -389,6 +441,10 @@ MetricSupervisor::computePRR(std::string buf)
   m_latency_map.erase(buf);
 }
 
+bool IsChannelBusy(WifiPhyState state) {
+  return state != WifiPhyState::SLEEP && state != WifiPhyState::IDLE;
+}
+
 void
 storeCBR80211p (std::string context, Time start, Time duration, WifiPhyState state)
 {
@@ -398,7 +454,7 @@ storeCBR80211p (std::string context, Time start, Time duration, WifiPhyState sta
   std::size_t last = context.find ("/", first);
   std::string node = context.substr (first, last - first);
 
-  if (state != WifiPhyState::IDLE && state != WifiPhyState::SLEEP)
+  if (IsChannelBusy (state))
     {
       // Check if the last measurement for busy state started before the last CBR check
       // In this case we need to consider only the time from the last CBR check
@@ -406,11 +462,16 @@ storeCBR80211p (std::string context, Time start, Time duration, WifiPhyState sta
       if (start < lastCBRCheck)
         {
           duration -= lastCBRCheck - start;
+          if (duration.IsNegative())
+            {
+              duration = Seconds (0);
+            }
         }
       if (currentBusyCBR.find(node) == currentBusyCBR.end())
         {
           currentBusyCBR[node] = duration;
-        } else
+        }
+      else
         {
           currentBusyCBR[node] += duration;
         }
@@ -421,6 +482,11 @@ storeCBR80211p (std::string context, Time start, Time duration, WifiPhyState sta
     }
   else
     {
+      if (currentBusyCBR.find(node) == currentBusyCBR.end())
+        {
+          currentBusyCBR[node] = Time(0);
+        }
+      // Skip the part for the updating of CBR, because doing += Time(0) would be useless
       nodeLastState80211p[node].first = Simulator::Now();
       nodeLastState80211p[node].second = WifiPhyState::IDLE;
     }
@@ -434,76 +500,176 @@ storeCBRNr(std::string context, Time duration)
   std::size_t last = context.find ("/", first);
   std::string node = context.substr (first, last - first);
 
-  // How long the state will last?
-  nodeDurationStateNr[node] = Simulator::Now() + duration;
-
-  if (currentBusyCBR.find(node) == currentBusyCBR.end())
+  // How long the state will last for the other nodes?
+  // This management will be useful when the CheckCBR function will start (see below)
+  for (auto it = nodeDurationStateNr.begin(); it != nodeDurationStateNr.end(); ++it)
     {
-      currentBusyCBR[node] = duration;
-    } else
-    {
-      currentBusyCBR[node] += duration;
+      if (it->first != node) nodeDurationStateNr[it->first] = Simulator::Now() + duration;
     }
+
+  for (auto it = currentBusyCBR.begin(); it != currentBusyCBR.end(); ++it)
+    {
+      if (it->first != node) it->second += duration;
+    }
+
 }
 
 void
 MetricSupervisor::checkCBR ()
 {
 
-  std::map<std::basic_string<char>, std::pair<StationType_t, Ptr<Node>>> nodes = m_traci_ptr->get_NodeMap();
   std::unordered_map<std::string, Time> nextTimeToAddNr;
-
-  for (auto it = nodes.begin (); it != nodes.end (); ++it)
+  if(m_traci_ptr != nullptr)
     {
-      std::string item = it->first;
+      std::map<std::basic_string<char>, std::pair<StationType_t, Ptr<Node>>> nodes = m_traci_ptr->get_NodeMap ();
 
-      std::basic_string<char> node_id = std::to_string(it->second.second->GetId ());
-
-      if (currentBusyCBR.find(node_id) == currentBusyCBR.end())
+      for (auto it = nodes.begin (); it != nodes.end (); ++it)
         {
-          continue;
-        }
+          std::string item = it->first;
 
-      Time busyCbr = currentBusyCBR[node_id];
+          std::basic_string<char> node_id = std::to_string (it->second.second->GetId ());
 
-      // We are in the middle of a busy state
-      if(m_channel_technology == "80211p" && nodeLastState80211p[node_id].second == WifiPhyState::CCA_BUSY)
-        {
-          // 80211p duration refers to the past time the channel was busy
-          // We need to add the time from the last check if the state is still busy
-          busyCbr += Simulator::Now() - nodeLastState80211p[node_id].first;
-        }
-
-      if(m_channel_technology == "Nr")
-        {
-          // NR duration refers to the future time the channel will be busy
-          // We need to subtract the time that will be busy after this check
-          // This time will be added in the next check (see below)
-          if (nodeDurationStateNr[node_id] > Simulator::Now())
+          if (currentBusyCBR.find (node_id) == currentBusyCBR.end ())
             {
-              Time nextToAdd = nodeDurationStateNr[node_id] - Simulator::Now();
-              busyCbr -= nextToAdd;
-              nextTimeToAddNr[node_id] = nextToAdd;
+              continue;
+            }
+
+          Time busyCbr = currentBusyCBR[node_id];
+
+          // We are in the middle of a busy state
+          /*
+          if (m_channel_technology == "80211p" &&
+              nodeLastState80211p[node_id].second == WifiPhyState::CCA_BUSY)
+            {
+              // 80211p duration refers to the past time the channel was busy
+              // We need to add the time from the last check if the state is still busy
+              busyCbr += Simulator::Now () - nodeLastState80211p[node_id].first;
+            }
+            */
+
+          if (m_channel_technology == "Nr")
+            {
+              // NR duration refers to the future time the channel will be busy due to resource allocation for a certain node
+              // We need to subtract the time that the channel will be busy for this node after this current check
+              // This time will be added for the next check (see below)
+              if (nodeDurationStateNr[node_id] > Simulator::Now ())
+                {
+                  Time nextToAdd = nodeDurationStateNr[node_id] - Simulator::Now ();
+                  busyCbr -= nextToAdd;
+                  nextTimeToAddNr[node_id] = nextToAdd;
+                }
+            }
+
+          double currentCbr = busyCbr.GetDouble () / (m_cbr_window * 1e6);
+          if (false) std::cout << Simulator::Now().GetSeconds() << "s - Node " << node_id << " - CBR: " << 100 * currentCbr << std::endl;
+
+          if (m_average_cbr.find (item) != m_average_cbr.end ())
+            {
+              // Exponential moving average
+              double new_cbr = m_cbr_alpha * m_average_cbr[item].back () + (1 - m_cbr_alpha) * currentCbr;
+              m_average_cbr[item].push_back (new_cbr);
+            }
+          else
+            {
+              m_average_cbr[item].push_back (currentCbr);
             }
         }
+    }
+  else if (m_carla_ptr != nullptr)
+    {
+      std::map<std::string,std::string> obj_node_map = m_carla_ptr->getManagedConnectedNodes();
 
-      double currentCbr = busyCbr.GetDouble() / (m_cbr_window * 1e6);
+      for (const auto& pair : obj_node_map)
+        {
+          std::string node_id = pair.second;
+          std::string obj_id = pair.first;
+          // std::string node_id = std::to_string (item);
 
-      if (m_average_cbr.find (item) != m_average_cbr.end ())
-        {
-          // Exponential moving average
-          double new_cbr = m_cbr_alpha * m_average_cbr[item].back () + (1 - m_cbr_alpha) * currentCbr;
-          m_average_cbr[item].push_back (new_cbr);
-        }
-      else
-        {
-          m_average_cbr[item].push_back (currentCbr);
+          if (currentBusyCBR.find (node_id) == currentBusyCBR.end ())
+            {
+              continue;
+            }
+
+          Time busyCbr = currentBusyCBR[node_id];
+
+          // We are in the middle of a busy state
+          /*
+          if (m_channel_technology == "80211p" &&
+              nodeLastState80211p[node_id].second == WifiPhyState::CCA_BUSY)
+            {
+              // 80211p duration refers to the past time the channel was busy
+              // We need to add the time from the last check if the state is still busy
+              busyCbr += Simulator::Now () - nodeLastState80211p[node_id].first;
+            }
+            */
+
+          if (m_channel_technology == "Nr")
+            {
+              // NR duration refers to the future time the channel will be busy due to resource allocation for a certain node
+              // We need to subtract the time that the channel will be busy for this node after this current check
+              // This time will be added for the next check (see below)
+              if (nodeDurationStateNr[node_id] > Simulator::Now ())
+                {
+                  Time nextToAdd = nodeDurationStateNr[node_id] - Simulator::Now ();
+                  busyCbr -= nextToAdd;
+                  nextTimeToAddNr[node_id] = nextToAdd;
+                }
+            }
+
+          double currentCbr = busyCbr.GetDouble () / (m_cbr_window * 1e6);
+
+          if (m_average_cbr.find (obj_id) != m_average_cbr.end ())
+            {
+              // Exponential moving average
+              double new_cbr =
+                  m_cbr_alpha * m_average_cbr[obj_id].back () + (1 - m_cbr_alpha) * currentCbr;
+              m_average_cbr[obj_id].push_back (new_cbr);
+            }
+          else
+            {
+              m_average_cbr[obj_id].push_back (currentCbr);
+            }
         }
     }
+  else if (!m_v_gpstc.empty())
+    {
+      for (auto gpstc_ptr = m_v_gpstc.begin(); gpstc_ptr != m_v_gpstc.end(); ++gpstc_ptr)
+        {
+          if (currentBusyCBR.find ((*gpstc_ptr)->getNodeID()) != currentBusyCBR.end ())
+            {
+              Time busyCbr = currentBusyCBR[(*gpstc_ptr)->getNodeID()];
 
+              if (m_channel_technology == "Nr")
+                {
+                  // NR duration refers to the future time the channel will be busy due to resource allocation for a certain node
+                  // We need to subtract the time that the channel will be busy for this node after this current check
+                  // This time will be added for the next check (see below)
+                  if (nodeDurationStateNr[(*gpstc_ptr)->getNodeID()] > Simulator::Now ())
+                    {
+                      Time nextToAdd = nodeDurationStateNr[(*gpstc_ptr)->getNodeID()] - Simulator::Now ();
+                      busyCbr -= nextToAdd;
+                      nextTimeToAddNr[(*gpstc_ptr)->getNodeID()] = nextToAdd;
+                    }
+                }
+
+              double currentCbr = busyCbr.GetDouble () / (m_cbr_window * 1e6);
+
+              if (m_average_cbr.find ((*gpstc_ptr)->getID()) != m_average_cbr.end ())
+                {
+                  // Exponential moving average
+                  double new_cbr =
+                      m_cbr_alpha * m_average_cbr[(*gpstc_ptr)->getID()].back () + (1 - m_cbr_alpha) * currentCbr;
+                  m_average_cbr[(*gpstc_ptr)->getID()].push_back (new_cbr);
+                }
+              else
+                {
+                  m_average_cbr[(*gpstc_ptr)->getID()].push_back (currentCbr);
+                }
+            }
+        }
+    }
   currentBusyCBR.clear();
-  if(m_channel_technology == "80211p")
-    nodeLastState80211p.clear();
+  if(m_channel_technology == "80211p") nodeLastState80211p.clear();
   if(m_channel_technology == "Nr")
     {
       nodeDurationStateNr.clear();
@@ -514,6 +680,16 @@ MetricSupervisor::checkCBR ()
     }
 
   lastCBRCheck = Simulator::Now();
+
+  // If enabled, log each CBR value to a CSV file
+  if (m_cbr_csv_log_file!="") {
+      for (auto it = m_average_cbr.begin(); it != m_average_cbr.end(); ++it) {
+          if (!it->second.empty()) {
+              writeDataToCSV(m_cbr_csv_log_file, "timestamp_ms,vehicle_id,CBR,CBR_time_window",
+                static_cast<double>(Simulator::Now().GetNanoSeconds())/1000000.0,it->first,it->second.back(),m_cbr_window);
+          }
+      }
+  }
 
   Simulator::Schedule (MilliSeconds (m_cbr_window), &MetricSupervisor::checkCBR, this);
 }
@@ -552,7 +728,7 @@ MetricSupervisor::logLastCBRs ()
 }
 
 void
-MetricSupervisor::startCheckCBR ()
+MetricSupervisor::startCheckCBR (int num_nodes)
 {
   // Assert that the parameters for the CBR are set
   NS_ASSERT_MSG(m_cbr_window > 0, "CBR window must be greater than 0");
@@ -560,13 +736,29 @@ MetricSupervisor::startCheckCBR ()
   NS_ASSERT_MSG (m_channel_technology != "", "Channel technology must be set, choose between 80211p and Nr");
   NS_ASSERT_MSG (m_simulation_time > 0, "Simulation time must be greater than 0");
 
-  if (m_channel_technology == "80211p")
+  NS_ASSERT_MSG (m_node_container.GetN() != 0, "The Node container must be filled before the CBR checking.");
+  uint8_t i = 0;
+  uint8_t nodes_to_check = num_nodes == -1 ? m_node_container.GetN() : num_nodes;
+  for(; i < nodes_to_check; i++)
     {
-      Config::Connect ("/NodeList/*/DeviceList/*/Phy/State/State", MakeCallback (&storeCBR80211p));
-    } else if (m_channel_technology == "Nr")
-    {
-      Config::Connect("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/NrSpectrumPhyList/*/ChannelOccupied", MakeCallback(&storeCBRNr));
+      Ptr<Node> node = m_node_container.Get (i);
+      std::basic_ostringstream<char> oss;
+      if (m_channel_technology == "80211p")
+        {
+          oss << "/NodeList/" << node->GetId() << "/DeviceList/*/$ns3::WifiNetDevice/Phy/State/State";
+          std::string var = oss.str();
+          Config::Connect(var, MakeCallback(&storeCBR80211p));
+        }
+      else if (m_channel_technology == "Nr")
+        {
+          oss << "/NodeList/" << node->GetId() << "/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/NrSpectrumPhyList/*/ChannelOccupied";
+          std::string var = oss.str();
+          Config::Connect(var, MakeCallback(&storeCBRNr));
+          currentBusyCBR[std::to_string (node->GetId())] = Time(0);
+          nodeDurationStateNr[std::to_string (node->GetId())] = Time(0);
+        }
     }
+
   Simulator::Schedule (MilliSeconds(m_cbr_window), &MetricSupervisor::checkCBR, this);
   Simulator::Schedule (Seconds (m_simulation_time), &MetricSupervisor::logLastCBRs, this);
 
@@ -610,18 +802,41 @@ std::unordered_map<std::string, std::vector<double>> MetricSupervisor::getCBRVal
 void
 MetricSupervisor::channelOccupationBytesPerSecondsPerSquareMeter ()
 {
-  if (m_total_area == 0)
+  if(m_traci_ptr != nullptr)
     {
-      std::vector<std::basic_string<char>> lanes = m_traci_ptr->TraCIAPI::lane.getIDList();
-      double totalArea = 0;
-      for (auto it : lanes)
+      if (m_total_area == 0)
         {
-          double length = m_traci_ptr->TraCIAPI::lane.getLength (it);
-          double weight = m_traci_ptr->TraCIAPI::lane.getWidth (it);
-          totalArea += length * weight;
-        }
+          std::vector<std::basic_string<char>> lanes = m_traci_ptr->TraCIAPI::lane.getIDList ();
+          double totalArea = 0;
+          for (auto it : lanes)
+            {
+              double length = m_traci_ptr->TraCIAPI::lane.getLength (it);
+              double weight = m_traci_ptr->TraCIAPI::lane.getWidth (it);
+              totalArea += length * weight;
+            }
 
-      m_total_area = totalArea;
+          m_total_area = totalArea;
+        }
+    }
+  else if (m_carla_ptr != nullptr)
+    {
+      if (m_total_area == 0)
+        {
+          std::map<std::basic_string<char>, std::basic_string<char>> ids = m_carla_ptr->getManagedConnectedNodes ();
+          double totalArea = 0;
+          for (auto it = ids.begin(); it != ids.end(); ++it)
+            {
+              std::string stationID = it->first;
+              carla::Vehicle vehicle = m_carla_ptr->GetManagedActorById(std::stoi (stationID));
+              totalArea += vehicle.length () * vehicle.width ();
+            }
+
+          m_total_area = totalArea;
+        }
+    }
+  else
+    {
+      NS_FATAL_ERROR("Fatal error: mobility client not set in Metric Supervisor.");
     }
   uint32_t bytes = m_total_bytes;
   uint64_t receivedBytesWithinTimeWindow;

@@ -32,7 +32,7 @@ namespace ns3
 {
   NS_LOG_COMPONENT_DEFINE("GPSTraceClient");
 
-  GPSTraceClient::GPSTraceClient(std::string vehID)
+  GPSTraceClient::GPSTraceClient(std::string vehID, std::string vehType)
   {
       //ctor
       m_lastvehicledataidx=0;
@@ -44,6 +44,7 @@ namespace ns3
       m_travelled_distance=0;
       m_vehicle_visualizer=nullptr;
       m_accelerationset=false;
+      m_vehType=vehType;
   }
 
   GPSTraceClient::~GPSTraceClient()
@@ -61,6 +62,12 @@ namespace ns3
     return m_vehID;
   }
 
+  std::string
+  GPSTraceClient::getNodeID()
+  {
+    return m_node_id;
+  }
+
   void
   GPSTraceClient::setTimestamp(std::string utc_time)
   {
@@ -74,7 +81,14 @@ namespace ns3
       // Add the struct to the vector
       vehiclesdata.push_back(data_t);
       // Convert from sec to us
-      utc_time_d = std::stod(utc_time) * 1000000;
+      if (!m_input_microseconds)
+        {
+          utc_time_d = std::stod(utc_time) * 1000000;
+        }
+      else
+        {
+          utc_time_d = std::stod(utc_time);
+        }
 
       // Set the timestamp
       vehiclesdata[lastcell].utc_time = utc_time_d;
@@ -239,7 +253,7 @@ namespace ns3
   }
 
   void
-  GPSTraceClient::GPSTraceClientSetup(STARTUP_FCN create_fcn,SHUTDOWN_FCN destroy_fcn)
+  GPSTraceClient::GPSTraceClientSetup(STARTUP_GPS_FCN create_fcn,SHUTDOWN_GPS_FCN destroy_fcn)
   {
       m_includeNode=create_fcn;
       m_excludeNode=destroy_fcn;
@@ -306,6 +320,7 @@ namespace ns3
             NS_FATAL_ERROR("Error: cannot send the object update to the vehicle visualizer for vehicle: "<<m_vehID);
         }
     }
+
     if(m_lastvehicledataidx+1==vehiclesdata.size())
       {
         m_excludeNode(m_vehNode,m_vehID);
@@ -315,7 +330,6 @@ namespace ns3
 
         return;
       }
-
     m_event_updatepos=Simulator::Schedule(MicroSeconds (vehiclesdata[m_lastvehicledataidx+1].utc_time-vehiclesdata[m_lastvehicledataidx].utc_time), &GPSTraceClient::UpdatePositions, this);
   }
 

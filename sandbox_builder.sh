@@ -32,7 +32,7 @@ if [ ! -z $1 ]; then
 			exit 1
 		fi
 
-		sudo apt install -y g++ python3 cmake ninja-build git ccache gir1.2-goocanvas-2.0 python3-gi python3-gi-cairo python3-pygraphviz gir1.2-gtk-3.0 python3-dev pkg-config sqlite3 cmake python3-setuptools qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools mercurial unzip gdb valgrind clang clang-format doxygen graphviz imagemagick python3-sphinx gsl-bin libgsl-dev libgslcblas0 tcpdump libsqlite3-dev libxml2 libxml2-dev libc6-dev libc6-dev-i386 libclang-dev llvm-dev automake python3-pip libgtk-3-dev libxml2 libxml2-dev libboost-all-dev libgrpc++-dev libprotobuf-dev protobuf-compiler libdpdk-dev
+		sudo apt install -y g++ python3 cmake ninja-build git ccache gir1.2-goocanvas-2.0 python3-gi python3-gi-cairo python3-pygraphviz gir1.2-gtk-3.0 python3-dev pkg-config sqlite3 cmake python3-setuptools qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools mercurial unzip gdb valgrind clang clang-format doxygen graphviz imagemagick python3-sphinx gsl-bin libgsl-dev libgslcblas0 tcpdump libsqlite3-dev libxml2 libxml2-dev libc6-dev libc6-dev-i386 libclang-dev llvm-dev automake python3-pip libgtk-3-dev libxml2 libxml2-dev libboost-all-dev libgrpc++-dev libprotobuf-dev protobuf-compiler libdpdk-dev libssh-dev
 		sudo apt install build-essential autoconf libtool pkg-config cmake
 		python3 -m pip install --user grpcio
 		python3 -m pip install --user grpcio-tools
@@ -50,6 +50,23 @@ if [ ! -z $1 ]; then
 		sudo make install
 		cd ../../..
 
+		echo "Installing OpenCV..."
+		git clone https://github.com/opencv/opencv.git
+	    git clone https://github.com/opencv/opencv_contrib.git
+	    cd opencv
+	    mkdir build
+	    cd build
+	    cmake -D CMAKE_BUILD_TYPE=Release \
+	          -D CMAKE_INSTALL_PREFIX=/usr/local \
+	          -D OPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules \
+	          -D WITH_TBB=ON \
+	          -D WITH_V4L=ON \
+	          -D WITH_QT=OFF \
+	          -D WITH_OPENGL=ON ..
+	    make -j$(nproc)
+	    sudo make install
+	    ldconfig
+	    cd ../..
 
 		# Detecting the current Ubuntu version to install the correct version of libgsl
 		# This is done only on Ubuntu (i.e. only if the command "lsb_release" returns "Ubuntu" as distro)
@@ -145,6 +162,20 @@ cp src/automotive/propagation-extended/cni-urbanmicrocell-propagation-loss-model
 cp src/automotive/propagation-extended/cni-urbanmicrocell-propagation-loss-model.h src/propagation/model/
 cp src/automotive/propagation-extended/CMakeLists.txt src/propagation/
 
+echo "Copying propagation files for NVIDIA Sionna..."
+sleep 1
+cp src/sionna/files/propagation/CMakeLists.txt src/propagation/
+cp src/sionna/files/propagation/propagation-delay-model.cc src/propagation/model/
+cp src/sionna/files/propagation/propagation-delay-model.h src/propagation/model/
+cp src/sionna/files/propagation/propagation-loss-model.cc src/propagation/model/
+cp src/sionna/files/propagation/propagation-loss-model.h src/propagation/model/
+cp src/sionna/files/propagation/three-gpp-propagation-loss-model.h src/propagation/model
+cp src/sionna/files/propagation/three-gpp-propagation-loss-model.cc src/propagation/model
+cp src/sionna/files/spectrum/CMakeLists.txt src/spectrum/
+cp src/sionna/files/spectrum/three-gpp-spectrum-propagation-loss-model.cc src/spectrum/model
+
+cp src/automotive/model/TxTracker/channel_files/modified/yans-wifi-phy.h src/wifi/model
+
 echo "Extending Signal Info features..."
 sleep 1
 cp src/automotive/model/SignalInfo/rssi-tag.cc src/wifi/model/
@@ -195,6 +226,7 @@ cp src/automotive/model/SignalInfo/WiFi/qos-frame-exchange-manager.cc src/wifi/m
 cp src/automotive/model/SignalInfo/WiFi/CMakeLists.txt src/wifi/
 
 cp src/automotive/model/SignalInfo/CV2X/cv2x_lte-spectrum-phy.cc src/cv2x/model/
+cp src/automotive/model/SignalInfo/CV2X/cv2x_lte-spectrum-phy.h src/cv2x/model/
 cp src/automotive/model/SignalInfo/CV2X/cv2x_lte-ue-mac.h src/cv2x/model/
 cp src/automotive/model/SignalInfo/CV2X/cv2x_lte-ue-mac.cc src/cv2x/model/
 cp src/automotive/model/SignalInfo/CV2X/CMakeLists.txt src/cv2x/

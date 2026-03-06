@@ -9,6 +9,7 @@ is_anaconda_installed() {
     fi
 }
 
+
 ns_3_dir=$(pwd)
 
 mode_file="src/automotive/aux-files/current-mode.txt" 
@@ -63,15 +64,16 @@ if [ "$mode" = "base" ]; then
 		sudo apt install -y software-properties-common build-essential cmake debhelper git wget curl xdg-user-dirs xserver-xorg libvulkan1 libsdl2-2.0-0 libsm6 libgl1-mesa-glx libomp5 pip unzip libjpeg8 libtiff5 software-properties-common nano fontconfig
 
 		ns_3_dir=$(pwd)
-		wget https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.12.tar.gz 
-		wget https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/AdditionalMaps_0.9.12.tar.gz
+		wget https://tiny.carla.org/carla-0-9-12-linux
+		wget https://tiny.carla.org/additional-maps-0-9-12-linux
 		mkdir CARLA_0.9.12
-		tar -xzf CARLA_0.9.12.tar.gz -C CARLA_0.9.12/
-		cp AdditionalMaps_0.9.12.tar.gz CARLA_0.9.12/Import/
-		rm CARLA_0.9.12.tar.gz
-		rm AdditionalMaps_0.9.12.tar.gz
+		tar -xzf carla-0-9-12-linux -C CARLA_0.9.12/
+		cp additional-maps-0-9-12-linux CARLA_0.9.12/Import/
+		rm carla-0-9-12-linux 
+		rm additional-maps-0-9-12-linux
 		cd CARLA_0.9.12/Import/
-		tar -xzf AdditionalMaps_0.9.12.tar.gz
+		tar -xzf additional-maps-0-9-12-linux
+		mv additional-maps-0-9-12-linux additional-maps-0-9-12-linux.tar.gz
 		cd ..
 		./ImportAssets.sh
 		carla_dir=$(pwd)
@@ -205,22 +207,7 @@ if [ "$mode" = "base" ]; then
 	        esac
 	fi
 
-	# Switch CMakeLists.txt and PRRsup
-	ns_3_dir=$(pwd)
-	cd src/automotive/
-	cp CMakeLists.txt aux-files/CMakeLists-base.txt
-	cp model/Measurements/* aux-files/Measurements-base/
-	cp aux-files/CMakeLists-CARLA.txt CMakeLists.txt
-	cp aux-files/CMakeLists-examples-CARLA.txt examples/CMakeLists.txt
-	cp aux-files/Measurements-CARLA/* model/Measurements/
-
-	rm aux-files/current-mode.txt
-	echo "CARLA" >>  aux-files/current-mode.txt
-	cd "$ns_3_dir"
-	cd src/carla/proto/
-	./buildProto.sh
-	cd "$ns_3_dir"
-	echo "Succesfully switched to ms-van3t-CARLA!"
+	python3.7 adapt_files.py CARLA
 fi 
 
 
@@ -228,17 +215,7 @@ if [ "$mode" = "CARLA" ]; then
 	read -p "Current mode is 'CARLA', do you wish to switch to base ms-van3t? (WARNING: CARLA-OpenCDA capabilities are disabled in this mode)."
 
 	# Switch back to 'base'
-
-	ns_3_dir=$(pwd)
-	cd src/automotive/
-	cp aux-files/CMakeLists-base.txt CMakeLists.txt
-	cp aux-files/CMakeLists-examples-base.txt examples/CMakeLists.txt
-	cp aux-files/Measurements-base/* model/Measurements/
-
-	rm aux-files/current-mode.txt
-	echo "base" >>  aux-files/current-mode.txt
-	cd "$ns_3_dir"
-	echo "Succesfully switched to base ms-van3t!"
+	python3.7 adapt_files.py BASE
 fi
 
 

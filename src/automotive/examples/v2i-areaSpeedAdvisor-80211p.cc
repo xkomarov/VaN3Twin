@@ -19,7 +19,12 @@
  *  Carlos Mateo Risma Carletti, Politecnico di Torino (carlosrisma@gmail.com)
 */
 
-#include "ns3/automotive-module.h"
+#include "ns3/carla-module.h"
+//#include "ns3/automotive-module.h"
+#include "ns3/areaSpeedAdvisorServer80211p-helper.h"
+#include "ns3/areaSpeedAdvisorServer80211p.h"
+#include "ns3/areaSpeedAdvisorClient80211p.h"
+#include "ns3/areaSpeedAdvisorClient80211p-helper.h"
 #include "ns3/traci-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/wave-module.h"
@@ -207,7 +212,8 @@ main (int argc, char *argv[])
   NetDeviceContainer netRSUs = wifi80211p.Install (wifiPhy, wifi80211pMac, rsuNodes);
   //wifi80211p.EnableLogComponents ();
 
-  //wifiPhy.EnablePcap ("v2v-ASA",netDevices);
+  wifiPhy.EnablePcap ("v2v-ASA",netDevices);
+  wifiPhy.EnablePcap ("v2v-ASA-RSU",netRSUs);
   /* Give packet socket powers to nodes (otherwise, if the app tries to create a PacketSocket, CreateSocket will end up with a segmentation fault */
   PacketSocketHelper packetSocket;
   packetSocket.Install (obuNodes);
@@ -298,7 +304,7 @@ main (int argc, char *argv[])
   AreaSpeedAdvisorClient80211pHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
 
   /* callback function for node creation */
-  STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID) -> Ptr<Node>
+  STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID,TraciClient::StationTypeTraCI_t stationType) -> Ptr<Node>
     {
       if (nodeCounter >= obuNodes.GetN())
         NS_FATAL_ERROR("Node Pool empty!: " << nodeCounter << " nodes created.");

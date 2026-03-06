@@ -13,16 +13,22 @@
 
 #include "ns3/core-module.h"
 #include "ns3/mobility-module.h"
-#include "ns3/traci-client.h"
+#include "ns3/traci-module.h"
+#include "ns3/sionna-connection-handler.h"
 
 #include "ns3/vehicle-visualizer.h"
+
+
+#define STARTUP_GPS_FCN std::function<Ptr<Node>(std::string)>
+#define SHUTDOWN_GPS_FCN std::function<void(Ptr<Node>,std::string)>
+
 
 namespace ns3 {
 
   class GPSTraceClient : public Object
   {
       public:
-          GPSTraceClient(std::string vehID);
+          GPSTraceClient(std::string vehID, std::string vehType);
           virtual ~GPSTraceClient();
           void sortVehiclesdata();
           void shiftOrigin(double,double);
@@ -66,6 +72,8 @@ namespace ns3 {
           void setLon0(double);
 
           // Getter
+          std::string getVehId() {return m_vehID;};
+          std::string getType() {return m_vehType;};
           long int getTimestamp();
           double getLat();
           double getLon();
@@ -76,6 +84,8 @@ namespace ns3 {
           double getAccelmsq();
           double getTravelledDistance();
           std::string getID();
+          std::string getNodeID();
+          void setNodeID(std::string node_id) {m_node_id = node_id;};
           uint64_t getLastIndex();
           double getLat0();
           double getLon0();
@@ -84,11 +94,13 @@ namespace ns3 {
           void playTrace(Time const &delay);
 
           // Set the functions to create/destroy node
-          void GPSTraceClientSetup(STARTUP_FCN create_fcn,SHUTDOWN_FCN destroy_fcn);
+          void GPSTraceClientSetup(STARTUP_GPS_FCN create_fcn,SHUTDOWN_GPS_FCN destroy_fcn);
 
           // Stop "playing" the trace
           void StopUpdates();
           void setVehicleVisualizer(Ptr<vehicleVisualizer> vehicleVis) {m_vehicle_visualizer = vehicleVis;}
+
+          void SetInputMicroseconds(bool use_microseconds) {m_input_microseconds = use_microseconds;};
 
       private:
           typedef struct _positioning_data {
@@ -117,11 +129,12 @@ namespace ns3 {
           bool m_updatefirstiter;
           bool m_accelerationset;
           std::string m_vehID;
+          std::string m_vehType;
           double m_travelled_distance;
 
           // Function pointers to node include/exclude functions
-          STARTUP_FCN m_includeNode;
-          SHUTDOWN_FCN m_excludeNode;
+          STARTUP_GPS_FCN m_includeNode;
+          SHUTDOWN_GPS_FCN m_excludeNode;
 
           EventId m_event_updatepos;
 
@@ -132,7 +145,9 @@ namespace ns3 {
 
           Ptr<vehicleVisualizer> m_vehicle_visualizer;
 
+          bool m_input_microseconds = false;
 
+          std::string m_node_id;
   };
 
 

@@ -38,7 +38,7 @@
  * The reported latency of vehicle 3 is expected to be 0 as it transmits interfering traffic (so, no ETSI-compliant
  * message is transmitted), that is not considered by the PRRSupervisor.
  */
-
+#include "ns3/carla-module.h"
 #include "ns3/vector.h"
 #include "ns3/string.h"
 #include "ns3/socket.h"
@@ -124,12 +124,13 @@ int main (int argc, char *argv[])
   double m_baseline_prr = 150.0; // PRR baseline value (default: 150 m)
   int txPower = 33.0; // IEEE 802.11p transmission power in dBm
   xmlDocPtr rou_xml_file;
-  double simTime = 20.0; // Total simulation time (default: 100 seconds)
+  double simTime = 150.0; // Total simulation time (default: 100 seconds)
+  int dcc_nodes = 7;
 
   // Set here the path to the SUMO XML files
-  std::string sumo_folder = "src/automotive/examples/sumo_files_v2v_map_congestion/";
-  std::string mob_trace = "cars.rou.xml";
-  std::string sumo_config ="src/automotive/examples/sumo_files_v2v_map_congestion/map.sumo.cfg";
+  std::string sumo_folder = "src/automotive/examples/sumo_files_v2v_map/";
+  std::string mob_trace = "cars_7.rou.xml";
+  std::string sumo_config ="src/automotive/examples/sumo_files_v2v_map/map_7.sumo.cfg";
 
   // Read the command line options
   CommandLine cmd (__FILE__);
@@ -221,7 +222,7 @@ int main (int argc, char *argv[])
   sumoClient->SetAttribute ("SumoLogFile", BooleanValue (false));
   sumoClient->SetAttribute ("SumoStepLog", BooleanValue (false));
   sumoClient->SetAttribute ("SumoSeed", IntegerValue (10));
-  sumoClient->SetAttribute ("SumoWaitForSocket", TimeValue (Seconds (1.0)));
+  sumoClient->SetAttribute ("SumoWaitForSocket", TimeValue (Seconds (1.5)));
 
   // Set up a Metricsupervisor
   // This module enables a trasparent and seamless collection of one-way latency (in ms) and PRR metrics
@@ -234,10 +235,11 @@ int main (int argc, char *argv[])
   metSup->setChannelTechnology("80211p");
   metSup->enableCBRVerboseOnStdout();
   metSup->enableCBRWriteToFile();
-  metSup->setCBRWindowValue(200);
+  metSup->setCBRWindowValue(100);
   metSup->setCBRAlphaValue(0.1);
   metSup->setSimulationTimeValue(simTime);
-  metSup->startCheckCBR();
+  metSup->setNodeContainer(c);
+  metSup->startCheckCBR(dcc_nodes);
 
   // Create a new socket for the generation of broadcast interfering traffic
   // With the aim of sending generic broadcast packets, we use a PacketSocket
@@ -272,14 +274,11 @@ int main (int argc, char *argv[])
       source_interfering[i] = socket;
     }
 
-  Ptr<DCC> dcc = NULL;
-  DCC dccObj = DCC();
-  dcc = &dccObj;
-  dcc->SetDCCInterval(MilliSeconds (200));
-  dcc->SetTraciClient (sumoClient);
-  dcc->SetMetricSupervisor (metSup);
-  dcc->adaptiveDCC();
-  // dcc->reactiveDCC();
+  std::unordered_map<Ptr<Node>, Ptr<DCC>> dcc_per_node;
+  for (uint8_t i = 0; i < dcc_nodes; i++)
+  {
+    dcc_per_node[c.Get(i)] = CreateObject<DCC>();
+  }
 
   std::cout << "A transmission power of " << txPower << " dBm  will be used." << std::endl;
 
@@ -288,13 +287,16 @@ int main (int argc, char *argv[])
   // Important: what you write inside setupNewWifiNode() will be executed every time a new vehicle enters the simulation in SUMO
   // This kind of "std::function" is called lambda function, and it can access all variables outside its scope, thanks to the [&] capture
   // We setup here the ETSI stack for each vehicle (except the one generating interfering traffic), thanks to the BSContainer object
-  STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID) -> Ptr<Node>
+  STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID,TraciClient::StationTypeTraCI_t stationType) -> Ptr<Node>
     {
+      std::cout << "Setting up the ETSI ITS-G5 stack for vehicle " << vehicleID << std::endl;
       unsigned long nodeID = std::stol(vehicleID.substr (3))-1;
       uint32_t id = source_interfering[nodeID]->GetNode()->GetId();
-      Simulator::ScheduleWithContext (id,
+      if (nodeID == 2)
+        Simulator::ScheduleWithContext (id,
                                       Seconds (1.0), &GenerateTraffic_interfering,
-                                      source_interfering[nodeID], 1000, simTime*2000, MilliSeconds (5));
+                                      source_interfering[nodeID], 2250, simTime*2000, MilliSeconds (2));
+
       // Create a new ETSI GeoNetworking socket, thanks to the GeoNet::createGNPacketSocket() function, accepting as argument a pointer to the current node
       Ptr<Socket> sock;
       sock=GeoNet::createGNPacketSocket(c.Get(nodeID));
@@ -319,16 +321,22 @@ int main (int argc, char *argv[])
       // The third parameter should be true if you want to setup a VRU Basic Service (for sending/receiving VAMs)
 
       bs_container->addCPMRxCallback (std::bind(&receiveCPM,std::placeholders::_1,std::placeholders::_2,std::placeholders::_3,std::placeholders::_4,std::placeholders::_5));
-      bs_container->setupContainer(true,false,false, true, false);
+      bs_container->setupContainer(true,false,false,false,false);
+      Ptr<GeoNet> gn = bs_container->getGeoNet();
 
       // Store the container for this vehicle inside a local global BSMap, i.e., a structure (similar to a hash table) which allows you to easily
       // retrieve the right BSContainer given a vehicle ID
       basicServices.add(bs_container);
 
-      // Set DCC
-      dcc->AddCABasicService(std::to_string(nodeID), bs_container->getCABasicService());
-      dcc->AddCPBasicService(std::to_string (nodeID), bs_container->getCPBasicService());
-      // dcc->AddVRUBasicService(std::to_string(nodeID), bs_container->getVRUBasicService());
+      // Setup DCC for both internal behavior and GeoNet link
+      if (dcc_per_node.find(c.Get(nodeID))!=dcc_per_node.end())
+        {
+          std::cout << "DCC enabled for vehicle " << vehicleID << std::endl;
+          dcc_per_node[c.Get(nodeID)]->SetupDCC(vehicleID, metSup, c.Get(nodeID), "adaptive", 200);
+          dcc_per_node[c.Get(nodeID)]->setBitRate (6e6);
+          gn->setDCC (dcc_per_node[c.Get(nodeID)]);
+          dcc_per_node[c.Get(nodeID)]->StartDCC();
+        }
 
       // Start transmitting CAMs
       // We randomize the instant in time in which the CAM dissemination is going to start
@@ -338,14 +346,14 @@ int main (int argc, char *argv[])
       std::srand(Simulator::Now().GetNanoSeconds ()*2); // Seed based on the simulation time to give each vehicle a different random seed
       double desync = ((double)std::rand()/RAND_MAX);
       bs_container->getCABasicService ()->startCamDissemination (desync);
-      bs_container->getCPBasicService()->startCpmDissemination();
+      // bs_container->getCPBasicService()->startCpmDissemination();
 
       return c.Get(nodeID);
     };
 
   // Important: what you write here is called every time a node exits the simulation in SUMO
   // You can safely keep this function as it is, and ignore it
-  SHUTDOWN_FCN shutdownWifiNode = [] (Ptr<Node> exNode, std::string vehicleID)
+  SHUTDOWN_FCN shutdownWifiNode = [&] (Ptr<Node> exNode, std::string vehicleID)
     {
       /* Set position outside communication range */
       Ptr<ConstantPositionMobilityModel> mob = exNode->GetObject<ConstantPositionMobilityModel>();
@@ -356,7 +364,6 @@ int main (int argc, char *argv[])
       // We need to get the right Ptr<BSContainer> based on the station ID (not the nodeID used
       // as index for the nodeContainer), so we don't use "-1" to compute "intVehicleID" here
       unsigned long intVehicleID = std::stol(vehicleID.substr (3));
-
       Ptr<BSContainer> bsc = basicServices.get(intVehicleID);
       bsc->cleanup();
     };
@@ -373,23 +380,12 @@ int main (int argc, char *argv[])
   // When the simulation is terminated, gather the most relevant metrics from the Metricsupervisor
   std::cout << "Run terminated..." << std::endl;
 
+  std::cout << "Average CBR: " << metSup->getAverageCBROverall() << std::endl;
   std::cout << "Average PRR: " << metSup->getAveragePRR_overall () << std::endl;
   std::cout << "Average latency (ms): " << metSup->getAverageLatency_overall () << std::endl;
-  // std::cout << "Average PRR: " << metSup->getAveragePRR_vehicle(1) << std::endl;
+  std::cout << "TX overall: " << metSup->getNumberTx_overall() << std::endl;
+  std::cout << "RX overall: " << cam_packet_count + cpm_packet_count << std::endl;
 
-  std::cout << "Average latency veh 1 (ms): " << metSup->getAverageLatency_vehicle (1) << std::endl;
-  std::cout << "Average latency veh 2 (ms): " << metSup->getAverageLatency_vehicle (2) << std::endl;
-  std::cout << "Average latency veh 3 (ms): " << metSup->getAverageLatency_vehicle (3) << std::endl; // Should return 0, as this vehicle generated only interfering traffic, and it is ignored by the PRRsupervisor
-  std::cout << "Average latency veh 4 (ms): " << metSup->getAverageLatency_vehicle (4) << std::endl;
-
-  std::cout << "RX packet count: " << cam_packet_count + cpm_packet_count << std::endl;
-
-  std::vector<std::tuple<double, double>> res = metSup->getCBRValuesPerChannelOccupation();
-
-  for(auto it : res)
-    {
-      std::cout << std::get<0>(it) << " " << std::get<1>(it) << std::endl;
-    }
 
   Simulator::Destroy ();
 

@@ -298,14 +298,14 @@ namespace ns3 {
     asn1cpp::setField (cpm->header.stationId, m_station_id);
 
     /*
-     * Compute the generationDeltaTime, "computed as the time corresponding to the
-     * time of the reference position in the CPM, considered as time of the CPM generation.
-     * The value of the generationDeltaTime shall be wrapped to 65 536. This value shall be set as the
-     * remainder of the corresponding value of TimestampIts divided by 65 536 as below:
-     * generationDeltaTime = TimestampIts mod 65 536"
+     * Compute the referenceTime. According to the ETSI-ITS-CDD .asn file, the referenceTime is defined as TimestampIts.
+     * The TimestampIts is defined represents the number of elapsed (TAI) milliseconds since the ITS Epoch.
+     * The ITS epoch, in turn, is `00:00:00.000 UTC, 1 January 2004`.
+     * The referenceTime was equal to generationDeltaTime in CPMs v1, but for CPMs v2, it has changed to a TimestampIts.
+     * As a reference, we align here the referenceTime to the CPM generation time.
     */
-    asn1cpp::setField (cpm->payload.managementContainer.referenceTime,
-                       compute_timestampIts (m_real_time) % 65536);
+    // asn1cpp::setField (cpm->payload.managementContainer.referenceTime, compute_timestampIts () % 65536); // <- this was valid for CPMs v1
+    asn1cpp::setField(cpm->payload.managementContainer.referenceTime, get_timestamp_ms_cpm(m_real_time));
 
     cpm_mandatory_data = m_vdp->getCPMMandatoryData ();
 
@@ -420,17 +420,17 @@ namespace ns3 {
     dataRequest.GNTraClass = 0x02; // Store carry foward: no - Channel offload: no - Traffic Class ID: 2
     dataRequest.lenght = packet->GetSize ();
     dataRequest.data = packet;
-    m_btp->sendBTP(dataRequest);
-
-    m_cpm_sent++;
+    std::tuple<GNDataConfirm_t, MessageId_t> status = m_btp->sendBTP(dataRequest, 0, MessageId_cpm);
+    GNDataConfirm_t dataConfirm = std::get<0>(status);
+    MessageId_t message_id = std::get<1>(status);
+    m_wannabe_sent ++;
+    /* Update the CAM statistics */
+    if(dataConfirm == ACCEPTED) {
+        if (message_id == MessageId_cpm) m_cpm_sent++;
+      }
 
     // Estimation of the transmission time
     m_last_transmission = (double) Simulator::Now().GetMilliSeconds();
-    uint32_t packetSize = packet->GetSize();
-    m_Ton_pp = (double) (NanoSeconds((packetSize * 8) / 0.006) + MicroSeconds(68)).GetNanoSeconds();
-    m_Ton_pp = m_Ton_pp / 1e6;
-
-    toffUpdateAfterTransmission();
 
     // Store the time in which the last CPM (i.e. this one) has been generated and successfully sent
     m_T_GenCpm_ms=now-lastCpmGen;
@@ -515,7 +515,7 @@ namespace ns3 {
 
 
     /** Decoding **/
-    decoded_cpm = asn1cpp::uper::decode(packetContent, CollectivePerceptionMessage);
+    decoded_cpm = asn1cpp::uper::decodeASN(packetContent, CollectivePerceptionMessage);
 
     if(bool(decoded_cpm)==false) {
         NS_LOG_ERROR("Warning: unable to decode a received CPM.");
@@ -524,7 +524,8 @@ namespace ns3 {
 
     if(m_CPReceiveCallback!=nullptr) {
         m_CPReceiveCallback(decoded_cpm,from);
-      } else if(m_CPReceiveCallbackExtended!=nullptr) {
+      }
+    if(m_CPReceiveCallbackExtended!=nullptr) {
         m_CPReceiveCallbackExtended(decoded_cpm,from,m_station_id,m_stationtype,GetSignalInfo());
       }
   }
@@ -548,27 +549,10 @@ namespace ns3 {
     return int_tstamp;
   }
 
-  void
-  CPBasicService::toffUpdateAfterDeltaUpdate(double delta)
+  CPBasicService::~CPBasicService ()
   {
-    if (m_last_transmission == 0)
-      return;
-    double waiting = Simulator::Now().GetMilliSeconds() - m_last_transmission;
-    double aux = m_Ton_pp / delta * (m_N_GenCpm - waiting) / m_N_GenCpm + waiting;
-    aux = std::max (aux, 25.0);
-    double new_gen_time = std::min (aux, 1000.0);
-    setCheckCpmGenMs ((long) new_gen_time);
-    m_last_delta = delta;
+    // std::cout << "Wannabe Sent: " << m_wannabe_sent << std::endl;
+    NS_LOG_INFO("CPBasicService object destroyed.");
   }
 
-  void
-  CPBasicService::toffUpdateAfterTransmission()
-  {
-    if (m_last_delta == 0)
-      return;
-    double aux = m_Ton_pp / m_last_delta;
-    double new_gen_time = std::max(aux, 25.0);
-    new_gen_time = std::min(new_gen_time, 1000.0);
-    setCheckCpmGenMs ((long) new_gen_time);
   }
-}

@@ -18,7 +18,8 @@
  *  Francesco Raviglione, Politecnico di Torino (francescorav.es483@gmail.com)
  *  Carlos Mateo Risma Carletti, Politecnico di Torino (carlosrisma@gmail.com)
 */
-
+#include "ns3/carla-module.h"
+#include "ns3/OpenCDAClient.h"
 #include <fstream>
 #include "ns3/core-module.h"
 #include "ns3/internet-module.h"
@@ -242,7 +243,7 @@ main (int argc, char *argv[])
   Ipv4StaticRoutingHelper ipv4RoutingHelper;
 
   /* Callback function for node creation */
-  STARTUP_FCN setupNewEmuNode = [&] (std::string vehicleID) -> Ptr<Node>
+  STARTUP_FCN setupNewEmuNode = [&] (std::string vehicleID,TraciClient::StationTypeTraCI_t stationType) -> Ptr<Node>
     {
       if (nodeCounter >= obuNodes.GetN())
         NS_FATAL_ERROR("Node Pool empty!: " << nodeCounter << " nodes created.");

@@ -62,28 +62,11 @@ namespace ns3
     void startCamDissemination();
     void startCamDissemination(double desync_s);
 
-    /**
-     * @brief Set the future time to check CAM condition
-     * @param nextCAM The next time to check CAM condition
-     */
-    void setCheckCamGenMs(long nextCAM) {m_T_CheckCamGen_ms = nextCAM;};
-
     //High frequency RSU container setters
     void setProtectedCommunicationsZonesRSU(asn1cpp::Seq<RSUContainerHighFrequencyV1> sequence) {m_protectedCommunicationsZonesRSU = sequence;}
 
     uint64_t terminateDissemination();
 
-    /**
-     * @brief Used for DCC Adaptive approach to set the future time to check CAM condition after an update of delta value
-     * @param delta new delta value calculated through DCC adaptive approach
-     */
-    void toffUpdateAfterDeltaUpdate(double delta);
-
-    /**
-     * @brief Used for DCC Adaptive approach to set the future time to check CAM condition after a transmission
-     * @param delta new delta value calculated through DCC adaptive approach
-     */
-    void toffUpdateAfterTransmission();
 
     const long T_GenCamMin_ms = 100;
     const long T_GenCamMax_ms = 1000;
@@ -153,8 +136,8 @@ namespace ns3
     bool m_specialVehContainerEnabled;
 
     double m_last_transmission = 0;
-    double m_Ton_pp = 0;
-    double m_last_delta = 0;
+
+    long m_T_next_dcc = -1;
   };
 }
 

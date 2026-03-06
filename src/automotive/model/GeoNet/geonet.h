@@ -25,6 +25,7 @@
 #include "ns3/longpositionvector.h"
 #include "ns3/btpdatarequest.h"
 #include "ns3/VRUdp.h"
+#include "ns3/DCC.h"
 
 extern "C" {
   #include "ns3/CAM.h"
@@ -45,6 +46,11 @@ namespace ns3
   {
     public:
 
+      typedef struct LocationTableExtension{
+        std::vector<std::tuple<int64_t , double>> CBR_R0_Hop;
+        std::vector<std::tuple<int64_t , double>> CBR_R1_Hop;
+      } LocationTableExtension;
+
       typedef struct _LocTableEntry {
         /**
         *   ETSI EN 302 636-4-1 [8.1.2]
@@ -59,6 +65,7 @@ namespace ns3
         std::set<uint16_t> DPL; //! Duplicate packet list
         long timestamp;
         uint32_t PDR;
+        LocationTableExtension cbr_extension;
       } GNLocTE;
 
       typedef struct _egoPositionVector {
@@ -118,13 +125,15 @@ namespace ns3
        * @brief Set the callback function to receive packets.
        * @param rx_callback
        */
+
+      void setDCC(Ptr<DCC> dcc) {m_dcc = dcc; attachSendFromDCCQueue(); attachGlobalCBRCheck();}
       void addRxCallback(std::function<void(GNDataIndication_t,Address)> rx_callback) {m_ReceiveCallback=rx_callback;}
       /**
        * @brief Create GeoNet PDU with the correct headers (GBC or TSB) and send it.
        * @param dataRequest
        * @return
        */
-      GNDataConfirm_t sendGN(GNDataRequest_t dataRequest);
+      std::tuple<GNDataConfirm_t, MessageId_t> sendGN (GNDataRequest_t dataRequest, int priority, MessageId_t message_id);
       /**
        * @brief Receive a GeoNet PDU and send a data indication to BTP layer.
        * @param socket
@@ -149,6 +158,9 @@ namespace ns3
       static Ptr<Socket> createGNPacketSocket(Ptr<Node> node_ptr);
 
       void setSecurity(bool security){enableSecurity = security; m_security = CreateObject<Security>();}
+      void attachSendFromDCCQueue();
+
+      void attachGlobalCBRCheck();
 
   private:
       void LocTE_timeout(GNAddress entry_address);
@@ -246,7 +258,9 @@ namespace ns3
       bool m_PRRsupervisor_beacons = true;
 
       bool m_EPVupdate_running = true;
+      Ptr<DCC> m_dcc = nullptr;
 
+      int64_t m_GNLocTTimerCBR_ms = 1000;
   };
 }
 #endif // GEONET_H

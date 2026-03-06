@@ -75,6 +75,7 @@ public:
 
     void receiveVam(BTPDataIndication_t dataIndication, Address from);
     void addVAMRxCallback(std::function<void(asn1cpp::Seq<VAM>, Address)> rx_callback) {m_VAMReceiveCallback=rx_callback;}
+    void addVAMRxCallbackExtended(std::function<void(asn1cpp::Seq<VAM>, Address, StationID_t, StationType_t)> rx_callback) {m_VAMReceiveCallbackExtended=rx_callback;}
 
     void startVamDissemination();
     void startVamDissemination(double desync_s);
@@ -86,24 +87,15 @@ public:
     const long T_GenVamMin_ms = 100;
     const long T_GenVamMax_ms = 5000;
 
-    /**
-     * @brief Set the next time to check VAM condition
-     * @param nextVAM The next time to check VAM condition
-     */
-    void setCheckVamGenMs(long nextVAM) {m_T_CheckVamGen_ms = nextVAM;};
+    void SetLogTriggering(bool log, std::string log_filename) {m_log_triggering = log; m_log_filename = log_filename;};
 
-    /**
-     * @brief Used for DCC Adaptive approach to set the future time to check VAM condition after an update of delta value
-     * @param delta new delta value calculated through DCC adaptive approach
-     */
-    void toffUpdateAfterDeltaUpdate(double delta);
+    void write_log_triggering(bool condition_verified, bool vamredmit_verified, float head_diff, float pos_diff, float speed_diff, long time_difference, std::string data_head, std::string data_pos, std::string data_speed, std::string data_safed, std::string data_time, std::string data_vamredmit, std::string data_dcc);
 
-    /**
-     * @brief Used for DCC Adaptive approach to set the future time to check VAM condition after a transmission
-     * @param delta new delta value calculated through DCC adaptive approach
-     */
-    void toffUpdateAfterTransmission();
-    
+    std::string printMinDist(double minDist) {
+      return ((minDist>-DBL_MAX && minDist<MAXFLOAT) ? std::to_string(minDist) : "unavailable");
+    }
+
+
 private:
     void initDissemination();
     void checkVamConditions();
@@ -114,6 +106,7 @@ private:
     void vLDM_handler(asn1cpp::Seq<VAM> decodedVAM);
 
     std::function<void(asn1cpp::Seq<VAM>, Address)> m_VAMReceiveCallback;
+    std::function<void(asn1cpp::Seq<VAM>, Address, StationID_t, StationType_t)> m_VAMReceiveCallbackExtended;
 
     Ptr<btp> m_btp;
 
@@ -138,6 +131,8 @@ private:
     // Previous VAM relevant values
     double m_prev_heading;
     libsumo::TraCIPosition m_prev_position;
+    double m_prev_lat;
+    double m_prev_lon;
     double m_prev_speed;
 
     // Safe distances
@@ -179,8 +174,18 @@ private:
     bool m_lowFreqContainerEnabled;
 
     double m_last_transmission = 0;
-    double m_Ton_pp = 0;
-    double m_last_delta = 0;
+
+    bool m_log_triggering = false;
+    std::string m_log_filename;
+
+    // Statistics: number of VAMs sent per triggering conditions
+    uint64_t m_pos_sent = 0;
+    uint64_t m_speed_sent = 0;
+    uint64_t m_head_sent = 0;
+    uint64_t m_safedist_sent = 0;
+    uint64_t m_time_sent = 0;
+
+    long m_T_next_dcc = -1;
 };
 
 }

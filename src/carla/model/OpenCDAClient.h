@@ -27,12 +27,13 @@
 #include "grpcpp/grpcpp.h"
 #include <signal.h>
 #include <unistd.h>
+#include "ns3/sionna-connection-handler.h"
 
 
 #include "ns3/carla.grpc.pb.h"
 
-#define STARTUP_FCN std::function<Ptr<Node>(std::string)>
-#define SHUTDOWN_FCN std::function<void(Ptr<Node>,std::string)>
+#define STARTUP_OPENCDA_FCN std::function<Ptr<Node>(std::string)>
+#define SHUTDOWN_OPENCDA_FCN std::function<void(Ptr<Node>,std::string)>
 
 namespace ns3
 {
@@ -42,7 +43,7 @@ namespace ns3
       static TypeId GetTypeId (void);
       OpenCDAClient (void);
       ~OpenCDAClient (void);
-      void startCarlaAdapter(STARTUP_FCN includeNode, SHUTDOWN_FCN excludeNode);
+      void startCarlaAdapter(STARTUP_OPENCDA_FCN includeNode, SHUTDOWN_OPENCDA_FCN excludeNode);
       void startSimulation();
       void testInsertVehicle();
 
@@ -59,12 +60,21 @@ namespace ns3
       bool hasCARLALDM(int id);
       carla::Objects getDetectedObjects(int id);
       void setControl(int id, double speed, Vector position, double acceleration);
+      carla::Waypoint getWaypoint(Vector location);
+      carla::Waypoint getNextWaypoint(Vector location);
       carla::ActorIds GetManagedCAVsIds();
+      double InsertObjects (carla::ObjectsIn object);
+      double InsertCV(carla::ObjectIn object);
+
+      double getGTaccuracy(double x, double y, double length, double width, double yaw, int id);
 
       int getVehicleID(Ptr<Node> node);
       bool InsertObject(carla::ObjectIn object);
 
       std::vector<int> getManagedConnectedIds();
+      std::map<std::string,std::string> getManagedConnectedNodes();
+
+      void SetSionnaUp() {m_sionna = true;};
 
     private:
       void executeOneTimestep();
@@ -82,12 +92,25 @@ namespace ns3
       double m_simTimeLimit;
 
       int m_port;
-      std::string m_host;
+      std::string m_opencda_host; //!< Host of OpenCDA CI
+      int m_opencda_port; //!< Port of OpenCDA CI
+      std::string m_opencda_user; //!< User name for OpenCDA CI ssh connection
+      std::string m_opencda_password; //!< Password for OpenCDA CI ssh connection
+      std::string m_carla_host;  //!< Host for CARLA server
+      int m_carla_port;  //!< Port for CARLA server
+      std::string m_carla_user;  //!< User name for CARLA server ssh connection (to be used only in remote mode)
+      std::string m_carla_password;  //!< Password for CARLA server ssh connection (to be used only in remote mode)
+      bool m_carla_gui; //!< Flag to start CARLA server with GUI
+      int m_carla_gpu; //!< GPU ID to be used by CARLA server
+      int m_openCDA_gpu; //!< GPU ID to be used by OpenCDA
+      int m_carla_tm_port; //!< Port for CARLA Traffic Manager
       std::string m_opencda_config;
       std::string m_carla_home;
       std::string m_opencda_home;
       std::string m_python_interpreter;
       bool m_apply_ml;
+      bool m_carla_manual;
+      bool m_opencda_manual;
 
       std::map<int, Ptr<Node>> m_vehMap;
       std::vector<int> m_nonCVIDs;
@@ -96,8 +119,8 @@ namespace ns3
       EventId m_executeOneTimestepTrigger;
 
       // function pointers to node include/exclude functions
-      STARTUP_FCN m_includeNode;
-      SHUTDOWN_FCN m_excludeNode;
+      STARTUP_OPENCDA_FCN m_includeNode;
+      SHUTDOWN_OPENCDA_FCN m_excludeNode;
 
       pid_t m_pid;
       pid_t m_carla_pid;
@@ -109,6 +132,8 @@ namespace ns3
 
       // map every vehicle to an output file
       std::map<std::string, std::ofstream> m_fileMap;
+
+      bool m_sionna = false;
 
     };
 

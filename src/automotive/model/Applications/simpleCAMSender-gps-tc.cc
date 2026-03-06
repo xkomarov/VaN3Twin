@@ -49,10 +49,30 @@ namespace ns3
             MakeBooleanAccessor (&simpleCAMSender::m_real_time),
             MakeBooleanChecker ())
         .AddAttribute ("GPSClient",
-            "TraCI client for SUMO",
+            "GPSTC client",
             PointerValue (0),
             MakePointerAccessor (&simpleCAMSender::m_gps_tc_client),
-            MakePointerChecker<GPSTraceClient> ());
+            MakePointerChecker<GPSTraceClient> ())
+        .AddAttribute ("DCC",
+                   "",
+                   BooleanValue(false),
+                   MakeBooleanAccessor (&simpleCAMSender::m_enable_dcc),
+                   MakeBooleanChecker ())
+        .AddAttribute("DCCWindow",
+                   "",
+                   IntegerValue(0),
+                   MakeIntegerAccessor (&simpleCAMSender::m_dcc_time_window),
+                   MakeIntegerChecker<int>())
+        .AddAttribute("DCCModality",
+                   "",
+                   StringValue("reactive"),
+                   MakeStringAccessor (&simpleCAMSender::m_dcc_modality),
+                   MakeStringChecker())
+        .AddAttribute ("MetricSupervisor",
+                       "Metric Supervisor",
+                       PointerValue (0),
+                       MakePointerAccessor (&simpleCAMSender::m_met_sup),
+                       MakePointerChecker<MetricSupervisor> ());
         return tid;
   }
 
@@ -132,18 +152,26 @@ namespace ns3
     /* Set sockets, callback, station properties and TraCI VDP in CABasicService */
     m_caService.setSocketTx (m_socket);
     m_caService.setSocketRx (m_socket);
-    m_caService.addCARxCallback (std::bind(&simpleCAMSender::receiveCAM,this,std::placeholders::_1,std::placeholders::_2));
+    m_caService.addCARxCallbackExtended (std::bind(&simpleCAMSender::receiveCAM,this,std::placeholders::_1,std::placeholders::_2, std::placeholders::_3,std::placeholders::_4, std::placeholders::_5));
     m_caService.setRealTime (m_real_time);
 
     VDP* gpstc_vdp = new VDPGPSTraceClient(m_gps_tc_client,m_id);
     m_caService.setVDP(gpstc_vdp);
     m_denService.setVDP(gpstc_vdp);
 
+    m_caService.SetLogTriggering(true, "cam-log.txt");
 
     /* Schedule CAM dissemination */
     std::srand(Simulator::Now().GetNanoSeconds ());
     double desync = ((double)std::rand()/RAND_MAX);
     m_caService.startCamDissemination(desync);
+    if (m_enable_dcc)
+      {
+        m_dcc = CreateObject<DCC>();
+        m_dcc->SetupDCC(m_id, m_met_sup, m_node, m_dcc_modality, m_dcc_time_window);
+        m_geoNet->setDCC (m_dcc);
+        m_dcc->StartDCC();
+      }
   }
 
   void
@@ -157,9 +185,9 @@ namespace ns3
 
     cam_sent = m_caService.terminateDissemination ();
 
-    std::cout << "Vehicle " << m_id
+    /*std::cout << "Vehicle " << m_id
               << " has sent " << cam_sent
-              << " CAMs" << std::endl;
+              << " CAMs" << std::endl;*/
   }
 
   void
@@ -170,14 +198,22 @@ namespace ns3
   }
 
   void
-  simpleCAMSender::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
+  simpleCAMSender::receiveCAM (asn1cpp::Seq<CAM> cam, Address from, StationID_t my_stationID, StationType_t my_StationType, SignalInfo phy_info)
   {
     /* Implement CAM strategy here */
+    /*
     std::cout <<"VehicleID: " << m_id
             <<" | Rx CAM from "<<cam->header.stationId
             <<" | Remote vehicle position: ("<<asn1cpp::getField(cam->cam.camParameters.basicContainer.referencePosition.latitude,double)/DOT_ONE_MICRO<<","
             <<asn1cpp::getField(cam->cam.camParameters.basicContainer.referencePosition.longitude,double)/DOT_ONE_MICRO<<")"<<std::endl;
-
+    */
+    /* Write on a CSV file the time, sender, receiver, rx power*/
+    Time now = Simulator::Now ();
+    double time = now.GetSeconds ();
+    std::ofstream logFile;
+    logFile.open("cam-reception-log.csv", std::ios_base::app);
+    logFile << "Time: " << time << ", Sender: " << cam->header.stationId << ", Receiver: " << m_id << ", RSSI: " << phy_info.rssi << std::endl;
+    logFile.close();
   }
 
   void

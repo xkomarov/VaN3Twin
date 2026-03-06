@@ -64,21 +64,33 @@ namespace ns3
   class VRUdp
   {
   public:
+    typedef struct VRUDP_position_cartesian {
+      double x,y,z;
+    } VRUDP_position_cartesian_t;
+
     VRUdp();
     VRUdp(Ptr<TraciClient> mobility_client, std::string node_id);
 
     Ptr<TraciClient> getTraciClient() {return m_traci_client;}
 
-    VAM_mandatory_data_t getVAMMandatoryData();
+    virtual VAM_mandatory_data_t getVAMMandatoryData();
 
-    VRUdp_position_latlon_t getPedPosition();
-    double getPedSpeedValue() {return m_traci_client->TraCIAPI::person.getSpeed (m_id);}
-    double getPedHeadingValue() {return m_traci_client->TraCIAPI::person.getAngle (m_id);}
-    libsumo::TraCIPosition getPedPositionValue() {return m_traci_client->TraCIAPI::person.getPosition (m_id);}
+    virtual VRUdp_position_latlon_t getPedPosition();
+    virtual double getPedSpeedValue() {return m_traci_client->TraCIAPI::person.getSpeed (m_id);}
+    virtual double getPedHeadingValue() {return m_traci_client->TraCIAPI::person.getAngle (m_id);}
+    virtual libsumo::TraCIPosition getPedPositionValue() {return m_traci_client->TraCIAPI::person.getPosition (m_id);}
 
     VRUdpValueConfidence<> getLongAcceleration();
 
-    std::vector<distance_t> get_min_distance(Ptr<LDM> LDM);
+    virtual std::vector<distance_t> get_min_distance(Ptr<LDM> LDM);
+
+    virtual /**
+     * @brief This function converts the pedestrian's position in lat/lon coordinates to cartesian coordinates.
+     * @param lon The VRU longitude.
+     * @param lat The VRU latitude.
+     * @return
+     */
+    VRUDP_position_cartesian_t getXY(double lon, double lat);
 
   private:
     int64_t computeTimestampUInt64();

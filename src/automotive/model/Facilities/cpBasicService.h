@@ -41,6 +41,7 @@ public:
    * This constructor initializes the CPBasicService object.
    */
   CPBasicService();
+  ~CPBasicService();
   /**
    * @brief Set the station ID of the ITS-S.
    * @param fixed_stationid  The station ID to be set.
@@ -121,24 +122,12 @@ public:
   void setRedundancyMitigation(bool choice){m_redundancy_mitigation = choice;}
   void disableRedundancyMitigation(){m_redundancy_mitigation = false;}
 
-  void setCheckCpmGenMs(long nextCPM) {m_N_GenCpm=nextCPM;};
+  uint64_t getWannabeSent() {return m_wannabe_sent;}
 
   const long T_GenCpmMin_ms = 100;
   const long T_GenCpm_ms = 100;
   const long T_GenCpmMax_ms = 1000;
   const long m_T_AddSensorInformation = 1000;
-
-  /**
-     * @brief Used for DCC Adaptive approach to set the future time to check CPM condition after an update of delta value
-     * @param delta new delta value calculated through DCC adaptive approach
-     */
-  void toffUpdateAfterDeltaUpdate(double delta);
-
-  /**
-     * @brief Used for DCC Adaptive approach to set the future time to check CPM condition after a transmission
-     * @param delta new delta value calculated through DCC adaptive approach
-     */
-  void toffUpdateAfterTransmission();
 
 
 private:
@@ -204,8 +193,10 @@ private:
   EventId m_event_cpmSend;
 
   double m_last_transmission = 0;
-  double m_Ton_pp = 0;
-  double m_last_delta = 0;
+
+  long m_T_next_dcc = -1;
+
+  uint64_t m_wannabe_sent = 0;
 };
 }
 #endif // CPBASICSERVICE_H

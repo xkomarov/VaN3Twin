@@ -17,8 +17,9 @@
  *
  */
 #include "ns3/carla-module.h"
-#include "ns3/automotive-module.h"
-
+//#include "ns3/automotive-module.h"
+#include "ns3/cooperativePerception-helper.h"
+#include "ns3/cooperativePerception.h"
 #include "ns3/config-store.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
@@ -36,6 +37,7 @@
 
 #include <unistd.h>
 #include "ns3/core-module.h"
+#include "ns3/sionna-helper.h"
 
 
 using namespace ns3;
@@ -143,6 +145,11 @@ main (int argc, char *argv[])
   uint16_t channelUpdatePeriod = 500; //ms
   uint8_t mcs = 14;
 
+  bool sionna = false;
+  std::string server_ip = "";
+  bool local_machine = false;
+  bool verb = false;
+
   /*
    * From here, we instruct the ns3::CommandLine class of all the input parameters
    * that we may accept as input, as well as their description, and the storage
@@ -231,6 +238,10 @@ main (int argc, char *argv[])
                 "The MCS to used for sidelink",
                 mcs);
 
+  cmd.AddValue ("sionna", "Enable SIONNA usage", sionna);
+  cmd.AddValue ("sionna-server-ip", "SIONNA server IP address", server_ip);
+  cmd.AddValue ("sionna-local-machine", "SIONNA will be executed on local machine", local_machine);
+  cmd.AddValue ("sionna-verbose", "SIONNA server IP address", verb);
 
   // Parse the command line
   cmd.Parse (argc, argv);
@@ -240,6 +251,16 @@ main (int argc, char *argv[])
       LogComponentEnable ("v2v-nrv2x", LOG_LEVEL_INFO);
       LogComponentEnable ("CABasicService", LOG_LEVEL_INFO);
       LogComponentEnable ("DENBasicService", LOG_LEVEL_INFO);
+    }
+
+  SionnaHelper& sionnaHelper = SionnaHelper::GetInstance();
+
+  if (sionna)
+    {
+      sionnaHelper.SetSionna(sionna);
+      sionnaHelper.SetServerIp(server_ip);
+      sionnaHelper.SetLocalMachine(local_machine);
+      sionnaHelper.SetVerbose(verb);
     }
 
   /*
@@ -667,9 +688,13 @@ main (int argc, char *argv[])
 
   /*** 6. Setup OpenCDA client ***/
   Ptr<OpenCDAClient> opencda_client = CreateObject<OpenCDAClient> ();
+  if (sionna)
+    {
+      opencda_client->SetSionnaUp();
+    }
   opencda_client->SetAttribute ("CARLAHost", StringValue ("localhost"));
   opencda_client->SetAttribute ("UpdateInterval", DoubleValue (0.05));
-  opencda_client->SetAttribute ("Port", UintegerValue (1337));
+  opencda_client->SetAttribute ("OpenCDACIPort", UintegerValue (1337));
   opencda_client->SetAttribute ("PenetrationRate",DoubleValue(0.5));
   opencda_client->SetAttribute ("OpenCDA_config", StringValue(opencda_config));
   opencda_client->SetAttribute ("OpenCDA_HOME", StringValue(OpenCDA_HOME));
@@ -698,7 +723,7 @@ main (int argc, char *argv[])
 
   /* callback function for node creation */
   int i=0;
-  STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID) -> Ptr<Node>
+  STARTUP_OPENCDA_FCN setupNewWifiNode = [&] (std::string vehicleID) -> Ptr<Node>
     {
       if (nodeCounter >= allSlUesContainer.GetN())
         NS_FATAL_ERROR("Node Pool empty!: " << nodeCounter << " nodes created.");
@@ -719,7 +744,7 @@ main (int argc, char *argv[])
     };
 
   /* callback function for node shutdown */
-  SHUTDOWN_FCN shutdownWifiNode = [] (Ptr<Node> exNode,std::string vehicleID)
+  SHUTDOWN_OPENCDA_FCN shutdownWifiNode = [] (Ptr<Node> exNode,std::string vehicleID)
     {
       Ptr<cooperativePerception> appSample_ = exNode->GetApplication(0)->GetObject<cooperativePerception>();
 

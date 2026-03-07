@@ -730,7 +730,7 @@ namespace ns3 {
 
     std::map<std::pair<unsigned long,long>, ITSSOriginatingTableEntry>::iterator entry_originating_table = m_originatingITSSTable.find(map_index);
     /* 2a. If actionID exists in the originating ITS-S message table and the entry state is ACTIVE, then set termination to isCancellation.*/
-    if (entry_originating_table != m_originatingITSSTable.end())
+    if (entry_originating_table == m_originatingITSSTable.end())
       {
         T_Repetition_Mutex.unlock();
         return DENMV1_UNKNOWN_ACTIONID_ORIGINATING;
@@ -756,7 +756,7 @@ namespace ns3 {
 
     /* 2b. If actionID exists in the receiving ITS-S message table and the entry state is ACTIVE, then set termination to isNegation.*/
     std::map<std::pair<unsigned long,long>, ITSSReceivingTableEntry>::iterator entry_receiving_table = m_receivingITSSTable.find(map_index);
-    if (entry_receiving_table != m_receivingITSSTable.end())
+    if (entry_receiving_table == m_receivingITSSTable.end())
       {
         T_Repetition_Mutex.unlock();
         return DENMV1_UNKNOWN_ACTIONID_RECEIVING;

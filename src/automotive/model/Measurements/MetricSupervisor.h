@@ -72,7 +72,7 @@ public:
    * This constructor initializes the PRRSupervisor object.
    * @param baseline_m The baseline distance in meters to consider for a packet to be received.
    */
-  MetricSupervisor(int baseline_m) : m_baseline_m(baseline_m) {}
+  MetricSupervisor(int baseline_m) : m_baseline_m(baseline_m) {m_cbr_csv_log_file="";}
   virtual ~MetricSupervisor();
 
   static std::string bufToString(uint8_t *buf, uint32_t bufsize);
@@ -484,6 +484,7 @@ public:
 
     void setNodeContainer(NodeContainer nc) {m_node_container = nc;}
 
+    void writeCBRtoCSV(std::string filename) {m_cbr_csv_log_file=filename;}
 private:
   void computePRR(std::string buf);
 
@@ -565,6 +566,7 @@ private:
   double m_cbr_window = -1; //!< The window for the CBR computation
   float m_cbr_alpha = -1; //!< The alpha parameter for the exponential moving average
   bool m_cbr_write_to_file = false; //!< True if the CBR values are written to a file, false otherwise
+  std::string m_cbr_csv_log_file = ""; //!< Optional file name to which each CBR value should be written at each CBR computation window
   std::string m_channel_technology = ""; //!< The channel technology used
   NodeContainer m_node_container;
   float m_simulation_time = -1; //!< The simulation time

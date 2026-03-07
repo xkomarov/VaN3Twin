@@ -86,10 +86,12 @@ namespace ns3
           }
         uint8_t txp_byte = static_cast<uint8_t>(tp & 0x1F); // bits 0–4
         uint8_t reserved = 0;
-        i.WriteU8(cbr0_enc);  // Octet 40
-        i.WriteU8(cbr1_enc);  // Octet 41
-        i.WriteU8(txp_byte);  // Octet 42
-        i.WriteU8(reserved);  // Octet 43
+        uint32_t field =
+            (uint32_t(cbr0_enc) << 24) |
+            (uint32_t(cbr1_enc) << 16) |
+            (uint32_t(txp_byte) <<  8) |
+            uint32_t(reserved);
+        i.WriteHtonU32 (field);
       }
   }
 

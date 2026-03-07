@@ -9,6 +9,7 @@
 #include "ns3/cpBasicService.h"
 #include "ns3/cpBasicService_v1.h"
 #include "ns3/sumo-sensor.h"
+#include "ns3/tlmBasicService.h"
 
 namespace ns3
 {
@@ -33,7 +34,7 @@ namespace ns3
     void addDENMRxCallback(std::function<void(denData,Address,unsigned long,long,SignalInfo)> rx_callback) {m_DENReceiveCallbackExtended=rx_callback;}
     void addVAMRxCallback(std::function<void(asn1cpp::Seq<VAM>, Address, StationID_t, StationType_t)> rx_callback) {m_VAMReceiveCallbackExtended=rx_callback;}
     void addCPMRxCallback(std::function<void(asn1cpp::Seq<CollectivePerceptionMessage>, Address, StationID_t, StationType_t, SignalInfo)> rx_callback) {m_CPMReceiveCallbackExtended=rx_callback;}
-
+    void addSPATEMRxCallback(std::function<void(asn1cpp::Seq<SPATEM>, Address, StationID_t, StationType_t, SignalInfo)> rx_callback) {m_TLMReceiveCallbackExtended=rx_callback;}
     void setRealTime(bool real_time){m_real_time=real_time;}
 
     // ETSI Basic Services
@@ -42,6 +43,7 @@ namespace ns3
     Ptr<DENBasicService> getDENBasicService() {return &m_denbs;}
     Ptr<VRUBasicService> getVRUBasicService() {return &m_vrubs;}
     Ptr<CPBasicService> getCPBasicService() {return &m_cpbs;}
+    Ptr<TLMBasicService> getTLMBasicService() {return &m_tlmbs;}
 
     // Function to easily retrieve a pointer to the Mobility Client leveraged by this BSContainer
     // Currently, only SUMO/TraCI clients are supported
@@ -57,7 +59,7 @@ namespace ns3
     // For example, if vehicles in the XML file have id "carX", you should call "changeSUMO_ID_prefix("car")"
     void changeSUMO_ID_prefix(std::string new_prefix) {m_sumo_vehid_prefix=new_prefix;}
 
-    void setupContainer(bool CABasicService_enabled,bool DENBasicService_enabled,bool VRUBasicService_enabled, bool CPBasicService_enabled);
+    void setupContainer(bool CABasicService_enabled,bool DENBasicService_enabled,bool VRUBasicService_enabled, bool CPBasicService_enabled, bool TLMBasicService_enabled);
 
     // Function to setup a circular GeoArea for DENMs - it must be called at least once when sending/receiving DENMs
     // Then, it may be called as many times as desired to change the DENMs GeoArea
@@ -84,7 +86,7 @@ namespace ns3
     std::function<void(denData,Address,unsigned long,long,SignalInfo)> m_DENReceiveCallbackExtended;
     std::function<void(asn1cpp::Seq<VAM>, Address, StationID_t, StationType_t)> m_VAMReceiveCallbackExtended;
     std::function<void(asn1cpp::Seq<CollectivePerceptionMessage>, Address, StationID_t, StationType_t, SignalInfo)> m_CPMReceiveCallbackExtended;
-
+    std::function<void(asn1cpp::Seq<SPATEM>, Address, StationID_t, StationType_t, SignalInfo)> m_TLMReceiveCallbackExtended;
     // ETSI Transport and Networking layer pointers
     Ptr<btp> m_btp;
     Ptr<GeoNet> m_gn;
@@ -95,6 +97,7 @@ namespace ns3
     DENBasicService m_denbs;
     VRUBasicService m_vrubs;
     CPBasicService m_cpbs;
+    TLMBasicService m_tlmbs;
 
     bool m_real_time;
     Ptr<TraciClient> m_mobility_client;
@@ -126,6 +129,7 @@ namespace ns3
     bool m_CAMs_enabled = false;
     bool m_VAMs_enabled = false;
     bool m_CPMs_enabled = false;
+    bool m_SPATEMs_enabled = false;
 
     Ptr<SUMOSensor> m_sumo_sensor;
 

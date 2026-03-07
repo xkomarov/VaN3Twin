@@ -22,9 +22,11 @@
 #include <functional> 
 #include <vector>
 #include <cmath>
+#include "ns3/BitString.hpp"
 
 extern "C" {
   #include "ns3/CAM.h"
+  #include "ns3/BIT_STRING.h"
 }
 
 namespace ns3
@@ -326,20 +328,51 @@ namespace ns3
   {
       SPATEM_mandatory_data_t spatData;
 
+      spatData.optional_data = false;
+
       try {
-              spatData.intersectionId = (long)std::hash<std::string>{}(m_id);
+              spatData.intersectionId = (uint16_t)std::hash<std::string>{}(m_id);
           } catch (...) {
               spatData.intersectionId = 0;
           }
 
-      spatData.status = 0;
+      // Если нужно установить, например, 0-й бит (manualControlIsEnabled)
+      spatData.status.size = 2; // IntersectionStatusObject обычно 16 бит
+      spatData.status.bits_unused = 0;
+      spatData.status.buf = (uint8_t*)calloc(2, sizeof(uint8_t));
+      spatData.status.buf[0] = 0x80; // Установка первого бита
+      spatData.revision = 0;
 
       std::string stateString = m_traci_client->TraCIAPI::trafficlights.getRedYellowGreenState(m_id);
+        // if (stateString.empty())
+        // {
+        //     asn1cpp::bitstring::setBit(spatData.status, 13);
+        // }
+        // else
+        // {
+        //     asn1cpp::bitstring::setBit(spatData.status, 6);
+
+        //   bool allOff = true;
+        //   for (char s : stateString)
+        //   {
+        //     if (s != 'o' && s != 'O')
+        //     {
+        //       allOff = false;
+        //       break;
+        //     }
+          // }
+
+        //   if (allOff)
+        //   {
+        //       asn1cpp::bitstring::setBit(spatData.status, 9);
+        //   }
+        // }
+
       double nextSwitch = m_traci_client->TraCIAPI::trafficlights.getNextSwitch(m_id);
       double simTime = m_traci_client->TraCIAPI::simulation.getTime();
       double timeLeft = nextSwitch - simTime;
       if (timeLeft < 0) timeLeft = 0.0;
-      long timeLeftDeciSeconds = (long)(timeLeft * 10.0);      
+      uint16_t timeLeftDeciSeconds = (uint16_t)(std::round(timeLeft * 10.0));      
 
       for (size_t i = 0; i < stateString.length(); ++i) {
           SPATEM_SignalGroupState_t groupState;

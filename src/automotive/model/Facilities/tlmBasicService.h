@@ -1,6 +1,5 @@
-/** @file */
-#ifndef CABASICSERVICE_H
-#define CABASICSERVICE_H
+#ifndef TLMBASICSERVICE_H
+#define TLMBASICSERVICE_H
 
 #include "ns3/socket.h"
 #include "ns3/core-module.h"
@@ -10,11 +9,25 @@
 #include "ns3/btpHeader.h"
 #include "ns3/Seq.hpp"
 #include "ns3/Getter.hpp"
-#include "ns3/LDM.h"
 #include "signalInfoUtils.h"
+#include "ITSSOriginatingTableEntry.h"
+#include "ITSSReceivingTableEntry.h"
+#include "ns3/btpdatarequest.h"
+#include <functional>
+#include <mutex>
+#include <queue>
+#include "ns3/asn_application.h"
+#include "ns3/Setter.hpp"
+#include "ns3/Encoding.hpp"
+#include "ns3/SetOf.hpp"
+#include "ns3/SequenceOf.hpp"
+#include "ns3/BitString.hpp"
+#include "ns3/View.hpp"
+#include "ns3/Utils.hpp"
 
 extern "C" {
   #include "ns3/SPATEM.h"
+  #include "ns3/SPAT.h"
 }
 
 //#define CURRENT_VDP_TYPE VDPTraCI
@@ -25,296 +38,154 @@ namespace ns3
     SPATEM_NO_ERROR=0,
     SPATEM_WRONG_INTERVAL=1,
     SPATEM_ALLOC_ERROR=2,
-    SPATEM_NO_RSU_CONTAINER=3,
+    SPATEM_TX_SOCKET_NOT_SET=3,
     SPATEM_ASN1_UPER_ENC_ERROR=4,
     SPATEM_CANNOT_SEND=5
   } TLMBasicService_error_t;
 
-  /**
-   * \ingroup automotive
-   * \brief This class implements the Cooperative Awareness Basic Service
-   *
-   * This class implements the Cooperative Awareness Basic Service (CA Basic Service) as defined in ETSI EN 302 637-2-1 V1.3.1 (2018-09).
-   * The CA Basic Service is a service that allows vehicles and RSUs to exchange information about their current status and position.
-   *
-   */
+
+/**
+ * \ingroup automotive
+ * \brief This class implements the basic service for the  Infrastructure to Vehicle Information (TLM) service defined in ETSI TS 103 301 V1.3.1 (2020-02).
+ *
+ * TLM service is one instantiation of the infrastructure services to manage the generation, transmission and reception of the TLMM messages.
+ * An TLMM supports mandatory and advisory road signage such as contextual speeds and road works warnings.
+ * TLMM either provides information of physical road signs such as static or variable road signs, virtual signs or road works.
+ *
+ */
+
   class TLMBasicService: public Object, public SignalInfoUtils
   {
-  public:
+    public:
     /**
-     * \brief Default constructor
+     * @brief Constructor
      *
-     * This constructor creates a CA Basic Service object with default values.
+     * This constructor initializes the TLMBasicService object.
      */
     TLMBasicService();
-    ~TLMBasicService();
     /**
      * @brief Constructor
      *
-     * This constructor creates a CA Basic Service object with the given station ID and station type.
-     *
-     * @param fixed_stationid The station ID of the vehicle or RSU
-     * @param fixed_stationtype The station type of the vehicle or RSU
-     * @param vdp  The VDP object to be used by the CA Basic Service
-     * @param real_time  If true, the CA Basic Service will generate CAM messages using real time timestamps
-     * @param is_vehicle  If true, the CA Basic Service will generate CAM messages as a vehicle, otherwise it will generate CAM messages as an RSUs
+     * This constructor initializes the TLMBasicService object.
+     * @param fixed_stationid The station ID of the ITS-S.
+     * @param fixed_stationtype The station type of the ITS-S.
+     * @param socket_tx The socket used for transmitting TLMM messages.
      */
-    TLMBasicService(unsigned long fixed_stationid,long fixed_stationtype,VDP* vdp,bool real_time,bool is_vehicle);
+    TLMBasicService(unsigned long fixed_stationid,long fixed_stationtype,Ptr<Socket> socket_tx);
+
+    int receivedSPATEM ;
+    long timeStamp;
 
     /**
-     * @brief Constructor
-     *
-     * This constructor creates a CA Basic Service object with the given station ID, station type and socket.
-     *
-     * @param fixed_stationid The station ID of the vehicle or RSU
-     * @param fixed_stationtype The station type of the vehicle or RSU
-     * @param vdp  The VDP object to be used by the CA Basic Service
-     * @param real_time  If true, the CA Basic Service will generate CAM messages using real time timestamps
-     * @param is_vehicle  If true, the CA Basic Service will generate CAM messages as a vehicle, otherwise it will generate CAM messages as an RSUs
-     * @param socket_tx   The socket used to send CAM messages
+     * @brief Set Reception callback for TLM messages.
+     * @param rx_callback
      */
-    TLMBasicService(unsigned long fixed_stationid,long fixed_stationtype,VDP* vdp,bool real_time,bool is_vehicle,Ptr<Socket> socket_tx);
+    void addTLMRxCallback(std::function<void(asn1cpp::Seq<SPATEM>, Address)> rx_callback) {m_TLMReceiveCallback=rx_callback;}
+    void addTLMRxCallbackExtended(std::function<void(asn1cpp::Seq<SPATEM>, Address, StationId_t, StationType_t, SignalInfo)> rx_callback) {m_TLMReceiveCallbackExtended=rx_callback;}
 
     /**
-     * @brief Set the station properties
-     *
-     * This function sets the station ID and station type of the vehicle or RSU.
-     *
-     * @param fixed_stationid   The station ID of the vehicle or RSU
-     * @param fixed_stationtype   The station type of the vehicle or RSU
+     * @brief Set the VDP object
+     * This function sets the VDP object to be used by the CA Basic Service.
+     * @param vdp   The VDP object to be used by the CA Basic Service
+     */
+    void setVDP(VDP* vdp) {m_vdp=vdp;}
+
+    /**
+     * @brief Process a received SPATEM message.
+     * @param dataIndication  The received data indication from BTP/GeoNet.
+     * @param address  The address of the sender of the SPATEM message.
+     */
+    void receiveSPATEM(BTPDataIndication_t dataIndication, Address address);
+
+    /**
+     * @brief Set the station ID and station type of the ITS-S.
+     * @param fixed_stationid
+     * @param fixed_stationtype
      */
     void setStationProperties(unsigned long fixed_stationid,long fixed_stationtype);
-
     /**
-     * @brief  Set the fixed position of the RSU
-     *
-     * This function sets the fixed position of the RSU.
-     *
+     * @brief Set the fixed position of the ITS-S.
      * @param latitude_deg
      * @param longitude_deg
      */
     void setFixedPositionRSU(double latitude_deg, double longitude_deg);
-
     /**
-     * @brief Set the vehicle station ID
+     * @brief Set the station ID of the ITS-S.
      * @param fixed_stationid
      */
     void setStationID(unsigned long fixed_stationid);
     /**
-     * @brief Set the station type
+     * @brief Set the station type of the ITS-S.
      * @param fixed_stationtype
      */
     void setStationType(long fixed_stationtype);
-    /**
-     * @brief Set the socket used to send CAM messages
-     *
-     * This function passes the socket used to send CAM messages to the underlying BTP object.
-     *
-     * @param socket_tx   The socket used to send CAM messages
-     */
-    void setSocketTx(Ptr<Socket> socket_tx) {m_btp->setSocketTx (socket_tx);}
-    /**
-     * @brief Set the socket used to receive CAM messages
-     *
-     * This function sets the socket used to receive CAM messages.
-     *
-     * @param socket_rx   The socket used to receive CAM messages
-     */
-    void setSocketRx(Ptr<Socket> socket_rx);
-    void setRSU() {m_vehicle=false;}
-    /**
-     * @brief Set the VDP object
-     *
-     * This function sets the VDP object to be used by the CA Basic Service.
-     *
-     * @param vdp   The VDP object to be used by the CA Basic Service
-     */
-    void setVDP(VDP* vdp) {m_vdp=vdp;}
-    /**
-     * @brief Set the LDM object
-     *
-     * This function sets the LDM object to be used by the CA Basic Service.
-     *
-     * @param LDM   The LDM object to be used by the CA Basic Service
-     */
-    void setLDM(Ptr<LDM> LDM){m_LDM = LDM;}
-    /**
-     * @brief Set the BTP object
-     *
-     * This function sets the BTP object to be used by the CA Basic Service.
-     *
-     * @param btp   The BTP object to be used by the CA Basic Service
-     */
+
     void setBTP(Ptr<btp> btp){m_btp = btp;}
 
-    /**
-     * @brief Callback function for processing received CAM messages
-     *
-     * This function is called by the BTP object when a CAM message is received.
-     * It decodes the received CAM message and calls the callback application function set by the user.
-     *
-     * @param dataIndication   The received CAM message
-     * @param from  The address of the sender
-     */
-    void receiveSpatem(BTPDataIndication_t dataIndication, Address from);
-    void changeNGenCamMax(int16_t N_GenCamMax) {m_N_GenCamMax=N_GenCamMax;}
-    void changeRSUGenInterval(long RSU_GenCam_ms) {m_RSU_GenCam_ms=RSU_GenCam_ms;}
-    // Warning: if both the standard and extended callbacks are set, only the standard callback will be called
-    /**
-     * @brief Set the callback function for processing received CAM messages
-     *
-     * This function sets the callback function to be called when a CAM message is received.
-     *
-     * @param rx_callback   The callback function to be called when a CAM message is received
-     */
-    void addCARxCallback(std::function<void(asn1cpp::Seq<CAM>, Address)> rx_callback) {m_CAReceiveCallback=rx_callback;}
-    void addCARxCallbackExtended(std::function<void(asn1cpp::Seq<CAM>, Address, StationId_t, StationType_t, SignalInfo)> rx_callback) {m_CAReceiveCallbackExtended=rx_callback;}
-    void setRealTime(bool real_time){m_real_time=real_time;}
-
-    void setLowFrequencyContainer(bool enable) {m_lowFreqContainerEnabled = enable;}
-    void setSpecialVehicleContainer(bool enabled) {m_specialVehContainerEnabled = enabled;}
+    void setSocketTx(Ptr<Socket> socket_tx);
+    void setSocketRx(Ptr<Socket> socket_rx);
 
     /**
-     * @brief Start the CAM dissemination
-     *
-     * This function starts the CAM dissemination process.
-     */
-    void startCamDissemination();
-    /**
-     * @brief Start the CAM dissemination with a desynchronization interval
-     *
-     * This function starts the CAM dissemination process with a desynchronization interval to avoid CAM synchronization.
-     *
-     * @param desync_s   The desynchronization interval in seconds
-     */
-    void startCamDissemination(double desync_s);
-
-    //High frequency RSU container setters
-    void setProtectedCommunicationsZonesRSU(asn1cpp::Seq<RSUContainerHighFrequency> sequence) {m_protectedCommunicationsZonesRSU = sequence;}
-
-    /**
-     * @brief Stop the CAM dissemination
-     *
-     * This function stops the CAM dissemination process.
-     */
+   * @brief Запустить процесс рассылки (диссеминации) сообщений CPM.
+   * Инициирует планировщик событий для периодической генерации сообщений.
+   */
+    void startSpatemDissemination();
     uint64_t terminateDissemination();
 
-    long T_GenCamMin_ms = 100;
-    long T_GenCamMax_ms = 1000;
+    const long T_GenSpatemMin_ms = 100;    //!< Минимальный интервал между генерациями CPM (100 мс)
+    const long T_GenSpatem_ms = 100;       //!< Стандартный интервал генерации CPM (100 мс)
+    const long T_GenSpatemMax_ms = 1000;   //!< Максимальный интервал между генерациями CPM (1000 мс)
 
-    void SetLogTriggering(bool log, std::string log_filename) {m_log_triggering = log; m_log_filename = log_filename;};
-
-    void write_log_triggering(bool condition_verified, float head_diff, float pos_diff, float speed_diff, long time_difference, std::string data_head, std::string data_pos, std::string data_speed, std::string data_time, std::string data_dcc);
-
+    void setRealTime(bool real_time){m_real_time=real_time;}
+    void setGeoArea(GeoArea_t geoArea){m_geoArea = geoArea;}
+    /* Cleanup function - always call this before terminating the simulation */
+    void cleanup(void);
 
   private:
-    const size_t m_MaxPHLength = 23;
 
+    bool CheckMainAttributes(void);
     void initDissemination();
-    void RSUDissemination();
-    /**
-     * @brief Check the conditions to generate a CAM message
-     *
-     * This is function periodically checks the conditions to generate a CAM message according to the ETSI EN 302 637-2-1 V1.3.1 (2018-09) standard.
-     */
-    void checkCamConditions();
-    /**
-     * @brief Generate and encode a CAM message
-     *
-     * This function generates and encodes a CAM message.
-     *
-     * @return CABasicService_error_t   The error code
-     */
-    TLMBasicService_error_t generateAndEncodeSpatem();
+
     int64_t computeTimestampUInt64();
-    /**
-     * @brief Update the LDM with the received CAM message information
-     * @param decodedSPATEM  The decoded CAM message
-     */
-    void vLDM_handler(asn1cpp::Seq<SPATEM> decodedSPATEM);
-
-    // std::function<void(CAM_t *, Address)> m_CAReceiveCallback;
-    std::function<void(asn1cpp::Seq<SPATEM>, Address)> m_CAReceiveCallback;
-    std::function<void(asn1cpp::Seq<CAM>, Address, Ptr<Packet>)> m_CAReceiveCallbackPkt;
-    std::function<void(asn1cpp::Seq<CAM>, Address, StationId_t, StationType_t, SignalInfo)> m_CAReceiveCallbackExtended;
-
-    Ptr<btp> m_btp; //! BTP object
-
-    double m_T_CheckCamGen_ms; //! CAM generation check interval
-
-    long m_T_GenCam_ms; //! CAM generation interval
-
-    int16_t m_N_GenCam;
-    int16_t m_N_GenCamMax;
+    TLMBasicService_error_t generateAndEncodeSPATEM();
 
 
-    long m_RSU_GenCam_ms; //! CAM generation interval for RSU ITS-Ss
+    std::function<void(asn1cpp::Seq<SPATEM>, Address)> m_TLMReceiveCallback;
+    std::function<void(asn1cpp::Seq<SPATEM>, Address, Ptr<Packet>)> m_TLMReceiveCallbackPkt;
+    std::function<void(asn1cpp::Seq<SPATEM>, Address, StationId_t, StationType_t, SignalInfo)> m_TLMReceiveCallbackExtended;
 
-    int64_t lastCamGen; //! Last CAM generation timestamp
+    uint16_t m_port;
+    bool m_real_time;
+    std::string m_model;
 
-    int64_t lastCamGenLowFrequency; //! Last CAM generation timestamp for low frequency CAMs
-    int64_t lastCamGenSpecialVehicle;
 
+    StationID_t m_station_id;
+    StationType_t m_stationtype;
+    uint16_t m_seq_number;
 
-    bool m_real_time; //! If true, the CA Basic Service will generate CAM messages using real time timestamps
-
-    bool m_vehicle; //! If true, the CA Basic Service will generate CAM messages as a vehicle, otherwise it will generate CAM messages as an RSU
-
+    Ptr<btp> m_btp;
     VDP* m_vdp; //! VDP object
+    GeoArea_t m_geoArea;
+    Ptr<Socket> m_socket_tx; // Socket TX
 
+    long m_T_CheckSpatemGen_ms;
+    long m_T_GenSpatem_ms; //!< Текущий интервал генерации CPM
+    int16_t m_N_GenSpatem; //!< Время до следующей генерации (используется для планирования события)
+    int16_t m_N_GenSpatemMax; //!< Максимальный лимит (используется в логике частоты)
 
-    Ptr<Socket> m_socket_tx; //! Socket used to send CAM messages
+    int64_t lastSpatemGen; //!< Метка времени последней генерации CPM
+ 
+    // CP Basic Service может насчитать до 18446744073709551615 (UINT64_MAX) CPM
+    uint64_t m_spatem_sent; //!< Статистика: количество успешно отправленных CPM с момента запуска сервиса
 
-    Ptr<LDM> m_LDM; //!< LDM object
+    // ID событий ns-3, используемые для корректной остановки симуляции с помощью terminateDissemination()
+    EventId m_event_spatemDisseminationStart; //!< ID события начала рассылки
+    EventId m_event_spatemSend; //!< ID события отправки сообщения
 
-    StationId_t m_station_id; //! Station ID
+    double m_last_transmission = 0; //!< Время последней передачи
 
-    StationType_t m_stationtype; //! Station type
+    long m_T_next_dcc = -1; //!< Время следующей проверки DCC (Decentralized Congestion Control - контроль перегрузки канала)
 
-    // Previous CAM relevant values
-
-    double m_prev_heading; //! Previous heading
-
-    double m_prev_distance; //! Previous distance
-
-    double m_prev_speed; //! Previous speed
-
-    VDP::VDP_position_latlon_t m_prev_position;
-
-    uint64_t m_cam_sent;//! Number of CAMs successfully sent since the CA Basic Service has been started. The CA Basic Service can count up to 18446744073709551615 (UINT64_MAX) CAMs
-
-    // ns-3 event IDs used to properly stop the simulation with terminateDissemination()
-
-    EventId m_event_camDisseminationStart; //! Event ID for the start of the CAM dissemination
-
-    EventId m_event_camCheckConditions; //! Event ID for the check of the CAM generation conditions
-
-    EventId m_event_camRsuDissemination; //! Event ID for the RSU CAM dissemination
-
-
-    std::vector<std::pair<ReferencePositionWithConfidence_t,PathHistoryDeltas_t>> m_refPositions; //! Reference positions for the PathHistory container
-
-    //High frequency RSU container
-    asn1cpp::Seq<RSUContainerHighFrequency> m_protectedCommunicationsZonesRSU;
-    double m_RSUlon;
-    double m_RSUlat;
-
-    // Boolean/Enum variables to enable/disable the presence of certain optional containers in the CAM messages
-    bool m_lowFreqContainerEnabled;
-    bool m_specialVehContainerEnabled;
-
-    double m_last_transmission = 0;
-
-    bool m_log_triggering = false;
-    std::string m_log_filename;
-
-    // Statistics: number of CAMs sent per triggering conditions
-    uint64_t m_pos_sent = 0;
-    uint64_t m_speed_sent = 0;
-    uint64_t m_head_sent = 0;
-    uint64_t m_time_sent = 0;
-
-    long m_T_next_dcc = -1;
   };
 }
 

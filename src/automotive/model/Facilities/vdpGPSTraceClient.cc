@@ -154,9 +154,13 @@ namespace ns3
   {
     VDP::SPATEM_mandatory_data_t emptyData;
     emptyData.intersectionId = 0;
-    emptyData.status = 0;
+    emptyData.status.buf = nullptr;
+    emptyData.status.size = 0;
+    emptyData.status.bits_unused = 0;
+    emptyData.revision = 0;
     emptyData.moy = 0;
-    emptyData.timeStamp = 0;    
+    emptyData.timeStamp = 0; 
+    emptyData.optional_data = false;   
     
     return emptyData;
   }

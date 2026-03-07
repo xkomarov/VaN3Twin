@@ -118,8 +118,8 @@ namespace ns3
   }
 
   void
-  BSContainer::setupContainer(bool CABasicService_enabled,bool DENBasicService_enabled,bool VRUBasicService_enabled,bool CPMBasicService_enabled) {
-    if(CABasicService_enabled==false && DENBasicService_enabled==false && VRUBasicService_enabled==false && CPMBasicService_enabled==false) {
+  BSContainer::setupContainer(bool CABasicService_enabled,bool DENBasicService_enabled,bool VRUBasicService_enabled,bool CPMBasicService_enabled,bool TLMBasicService_enabled) {
+    if(CABasicService_enabled==false && DENBasicService_enabled==false && VRUBasicService_enabled==false && CPMBasicService_enabled==false && TLMBasicService_enabled==false) {
       NS_FATAL_ERROR("Error. Called setupContainer() asking for enabling zero Basic Services. Aborting simulation.");
     }
 
@@ -170,6 +170,21 @@ namespace ns3
       m_CAMs_enabled = true;
     }
 
+    if(TLMBasicService_enabled==true) {
+      m_tlmbs.setBTP (m_btp);
+      m_tlmbs.setSocketTx (m_socket);
+      m_tlmbs.setSocketRx (m_socket);
+
+      // Remember that setStationProperties() must always be called *after* setBTP()
+      m_tlmbs.setStationProperties (m_station_id, m_stationtype);
+
+      if(m_TLMReceiveCallbackExtended!=nullptr) {
+        m_tlmbs.addTLMRxCallbackExtended (m_TLMReceiveCallbackExtended);
+      }
+
+      m_SPATEMs_enabled = true;
+    }
+
     if(m_stationtype != StationType_pedestrian){
         m_vdp_ptr = new VDPTraCI(m_mobility_client,m_sumo_vehid_prefix + std::to_string(m_station_id));
         m_btp->setVDP(m_vdp_ptr);
@@ -180,6 +195,10 @@ namespace ns3
         if (CPMBasicService_enabled==true)
           {
             m_cpbs.setVDP (m_vdp_ptr);
+          }
+        if (TLMBasicService_enabled==true)
+          {
+            m_tlmbs.setVDP (m_vdp_ptr);
           }
       }
 
@@ -416,11 +435,15 @@ namespace ns3
     }
 
     if (m_CPMs_enabled == true) {
-      m_cpbs.terminateDissemination();
+      m_tlmbs.terminateDissemination();
       if (m_sumo_sensor != nullptr)
         {
           m_sumo_sensor->cleanup();
         }
+    }
+
+    if (m_SPATEMs_enabled == true) {
+      m_tlmbs.terminateDissemination(); // Остановить периодическую рассылку SPATEM
     }
 
     if(m_gn!=nullptr) {

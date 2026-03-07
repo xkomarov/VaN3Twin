@@ -87,39 +87,6 @@ namespace ns3
         T getDataRef() {return &m_dataitem;}
   };
 
-  // template <class T>
-  // class SPATDataItem
-  // {
-  //     private:
-  //       bool m_available;
-  //       T m_dataitem;
-
-  //     public:
-  //       SPATDataItem(T data): m_dataitem(data) {m_available=true;}
-  //       SPATDataItem(bool availability) {m_available=availability;}
-  //       SPATDataItem() {m_available=false;m_dataitem = {};}
-  //       T getData() {return m_dataitem;}
-  //       bool isAvailable() {return m_available;}
-  //       void setData(T data) {m_dataitem=data; m_available = true;}
-  //       T getDataRef() {return &m_dataitem;}
-  // };
-
-  // // Пример простой структуры для фазы светофора
-  // typedef struct SPATEM_PhaseState {
-  //     long signalGroup;
-  //     long lightState; // Red/Green/Yellow и т.д.
-  //     SPATEMDataItem<long> minEndTime;
-  //     SPATEMDataItem<long> maxEndTime;
-  // } SPATEM_PhaseState_t;
-
-  // // Пример контейнера
-  // typedef struct SPATEM_IntersectionState {
-  //     long intersectionId;
-  //     long status;
-  //     // В ASN.1 это список, поэтому тут вектор
-  //     std::vector<SPATEM_PhaseState_t> phases; 
-  // } SPATEM_IntersectionState_t;
-
   template <class V = int, class C = int>
   class DENValueConfidence
   {

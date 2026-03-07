@@ -8,9 +8,11 @@
 #include "ns3/Setter.hpp"
 #include "ns3/SetOf.hpp"
 #include "ns3/SequenceOf.hpp"
+//#include "ns3/BitString.hpp"
 
 extern "C" {
   #include "ns3/CAM.h"
+  #include "ns3/BIT_STRING.h"
 }
 
 namespace ns3
@@ -200,16 +202,18 @@ namespace ns3
 
 
       typedef struct SPATEM_SignalGroupState {
-          int signalGroupID;      
-          int eventState;         
-          long minEndTime;        
+          uint8_t signalGroupID;      
+          uint8_t eventState;         
+          uint16_t minEndTime;        
       } SPATEM_SignalGroupState_t;
 
       typedef struct SPATEM_mandatory_data {
-          long intersectionId;            
-          unsigned long status;           
-          unsigned long moy;              
-          unsigned long timeStamp;        
+          uint16_t intersectionId;            
+          BIT_STRING_t status;
+          uint8_t revision;           
+          uint32_t moy;              
+          uint16_t timeStamp;
+          bool optional_data;        
           std::vector<SPATEM_SignalGroupState_t> states; 
       } SPATEM_mandatory_data_t;
 

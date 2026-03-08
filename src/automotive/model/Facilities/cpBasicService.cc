@@ -423,6 +423,7 @@ namespace ns3 {
     std::tuple<GNDataConfirm_t, MessageId_t> status = m_btp->sendBTP(dataRequest, 0, MessageId_cpm);
     GNDataConfirm_t dataConfirm = std::get<0>(status);
     MessageId_t message_id = std::get<1>(status);
+    m_wannabe_sent ++;
     /* Update the CAM statistics */
     if(dataConfirm == ACCEPTED) {
         if (message_id == MessageId_cpm) m_cpm_sent++;
@@ -548,4 +549,10 @@ namespace ns3 {
     return int_tstamp;
   }
 
-}
+  CPBasicService::~CPBasicService ()
+  {
+    // std::cout << "Wannabe Sent: " << m_wannabe_sent << std::endl;
+    NS_LOG_INFO("CPBasicService object destroyed.");
+  }
+
+  }

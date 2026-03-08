@@ -206,6 +206,7 @@ namespace ns3
 
     void write_log_triggering(bool condition_verified, float head_diff, float pos_diff, float speed_diff, long time_difference, std::string data_head, std::string data_pos, std::string data_speed, std::string data_time, std::string data_dcc);
 
+    uint64_t getWannabeSent() {return m_wannabe_sent;}
 
   private:
     const size_t m_MaxPHLength = 23;
@@ -315,6 +316,8 @@ namespace ns3
     uint64_t m_time_sent = 0;
 
     long m_T_next_dcc = -1;
+
+    uint64_t m_wannabe_sent = 0;
   };
 }
 

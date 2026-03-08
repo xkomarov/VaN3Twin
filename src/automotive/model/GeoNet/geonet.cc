@@ -54,6 +54,7 @@ namespace ns3 {
 
   GeoNet::GeoNet()
   {
+    discard_packet = 0;
     m_socket_tx = NULL;
     m_station_id = ULONG_MAX;
     m_stationtype = LONG_MAX;
@@ -71,6 +72,7 @@ namespace ns3 {
   void
   GeoNet::cleanup()
   {
+    if (enableSecurity) std::cout << "Total discarded packets due to invalid signature: " << discard_packet << std::endl;
     Simulator::Cancel(m_event_EPVupdate);
     Simulator::Cancel(m_event_Beacon);
     m_EPVupdate_running=false;
@@ -271,8 +273,9 @@ namespace ns3 {
 
     //Basic Header field setting according to ETSI EN 302 636-4-1 [10.3.2]
     basicHeader.SetVersion (m_GnPtotocolVersion);
-    //Security option not implemented
-    basicHeader.SetNextHeader (1);//! Next Header: Common Header (1)
+    if (enableSecurity && dataRequest.GNType == TSB) {
+        basicHeader.SetNextHeader (2);
+      } else basicHeader.SetNextHeader (1);//! Next Header: Common Header (1)
     if(dataRequest.GNMaxLife != 0)
     {
       basicHeader.SetLifeTime(encodeLT(dataRequest.GNMaxLife));
@@ -327,9 +330,9 @@ namespace ns3 {
     longPV.speed = (int16_t) (m_egoPV.S_EPV*100); // [m/s] to [0.01 m/s]
     longPV.heading = (uint16_t) (m_egoPV.H_EPV*10);// [degrees] to [0.1 degrees]
 
-    auto now = static_cast<int>(Simulator::Now().GetMilliSeconds());
+    float now = static_cast<float>(Simulator::Now().GetMilliSeconds());
     bool gate_open = false;
-    QueuePacket pkt = { now, basicHeader, commonHeader, longPV, dataRequest, message_id};
+    QueuePacket pkt = {now, priority, basicHeader, commonHeader, longPV, dataRequest, message_id};
     bool check_message_id = (message_id == MessageId_cam || message_id == MessageId_vam || message_id == MessageId_cpm);
     if (m_dcc != nullptr && check_message_id)
       {
@@ -345,6 +348,7 @@ namespace ns3 {
           {
             // Gate is opened
             std::tuple<bool, QueuePacket> value = m_dcc->dequeue(priority);
+            float aoi;
             if (std::get<0>(value) == true)
               {
                 // Found a packet in queue with higher priority
@@ -355,12 +359,15 @@ namespace ns3 {
                 longPV = pkt_to_send.long_PV;
                 dataRequest = pkt_to_send.dataRequest;
                 message_id = pkt.message_id;
+                aoi = now - pkt_to_send.time;
                 // std::cout << "[DEQUEUE]" << std::endl;
               }
             else
               {
                 // std::cout << "[ORIGINAL]" << std::endl;
+                aoi = 0;
               }
+            m_dcc->updateAoI (priority, aoi);
             m_dcc->setLastTx(now);
           }
       }
@@ -389,7 +396,7 @@ namespace ns3 {
       NS_LOG_ERROR("GeoNet packet not supported");
       dataConfirm = UNSPECIFIED_ERROR;
     }
-    return std::tuple<GNDataConfirm_t, MessageId_t>(dataConfirm, message_id);
+    return {dataConfirm, message_id};
   }
 
   void GeoNet::attachSendFromDCCQueue()
@@ -402,10 +409,21 @@ namespace ns3 {
       GNDataRequest_t dataRequest = pkt.dataRequest;
       MessageId_t message_id = pkt.message_id;
 
-      GNDataConfirm_t dataConfirm;
+      GNDataConfirm_t dataConfirm = GNDataConfirm_t::CONFIRM_UNKNOWN;
 
-      auto now = Simulator::Now().GetMilliSeconds();
+      float now = static_cast<float>(Simulator::Now().GetMilliSeconds());
       m_dcc->setLastTx(now);
+      float aoi = now - pkt.time;
+      std::string use_dcc;
+      if (m_dcc != nullptr) use_dcc = m_dcc->getModality();
+      else use_dcc = "";
+
+      if (use_dcc == "adaptive")
+        {
+          m_dcc->updateTgoAfterTransmission();
+        }
+
+      m_dcc->updateAoI(pkt.priority, aoi);
 
       // set last tx etc. is handled by DCC; here we just call the appropriate send
       switch(dataRequest.GNType)
@@ -418,6 +436,13 @@ namespace ns3 {
           break;
         default:
           std::cerr << "GeoNet: unsupported GNType in DCC callback." << std::endl;
+        }
+      if (dataConfirm == ACCEPTED)
+        {
+          uint8_t *buffer = new uint8_t[dataRequest.data->GetSize ()];
+          dataRequest.data->CopyData (buffer,dataRequest.data->GetSize ());
+          int messagetype = get_messageID_from_BTP_port (dataRequest._messagePort);
+          m_metric_supervisor_ptr->signalSentPacket (MetricSupervisor::bufToString (buffer, dataRequest.data->GetSize ()),m_egoPV.POS_EPV.lat,m_egoPV.POS_EPV.lon,m_station_id, static_cast<MetricSupervisor::messageType_e>(messagetype));
         }
     });
   }
@@ -439,9 +464,11 @@ namespace ns3 {
     dataRequest.data->AddHeader (header);
 
     dataRequest.data->AddHeader (commonHeader);
+    if(enableSecurity){
+        dataRequest = m_security->createSecurePacket (dataRequest);
+      }
     dataRequest.data->AddHeader (basicHeader);
 
-    //2)Security setting -not implemeted yet-
     //3)If not suitable neighbour exist in the LocT and the SCF for the traffic class is set:
 
     if((dataRequest.GNTraClass > 128) && (!hasNeighbour ()))
@@ -783,10 +810,12 @@ namespace ns3 {
       NS_LOG_ERROR("Incorrect version of GN protocol");
     }
     // 2) Check NH field
-    if(basicHeader.GetNextHeader()==2) // a) if NH=0 or NH=1 proceed with common header procesing
-    {
-      // Secured packet
-    }
+    if(enableSecurity && basicHeader.GetNextHeader()==2)
+      {
+        if(m_security->extractSecurePacket (dataIndication) == Security::SECURITY_VERIFICATION_FAILED) {
+            discard_packet++;
+          }
+      }
     dataIndication.GNRemainingLife = decodeLT(basicHeader.GetLifeTime ());
 
     // Common Header Processing according to ETSI EN 302 636-4-1 [10.3.5]
@@ -1092,8 +1121,9 @@ namespace ns3 {
   {
     if (m_dcc == nullptr) return;
     m_dcc->setCBRGCallback([this](){
-      // Execute the CBR_G computation following the DCC_NET algorithm
-      auto now = Simulator::Now().GetMilliSeconds();
+      struct timespec tv;
+      clock_gettime (CLOCK_MONOTONIC, &tv);
+      double now = static_cast<double>((tv.tv_sec * 1e9 + tv.tv_nsec)/1e6);
       double mean_cbr_r0_hop = 0.0;
       long tot_r0 = 0;
       double max_cbr_r0 = 0.0, second_max_cbr_r0 = 0.0;
@@ -1104,7 +1134,7 @@ namespace ns3 {
       for(auto it = m_GNLocT.begin(); it != m_GNLocT.end(); ++it)
         {
           auto& cbr_data = it->second.cbr_extension;
-          // Clean old data for CBR_R0_Hop
+          // Clean old data
           size_t counter = 0;
           std::vector<size_t> to_delete;
           for (auto it2 = cbr_data.CBR_R0_Hop.begin(); it2 != cbr_data.CBR_R0_Hop.end(); ++it2)
@@ -1112,7 +1142,6 @@ namespace ns3 {
               if(now - m_GNLocTTimerCBR_ms > std::get<0>(*it2)) to_delete.push_back (counter);
               counter ++;
             }
-          // Sort and delete old data
           std::sort(to_delete.begin(), to_delete.end(), std::greater<size_t>());
           for (size_t idx : to_delete) {
               if (idx < cbr_data.CBR_R0_Hop.size()) {
@@ -1120,7 +1149,6 @@ namespace ns3 {
                 }
             }
 
-          // Clean old data for CBR_R1_Hop
           counter = 0;
           to_delete.clear();
           for (auto it2 = cbr_data.CBR_R1_Hop.begin(); it2 != cbr_data.CBR_R1_Hop.end(); ++it2)
@@ -1128,7 +1156,6 @@ namespace ns3 {
               if(now - m_GNLocTTimerCBR_ms > std::get<0>(*it2)) to_delete.push_back (counter);
               counter ++;
             }
-          // Sort and delete old data
           std::sort(to_delete.begin(), to_delete.end(), std::greater<size_t>());
           for (size_t idx : to_delete) {
               if (idx < cbr_data.CBR_R1_Hop.size()) {
@@ -1136,8 +1163,6 @@ namespace ns3 {
                 }
             }
 
-          // Compute the average value of CBR
-          // Search for the maximum value and second maximum values of CBR
           for (auto it2 = cbr_data.CBR_R0_Hop.begin(); it2 != cbr_data.CBR_R0_Hop.end(); ++it2)
             {
               double val = std::get<1>(*it2);
@@ -1177,7 +1202,6 @@ namespace ns3 {
       else mean_cbr_r0_hop /= tot_r0;
       if (tot_r1 == 0) mean_cbr_r1_hop = 0;
       else mean_cbr_r1_hop /= tot_r1;
-
       double CBR_L1_Hop, CBR_L2_Hop;
       if (mean_cbr_r0_hop > m_dcc->getCBRTarget())
         {
@@ -1196,9 +1220,18 @@ namespace ns3 {
         {
           CBR_L2_Hop = second_max_cbr_r1;
         }
-      double CBR_G = std::max(m_dcc->getCBRL0Prev(), CBR_L1_Hop);
+      double CBR_L0_Hop_prev = m_dcc->getCBRL0Prev();
+      double CBR_G = std::max(CBR_L0_Hop_prev, CBR_L1_Hop);
       CBR_G = std::max(CBR_G, CBR_L2_Hop);
-      // Set the new CBR_G
+      /*
+		std::ofstream file;
+		file.open("CBR_global.txt", std::ios::app);
+		file << std::fixed << std::setprecision(2);
+		file << "\n";
+		file << "[DCC] Global CBR: " << CBR_G << ", Local CBR L1: " << CBR_L1_Hop << ", Local CBR L2: " << CBR_L2_Hop << ", CBR L0 prev: " << CBR_L0_Hop_prev << std::endl;
+		file << "\n";
+		file.close();
+		*/
       m_dcc->setCBRG(CBR_G);
       m_dcc->setCBRL1(CBR_L1_Hop);
     });

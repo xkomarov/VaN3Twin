@@ -48,6 +48,15 @@
  * @brief C++ TraCI client API implementation
  */
 
+#define LCA_RIGHT 1 << 2
+#define LCA_LEFT 1 << 1
+#define LCA_UNKNOWN 1 << 30
+#define LCA_BLOCKED_LEFT (1 << 9 | 1 << 10)
+#define LCA_BLOCKED_RIGHT (1 << 11 | 1 << 12)
+#define LCA_INSUFFICIENT_SPACE 1 << 14
+#define LCA_INSUFFICIENT_SPEED 1 << 28
+#define LCA_BLOCKED (LCA_BLOCKED_LEFT | LCA_BLOCKED_RIGHT | LCA_INSUFFICIENT_SPACE | LCA_INSUFFICIENT_SPEED)
+
 
 class TraCIAPI {
 public:
@@ -757,6 +766,8 @@ public:
 
         void changeTarget(const std::string& vehicleID, const std::string& edgeID) const;
         void changeLane(const std::string& vehicleID, int laneIndex, double duration) const;
+        bool couldChangeLane(const std::string& vehicleID, int direction) const;
+        std::vector<uint8_t> getLaneChangeFailureReasons(int state, int stateTraCI, int direction);
         void changeLaneRelative(const std::string& vehicleID, int laneChange, double duration) const;
         void changeSublane(const std::string& vehicleID, double latDist) const;
         void setRouteID(const std::string& vehicleID, const std::string& routeID) const;

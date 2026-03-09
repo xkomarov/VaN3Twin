@@ -81,6 +81,9 @@ if(${NS3_MONOLIB})
           automotive/model/DCC/DCC.cc
           automotive/model/LOS-NLOS/los_nlos.h
           automotive/model/LOS-NLOS/los_nlos.cc
+          automotive/model/Foresee/foresee.h
+          automotive/model/Foresee/foresee.cc
+          automotive/model/Foresee/foresee.h
   )
   set_target_properties(
     ${lib-ns3-monolib} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE

@@ -57,6 +57,15 @@ namespace ns3 {
     CAM_mandatory_data_t getCAMMandatoryData();
 
     /**
+     * @brief This function returns the mandatory data of the MCM message.
+     *
+     * This method returns the mandatory data of the MCM message in the units used for the ASN.1 encoding.
+     *
+     * @return  The mandatory data of the MCM message.
+     */
+    MCM_mandatory_data_t getMCMMandatoryData();
+
+    /**
      * @brief This function returns the mandatory data of the CPM message.
      *
      * This method returns the mandatory data of the CPM message in the units used for the ASN.1 encoding.

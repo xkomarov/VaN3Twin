@@ -13,6 +13,7 @@
 
 #define CA_PORT 2001
 #define DEN_PORT 2002
+#define MC_PORT 2020
 #define IVIM_PORT 2006
 #define CP_PORT 2009
 #define VA_PORT 2018
@@ -106,6 +107,11 @@ namespace ns3
      */
     void addVAMRxCallback(std::function<void(BTPDataIndication_t,Address)> rx_callback) {m_vam_ReceiveCallback=rx_callback;}
     /**
+     * @brief Add a callback for MCM message reception.
+     * @param rx_callback
+     */
+    void addMCMRxCallback(std::function<void(BTPDataIndication_t,Address)> rx_callback) {m_mcm_ReceiveCallback=rx_callback;}
+    /**
      * @brief Add BTP headers and pass a data request to the GeoNet object.
      *
      * @param dataRequest The BTPDataRequest_t structure containing the BTP message to be sent.
@@ -129,6 +135,7 @@ namespace ns3
     std::function<void(BTPDataIndication_t,Address)> m_ivim_ReceiveCallback; //! Callback for IVIM message reception.
     std::function<void(BTPDataIndication_t,Address)> m_cpm_ReceiveCallback;   //! Callback for CPM message reception.
     std::function<void(BTPDataIndication_t,Address)> m_vam_ReceiveCallback;  //! Callback for VAM message reception.
+    std::function<void(BTPDataIndication_t,Address)> m_mcm_ReceiveCallback;  //! Callback for MCM message reception.
 
   };
 }

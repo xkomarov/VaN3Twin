@@ -86,7 +86,7 @@ namespace ns3 {
           OptionalDataItem<long> ySpeedAbs;
           OptionalDataItem<long> xAccAbs;
           OptionalDataItem<long> yAccAbs;
-
+          OptionalDataItem<long> lanePosition;
 
           OptionalDataItem<std::vector<long>> associatedCVs;
           OptionalDataItem<long> perceivedBy;

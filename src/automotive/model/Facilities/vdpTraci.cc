@@ -44,7 +44,7 @@ namespace ns3
 
   }
 
-  VDPTraCI::VDPTraCI(Ptr<TraciClient> traci_client, std::string node_id)
+  VDPTraCI:: VDPTraCI(Ptr<TraciClient> traci_client, std::string node_id)
   {
     m_traci_client=traci_client;
 
@@ -159,7 +159,7 @@ namespace ns3
     if (!m_isStatic)
       pos=m_traci_client->TraCIAPI::vehicle.getPosition(m_id);
     else
-      pos = m_traci_client->TraCIAPI::poi.getPosition(m_id);
+      pos=m_traci_client->TraCIAPI::poi.getPosition(m_id);
 
     vdppos.x=pos.x;
     vdppos.y=pos.y;
@@ -190,6 +190,69 @@ namespace ns3
     pos1 = m_traci_client->TraCIAPI::simulation.convertLonLattoXY(lon1,lat1);
     pos2 = m_traci_client->TraCIAPI::simulation.convertLonLattoXY(lon2,lat2);
     return sqrt((pow((pos1.x-pos2.x),2)+pow((pos1.y-pos2.y),2)));
+  }
+
+  VDPTraCI::MCM_mandatory_data_t
+  VDPTraCI::getMCMMandatoryData ()
+  {
+    MCM_mandatory_data_t MCMdata;
+
+    /* Speed [0.01 m/s] */
+    if (!m_isStatic)
+      MCMdata.speed = VDPValueConfidence<> (m_traci_client->TraCIAPI::vehicle.getSpeed (m_id) * CENTI,
+                                            SpeedConfidence_unavailable);
+
+    /* Position */
+    libsumo::TraCIPosition pos;
+    if (!m_isStatic)
+      pos=m_traci_client->TraCIAPI::vehicle.getPosition(m_id);
+    else
+      pos = m_traci_client->TraCIAPI::poi.getPosition(m_id);
+    pos=m_traci_client->TraCIAPI::simulation.convertXYtoLonLat (pos.x,pos.y);
+
+    // longitude WGS84 [0,1 microdegree]
+    MCMdata.longitude=(Longitude_t)(pos.x*DOT_ONE_MICRO);
+    // latitude WGS84 [0,1 microdegree]
+    MCMdata.latitude=(Latitude_t)(pos.y*DOT_ONE_MICRO);
+
+    /* Altitude [0,01 m] */
+    MCMdata.altitude = VDPValueConfidence<>(AltitudeValue_unavailable,
+                                             AltitudeConfidence_unavailable);
+
+    /* Position Confidence Ellipse */
+    MCMdata.posConfidenceEllipse.semiMajorConfidence=SemiAxisLength_unavailable;
+    MCMdata.posConfidenceEllipse.semiMinorConfidence=SemiAxisLength_unavailable;
+    MCMdata.posConfidenceEllipse.semiMajorOrientation=HeadingValue_unavailable;
+
+    /* Longitudinal acceleration [0.1 m/s^2] */
+    if (!m_isStatic)
+      MCMdata.longAcceleration = VDPValueConfidence<>(m_traci_client->TraCIAPI::vehicle.getAcceleration (m_id) * DECI,
+                                                       AccelerationConfidence_unavailable);
+
+    /* Heading WGS84 north [0.1 degree] */
+    if (!m_isStatic)
+      MCMdata.heading = VDPValueConfidence<>(m_traci_client->TraCIAPI::vehicle.getAngle (m_id) * DECI,
+                                              HeadingConfidence_unavailable);
+
+    /* Drive direction (backward driving is not fully supported by SUMO, at the moment */
+    MCMdata.driveDirection = DriveDirection_unavailable;
+
+    /* Curvature and CurvatureCalculationMode */
+    MCMdata.curvature = VDPValueConfidence<>(CurvatureValue_unavailable,
+                                              CurvatureConfidence_unavailable);
+    MCMdata.curvature_calculation_mode = CurvatureCalculationMode_unavailable;
+
+    /* Length and Width [0.1 m] */
+    if (!m_isStatic) {
+        MCMdata.VehicleLength = m_vehicle_length;
+        MCMdata.VehicleWidth = m_vehicle_width;
+      }
+
+    /* Yaw Rate */
+    MCMdata.yawRate = VDPValueConfidence<>(YawRateValue_unavailable,
+                                            YawRateConfidence_unavailable);
+
+    return MCMdata;
   }
 
   VDPTraCI::CAM_mandatory_data_t
@@ -251,6 +314,14 @@ namespace ns3
     /* Yaw Rate */
     CAMdata.yawRate = VDPValueConfidence<>(YawRateValue_unavailable,
                                            YawRateConfidence_unavailable);
+
+    int lanes = m_traci_client->TraCIAPI::edge.getLaneNumber (m_traci_client->TraCIAPI::vehicle.getRoadID (m_id));
+    int current_lane = m_traci_client->TraCIAPI::vehicle.getLaneIndex (m_id);
+    // ETSI enumeration policy is the opposite of SUMO's one
+    // For SUMO: lanes counting starts from 0 from the right most lane
+    // For ETSI: lanes counting starts from 1 from the left most lane
+    current_lane = lanes - current_lane;
+    CAMdata.lane = current_lane;
 
     return CAMdata;
   }
@@ -323,16 +394,12 @@ namespace ns3
   {
     if (m_isStatic)
       return VDPDataItem<int>((int)NULL);
-    int laneIndex;
     int lanePosition;
 
-    laneIndex=m_traci_client->TraCIAPI::vehicle.getLaneIndex (m_id);
+    int lanes = m_traci_client->TraCIAPI::edge.getLaneNumber (m_traci_client->TraCIAPI::vehicle.getRoadID (m_id));
+    lanePosition = lanes - m_traci_client->TraCIAPI::vehicle.getLaneIndex (m_id);
 
-    // We add '1' as sumo lane indeces start from '0', while
-    // LanePosition_t uses '1' as the index for the first rightmost
-    // lane ('0' would be reserved to 'hardShoulder')
-    lanePosition = laneIndex+1;
-    if (laneIndex < 0 || laneIndex > 14)
+    if (lanePosition < 0 || lanePosition > 14)
       {
         lanePosition = LanePosition_offTheRoad;
       }

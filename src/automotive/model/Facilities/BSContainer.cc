@@ -118,8 +118,8 @@ namespace ns3
   }
 
   void
-  BSContainer::setupContainer(bool CABasicService_enabled,bool DENBasicService_enabled,bool VRUBasicService_enabled,bool CPMBasicService_enabled,bool MCMBasicService_enabled,bool security_enabled) {
-    if(CABasicService_enabled==false && DENBasicService_enabled==false && VRUBasicService_enabled==false && CPMBasicService_enabled==false && MCMBasicService_enabled) {
+  BSContainer::setupContainer(bool CABasicService_enabled,bool DENBasicService_enabled,bool VRUBasicService_enabled,bool CPService_enabled,bool MCMBasicService_enabled,bool security_enabled) {
+    if(CABasicService_enabled==false && DENBasicService_enabled==false && VRUBasicService_enabled==false && CPService_enabled==false && MCMBasicService_enabled) {
       NS_FATAL_ERROR("Error. Called setupContainer() asking for enabling zero Basic Services. Aborting simulation.");
     }
 

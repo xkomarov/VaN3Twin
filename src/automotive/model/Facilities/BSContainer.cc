@@ -118,8 +118,13 @@ namespace ns3
   }
 
   void
+<<<<<<< HEAD
   BSContainer::setupContainer(bool CABasicService_enabled,bool DENBasicService_enabled,bool VRUBasicService_enabled,bool CPService_enabled,bool security_enabled, bool TLMBasicService_enabled) {
     if(CABasicService_enabled==false && DENBasicService_enabled==false && VRUBasicService_enabled==false && CPService_enabled==false && TLMBasicService_enabled==false) {
+=======
+  BSContainer::setupContainer(bool CABasicService_enabled,bool DENBasicService_enabled,bool VRUBasicService_enabled,bool CPService_enabled,bool MCMBasicService_enabled,bool security_enabled) {
+    if(CABasicService_enabled==false && DENBasicService_enabled==false && VRUBasicService_enabled==false && CPService_enabled==false && MCMBasicService_enabled) {
+>>>>>>> efe0f395485318eebf731a0d22625ec6510aaf9f
       NS_FATAL_ERROR("Error. Called setupContainer() asking for enabling zero Basic Services. Aborting simulation.");
     }
 
@@ -198,9 +203,15 @@ namespace ns3
           {
             m_cpbs.setVDP (m_vdp_ptr);
           }
+<<<<<<< HEAD
         if (TLMBasicService_enabled==true)
           {
             m_tlmbs.setVDP (m_vdp_ptr);
+=======
+        if (MCMBasicService_enabled==true)
+          {
+            m_mcbs.setVDP (m_vdp_ptr);
+>>>>>>> efe0f395485318eebf731a0d22625ec6510aaf9f
           }
       }
 
@@ -271,6 +282,22 @@ namespace ns3
           }
 
         m_CPMs_enabled = true;
+      }
+
+    if(MCMBasicService_enabled==true) {
+        m_mcbs.setBTP (m_btp);
+        m_mcbs.setSocketTx (m_socket);
+        m_mcbs.setSocketRx (m_socket);
+        m_mcbs.setLDM (m_LDM);
+
+        // Remember that setStationProperties() must always be called *after* setBTP()
+        m_mcbs.setStationProperties (m_station_id, m_stationtype);
+
+        if(m_MCMReceiveCallbackExtended!=nullptr) {
+            m_mcbs.addMCRxCallbackExtended (m_MCMReceiveCallbackExtended);
+          }
+
+        m_MCMs_enabled = true;
       }
 
     m_is_configured = true;

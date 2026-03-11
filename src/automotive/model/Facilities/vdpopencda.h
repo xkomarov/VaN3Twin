@@ -14,7 +14,11 @@ namespace ns3 {
     VDPOpenCDA();
     CAM_mandatory_data_t getCAMMandatoryData();
     CPM_mandatory_data_t getCPMMandatoryData();
+<<<<<<< HEAD
     SPATEM_mandatory_data_t getSPATEMMandatoryData();
+=======
+    MCM_mandatory_data_t getMCMMandatoryData();
+>>>>>>> efe0f395485318eebf731a0d22625ec6510aaf9f
 
     double getSpeedValue() {return m_opencda_client->getSpeed (m_id);}
     double getTravelledDistance() {return 0;}

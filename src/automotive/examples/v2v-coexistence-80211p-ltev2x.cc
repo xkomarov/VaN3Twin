@@ -32,7 +32,7 @@
 #include "ns3/mobility-helper.h"
 #include <iostream>
 #include "ns3/MetricSupervisor.h"
-//#include "ns3/sumo_xml_parser.h"
+#include "ns3/sumo_xml_parser.h"
 #include "ns3/BSMap.h"
 #include "ns3/caBasicService.h"
 #include "ns3/btp.h"
@@ -930,7 +930,7 @@ int main (int argc, char *argv[])
             break;
           }
         bs_container->disablePRRSupervisorForGNBeacons();
-        bs_container->setupContainer(true,false,false,true, false);
+        bs_container->setupContainer(true,false,false,true,false,false);
         basicServices.add(bs_container);
         std::srand(Simulator::Now().GetNanoSeconds ()*2); // Seed based on the simulation time to give each vehicle a different random seed
         bs_container->getCABasicService ()->startCamDissemination ();

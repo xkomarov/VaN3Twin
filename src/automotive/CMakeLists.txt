@@ -11,6 +11,8 @@ Set(source_files
     helper/areaSpeedAdvisorServer80211p-helper.cc
     helper/areaSpeedAdvisorClientLTE-helper.cc
     helper/areaSpeedAdvisorServerLTE-helper.cc
+    helper/tlmClient80211p-helper.cc
+    helper/tlmServer80211p-helper.cc
     helper/emergencyVehicleAlert-helper.cc
     helper/v2xEmulator-helper.cc
     helper/simpleCAMSender-helper.cc
@@ -31,6 +33,8 @@ Set(source_files
     model/Applications/areaSpeedAdvisorServer80211p.cc
     model/Applications/areaSpeedAdvisorClientLTE.cc
     model/Applications/areaSpeedAdvisorServerLTE.cc
+    model/Applications/tlmClient80211p.cc
+    model/Applications/tlmServer80211p.cc
     model/Applications/simpleCAMSender-gps-tc.cc
     model/Applications/simpleVAMSender-gps-tc.cc
     model/Applications/trafficManagerClient80211p.cc
@@ -1462,6 +1466,8 @@ set(header_files
     helper/areaSpeedAdvisorServerLTE-helper.h
     helper/areaSpeedAdvisorClient80211p-helper.h
     helper/areaSpeedAdvisorServer80211p-helper.h
+    helper/tlmClient80211p-helper.h
+    helper/tlmServer80211p-helper.h
     helper/emergencyVehicleAlert-helper.h
     helper/v2xEmulator-helper.h
     helper/simpleCAMSender-helper.h
@@ -1477,6 +1483,8 @@ set(header_files
     model/Applications/areaSpeedAdvisorServer80211p.h
     model/Applications/areaSpeedAdvisorClientLTE.h
     model/Applications/areaSpeedAdvisorServerLTE.h
+    model/Applications/tlmClient80211p.h
+    model/Applications/tlmServer80211p.h
     model/Applications/emergencyVehicleAlert.h
     model/Applications/simpleCAMSender-gps-tc.h
     model/Applications/simpleVAMSender-gps-tc.h

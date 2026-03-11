@@ -330,7 +330,7 @@ int main (int argc, char *argv[])
       // The third parameter should be true if you want to setup a VRU Basic Service (for sending/receiving VAMs)
       // The fourth parameter should be true if you want to setup a CP Service (for sending/receiving CPMs)
       // The fifth parameter should be true if you want to enable V2X security
-      bs_container->setupContainer(true, false, true, false, false);
+      bs_container->setupContainer(true, false, true, false, false, false);
 
       // Store the container for this vehicle inside a local global BSMap, i.e., a structure (similar to a hash table) which allows you to easily
       // retrieve the right BSContainer given a vehicle ID

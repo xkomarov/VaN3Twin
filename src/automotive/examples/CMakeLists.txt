@@ -20,6 +20,16 @@ build_lib_example(
 )
 
 build_lib_example(
+    NAME v2i-tlm-80211p
+    SOURCE_FILES v2i-tlm-80211p.cc
+    LIBRARIES_TO_LINK
+    ${libcarla}
+    ${libautomotive}
+    ${libwave}
+    ${libtraci}
+)
+
+build_lib_example(
     NAME v2i-emergencyVehicleWarning-80211p
     SOURCE_FILES v2i-emergencyVehicleWarning-80211p.cc
     LIBRARIES_TO_LINK

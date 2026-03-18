@@ -146,6 +146,8 @@ namespace ns3
 
     spatem_mandatory_data=m_vdp->getSPATEMMandatoryData();
 
+    //SPATEM_mandatory_data_t spatData = m_vdp->getSPATEMMandatoryData();
+
     if(spatem_mandatory_data.optional_data)
     {
       asn1cpp::setField(spatem->spat.timeStamp, 0);
@@ -162,6 +164,11 @@ namespace ns3
     memcpy(intersectionState->status.buf, spatem_mandatory_data.status.buf, spatem_mandatory_data.status.size);
     asn1cpp::setField(intersectionState->revision, spatem_mandatory_data.revision);   
     
+    // if (spatData.status.buf != nullptr) {
+    //     free(spatData.status.buf);
+    //     spatData.status.buf = nullptr; // Хорошая практика на всякий случай
+    // }
+
     //option
     if(spatem_mandatory_data.optional_data)
     {

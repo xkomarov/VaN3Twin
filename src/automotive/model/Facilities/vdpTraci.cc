@@ -36,6 +36,7 @@ namespace ns3
     m_traci_client=NULL;
     m_id="(null)";
     m_isStatic = NULL;
+    m_tls_id="";
 
     m_vehicleRole = VDPDataItem<unsigned int>(false);
     // Special vehicle container
@@ -56,6 +57,8 @@ namespace ns3
     m_isStatic = false;
 
     m_id = node_id;
+
+    m_tls_id="";
 
     if (!m_isStatic)
       {
@@ -99,6 +102,53 @@ namespace ns3
     m_isStatic = isStatic;
 
     m_id = node_id;
+
+    m_tls_id="";
+
+    if(!m_isStatic)
+      {
+        /* Length and width of car [0.1 m] */
+        m_vehicle_length = VDPValueConfidence<long, long> (
+            m_traci_client->TraCIAPI::vehicle.getLength (m_id) * DECI,
+            VehicleLengthConfidenceIndication_unavailable);
+        //    m_vehicle_length.vehicleLengthValue = m_traci_client->TraCIAPI::vehicle.getLength (m_id)*DECI;
+        //    m_vehicle_length.vehicleLengthConfidenceIndication = VehicleLengthConfidenceIndication_unavailable;
+
+        // ETSI TS 102 894-2 V1.2.1 - A.92 (Length greater than 102,2 m should be set to 102,2 m)
+        if (m_vehicle_length.getValue () > 1022)
+          {
+            m_vehicle_length.setValue (1022);
+          }
+
+        m_vehicle_width = m_traci_client->TraCIAPI::vehicle.getWidth (m_id) * DECI;
+
+        // ETSI TS 102 894-2 V1.2.1 - A.95 (Width greater than 6,1 m should be set to 6,1 m)
+        if (m_vehicle_width > 61)
+          {
+            m_vehicle_width = 61;
+          }
+
+        m_vehicleRole = VDPDataItem<unsigned int> (false);
+        // Special vehicle container
+        m_publicTransportContainerData = VDPDataItem<VDP_PublicTransportContainerData_t> (false);
+        m_specialTransportContainerData = VDPDataItem<VDP_SpecialTransportContainerData_t> (false);
+        m_dangerousGoodsBasicType = VDPDataItem<int> (false); // For the DangerousGoodsContainer
+        m_roadWorksContainerBasicData = VDPDataItem<VDP_RoadWorksContainerBasicData_t> (false);
+        m_rescueContainerLightBarSirenInUse = VDPDataItem<uint8_t> (false);
+        m_emergencyContainerData = VDPDataItem<VDP_EmergencyContainerData_t> (false);
+        m_safetyCarContainerData = VDPDataItem<VDP_SafetyCarContainerData_t> (false);
+      }
+  }
+
+  VDPTraCI::VDPTraCI(Ptr<TraciClient> traci_client, std::string node_id, bool isStatic, std::string tls_id)
+  {
+    m_traci_client=traci_client;
+
+    m_isStatic = isStatic;
+
+    m_id = node_id;
+
+    m_tls_id = tls_id;
 
     if(!m_isStatic)
       {
@@ -330,10 +380,12 @@ namespace ns3
 
       spatData.optional_data = false;
 
+      std::string target_id = m_tls_id.empty() ? m_id : m_tls_id;
+
       try {
-              spatData.intersectionId = (uint16_t)std::hash<std::string>{}(m_id);
+            spatData.intersectionId = (uint16_t)std::hash<std::string>{}(target_id);
           } catch (...) {
-              spatData.intersectionId = 0;
+            spatData.intersectionId = 0;
           }
 
       // Если нужно установить, например, 0-й бит (manualControlIsEnabled)
@@ -343,32 +395,9 @@ namespace ns3
       spatData.status.buf[0] = 0x80; // Установка первого бита
       spatData.revision = 0;
 
-      std::string stateString = m_traci_client->TraCIAPI::trafficlights.getRedYellowGreenState(m_id);
-        // if (stateString.empty())
-        // {
-        //     asn1cpp::bitstring::setBit(spatData.status, 13);
-        // }
-        // else
-        // {
-        //     asn1cpp::bitstring::setBit(spatData.status, 6);
+      std::string stateString = m_traci_client->TraCIAPI::trafficlights.getRedYellowGreenState(target_id);
 
-        //   bool allOff = true;
-        //   for (char s : stateString)
-        //   {
-        //     if (s != 'o' && s != 'O')
-        //     {
-        //       allOff = false;
-        //       break;
-        //     }
-          // }
-
-        //   if (allOff)
-        //   {
-        //       asn1cpp::bitstring::setBit(spatData.status, 9);
-        //   }
-        // }
-
-      double nextSwitch = m_traci_client->TraCIAPI::trafficlights.getNextSwitch(m_id);
+      double nextSwitch = m_traci_client->TraCIAPI::trafficlights.getNextSwitch(target_id);
       double simTime = m_traci_client->TraCIAPI::simulation.getTime();
       double timeLeft = nextSwitch - simTime;
       if (timeLeft < 0) timeLeft = 0.0;

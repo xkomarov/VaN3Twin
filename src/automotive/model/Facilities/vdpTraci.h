@@ -44,6 +44,7 @@ namespace ns3 {
     VDPTraCI(Ptr<TraciClient> traci_client, std::string node_id);
     VDPTraCI(Ptr<TraciClient> traci_client, std::string node_id, bool isStatic);
     VDPTraCI();
+    VDPTraCI(Ptr<TraciClient> traci_client, std::string node_id, bool isStatic, std::string tls_id);
 
     void setProperties(Ptr<TraciClient> traci_client,std::string node_id) {m_traci_client=traci_client; m_id=node_id;}
 
@@ -155,6 +156,7 @@ namespace ns3 {
 
     private:
       std::string m_id;
+      std::string m_tls_id;
       Ptr<TraciClient> m_traci_client;
       bool m_isStatic;
   };

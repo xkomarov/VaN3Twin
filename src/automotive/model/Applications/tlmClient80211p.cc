@@ -2,7 +2,6 @@
 #include "tlmClient80211p.h"
 #include "ns3/SPATEM.h"
 #include "ns3/CAM.h"
-#include "ns3/DENM.h"
 #include "ns3/vdpTraci.h"
 #include "ns3/socket.h"
 #include "ns3/network-module.h"
@@ -67,7 +66,7 @@ namespace ns3
     m_print_summary = true;
     m_already_print = false;
     m_cam_sent = 0;
-    m_denm_received = 0;
+    //m_denm_received = 0;
     m_spatem_received = 0;
   }
 
@@ -132,15 +131,8 @@ namespace ns3
     }
 
     m_btp->setGeoNet(m_geoNet);
-    m_denService.setBTP(m_btp);
     m_caService.setBTP(m_btp);
     m_tlmBasicService.setBTP(m_btp);
-
-    /* Set sockets, callback and station properties in DENBasicService */
-    m_denService.setStationProperties (std::stol(m_id.substr (3)), StationType_passengerCar);
-    m_denService.addDENRxCallback (std::bind(&tlmClient80211p::receiveDENM,this,std::placeholders::_1,std::placeholders::_2));
-    m_denService.setRealTime (m_real_time);
-    m_denService.setSocketRx (m_socket);
 
     /* Set sockets, callback, station properties and TraCI VDP in CABasicService */
     m_caService.setSocketTx (m_socket);
@@ -157,9 +149,9 @@ namespace ns3
 
     VDP* traci_vdp = new VDPTraCI(m_client,m_id);
 
-    m_caService.setVDP(traci_vdp);
+    m_btp->setVDP(traci_vdp); 
 
-    m_denService.setVDP(traci_vdp);
+    m_caService.setVDP(traci_vdp);
 
     m_tlmBasicService.setVDP(traci_vdp);
 
@@ -184,12 +176,10 @@ namespace ns3
   {
     NS_LOG_FUNCTION(this);
     Simulator::Cancel(m_sendCamEvent);
-    Simulator::Cancel(m_denmTimeout);
+    Simulator::Cancel(m_spatemTimeout);
 
     uint64_t cam_sent;
     cam_sent = m_caService.terminateDissemination ();
-    m_denService.cleanup();
-    //uint64_t m_spatem_received;
     m_tlmBasicService.terminateDissemination ();
 
     if (!m_csv_name.empty ())
@@ -199,7 +189,6 @@ namespace ns3
     {
       std::cout << "INFO-" << m_id
                 << ",CAM-SENT:" << cam_sent
-                << ",DENM-RECEIVED:" << m_denm_received
                 << ",SPATEM-RECEIVED:" << m_spatem_received
                 << std::endl;
       m_already_print=true;
@@ -228,21 +217,120 @@ namespace ns3
   void
   tlmClient80211p::receiveSPATEM (asn1cpp::Seq<SPATEM> spatem, Address from)
   {
+    Simulator::Cancel(m_spatemTimeout);
+
     /* Implement SPATEM strategy here */
     m_spatem_received++;
-    asn_fprint(stdout, &asn_DEF_SPATEM, &(*spatem));
-    // libsumo::TraCIColor blue;
-    // blue.r=0;blue.g=0;blue.b=255;blue.a=255;
-    // m_client->TraCIAPI::vehicle.setColor (m_id,blue);
-    m_client->TraCIAPI::vehicle.setMaxSpeed (m_id,1);
 
-     // Uncomment the following line to print a line to standard output for each SPATEM received by a vehicle
-    //std::cout << "SPATEM received by " << m_id << std::endl;
-    (void) spatem;
-    (void) from;
+    //asn_fprint(stdout, &asn_DEF_SPATEM, &(*spatem));
+    //std::cout << m_client->TraCIAPI::vehicle.getLaneID(m_id) << std::endl;
+    //std::cout << m_client->TraCIAPI::vehicle.getRoadID(m_id) << std::endl;
+    //std::cout << m_client->TraCIAPI::vehicle.getPosition(m_id) << std::endl;
+    //std::cout << m_id << std::endl;
+    auto upcomingTLS = m_client->TraCIAPI::vehicle.getNextTLS(m_id);
+    
+    if (upcomingTLS.size() > 0) {
+      std::string sumo_tls_id = upcomingTLS[0].id;
+      long expected_intersection_id = (uint16_t)std::hash<std::string>{}(sumo_tls_id);
+      long target_tl_index = upcomingTLS[0].tlIndex + 1; 
 
-   // Free the received SPATEM data structure
-  //   ASN_STRUCT_FREE(asn_DEF_SPATEM,spatem);
+      for (int j = 0; j < spatem->spat.intersections.list.count; ++j) {
+          auto intersection = spatem->spat.intersections.list.array[j];
+          
+          if (intersection->id.id == expected_intersection_id) {
+              for (int i = 0; i < intersection->states.list.count; ++i) {
+                  auto movement = intersection->states.list.array[i];
+                  
+                  if (movement->signalGroup == target_tl_index && movement->state_time_speed.list.count > 0) {
+                      
+                      long current_light_state = movement->state_time_speed.list.array[0]->eventState;
+                      
+                      // Расстояние до стоп-линии из TraCI
+                      double dist = upcomingTLS[0].dist;
+                      
+                      // Получаем время до переключения фазы светофора из SPATEM
+                      double timeToSwitch = 0.0;
+                      if (movement->state_time_speed.list.array[0]->timing != nullptr) {
+                          // minEndTime передается в десятых долях секунды (согласно vdpTraci.cc)
+                          timeToSwitch = movement->state_time_speed.list.array[0]->timing->minEndTime / 10.0;
+                      } else {
+                          // Резервный вариант, если поля timing нет в пакете
+                          double currentTime = m_client->TraCIAPI::simulation.getTime();
+                          double nextSwitch = m_client->TraCIAPI::trafficlights.getNextSwitch(sumo_tls_id);
+                          timeToSwitch = nextSwitch - currentTime;
+                      }
+                      
+                      // Параметры для ограничений скорости
+                      double maxSpeed = m_client->TraCIAPI::vehicle.getAllowedSpeed(m_id); 
+                      double minSpeed = 5.0;  // м/с (около 18 км/ч)
+                      double currentSpeed = m_client->TraCIAPI::vehicle.getSpeed(m_id);
+
+                      // === ЛОГИКА GLOSA ===
+                      if (current_light_state == 3) {
+                          // Красный: пытаемся ехать так, чтобы приехать к зеленому
+                          double targetSpeed = dist / timeToSwitch;
+                          
+                          if (targetSpeed <= maxSpeed && targetSpeed >= minSpeed) {
+                              m_client->TraCIAPI::vehicle.setSpeed(m_id, targetSpeed);
+                              
+                              libsumo::TraCIColor glosaGreen;
+                              glosaGreen.r = 50; glosaGreen.g = 205; glosaGreen.b = 50; glosaGreen.a = 255;
+                              m_client->TraCIAPI::vehicle.setColor(m_id, glosaGreen);
+                          } else {
+                              // Не можем подстроиться - просто останавливаемся
+                              m_client->TraCIAPI::vehicle.setSpeed(m_id, -1.0);
+                              
+                              libsumo::TraCIColor red;
+                              red.r = 255; red.g = 0; red.b = 0; red.a = 255;
+                              m_client->TraCIAPI::vehicle.setColor(m_id, red);
+                          }
+                      } else if (current_light_state == 6 || current_light_state == 5) {
+                          // Зеленый: проверяем, успеваем ли проехать
+                          double estimatedArrivalTime = dist / std::max(currentSpeed, 1.0);
+                          
+                          if (estimatedArrivalTime < timeToSwitch) {
+                              // Успеваем! Едем с обычной скоростью
+                              m_client->TraCIAPI::vehicle.setSpeed(m_id, -1.0);
+                              
+                              libsumo::TraCIColor blue;
+                              blue.r = 0; blue.g = 0; blue.b = 255; blue.a = 255;
+                              m_client->TraCIAPI::vehicle.setColor(m_id, blue);
+                          } else {
+                              // Не успеваем (приедем на красный). Тормозим заранее.
+                              double targetSpeed = dist / timeToSwitch;
+                              
+                              if (targetSpeed <= maxSpeed && targetSpeed >= minSpeed) {
+                                  m_client->TraCIAPI::vehicle.setSpeed(m_id, targetSpeed);
+                                  
+                                  libsumo::TraCIColor yellow;
+                                  yellow.r = 255; yellow.g = 215; yellow.b = 0; yellow.a = 255;
+                                  m_client->TraCIAPI::vehicle.setColor(m_id, yellow);
+                              } else {
+                                  // Просто едем и останавливаемся
+                                  m_client->TraCIAPI::vehicle.setSpeed(m_id, -1.0); 
+                              }
+                          }
+                      }
+                      
+                      break;
+                  }
+              }
+              break;
+          }
+      }
+    }
+
+    m_spatemTimeout = Simulator::Schedule(Seconds(0.2),&tlmClient80211p::spatemTimeout,this);
+  }
+
+  void
+  tlmClient80211p::spatemTimeout()
+  {
+    libsumo::TraCIColor orange;
+    orange.r=255;orange.g=99;orange.b=71;orange.a=255;
+    m_client->TraCIAPI::vehicle.setColor (m_id,orange);
+    // double speedLimit = 75/3.6;
+    // m_client->TraCIAPI::vehicle.setMaxSpeed (m_id,speedLimit);
   }
 
   long
@@ -257,64 +345,50 @@ namespace ns3
     return elapsed_since_2004;
   }
 
-  void
-  tlmClient80211p::receiveDENM (denData denm, Address from)
-  {
-  //   Simulator::Cancel (m_denmTimeout);
-
-  //   m_denm_received++;
-
-  //   // Uncomment the following line to print a line to standard output for each DENM received by a vehicle
-  //   //std::cout << "DENM received by " << m_id << std::endl;
-
-  //   /*
-  //    * Check the speed limit saved in the roadWorks container inside
-  //    * the optional "A la carte" container
-  //    * The division by 3.6 is used to convert the value stored in the DENM
-  //    * from km/h to m/s, as required by SUMO
-  //   */
-  //   if(!denm.getDenmAlacarteData_asn_types ().getData ().roadWorks.getData ().speedLimit.isAvailable ())
-  //   {
-  //     NS_FATAL_ERROR("Error in tlmClient80211p.cc. Received a NULL pointer for speedLimit.");
-  //   }
-
-  //   double speedLimit = denm.getDenmAlacarteData_asn_types ().getData ().roadWorks.getData ().speedLimit.getData ();
-
-  //   m_client->TraCIAPI::vehicle.setMaxSpeed (m_id, speedLimit/3.6);
-
-  //   /* Change color for slow-moving vehicles to green (just for visualization purpose) */
-  //  libsumo::TraCIColor green;
-  //   green.r=50;green.g=205;green.b=50;green.a=255;
-  //   m_client->TraCIAPI::vehicle.setColor (m_id,green);
-
-  //   if (!m_csv_name.empty ())
-  //   {
-  //     m_csv_ofstream << denm.getDenmHeaderMessageID () << ","
-  //                    << denm.getDenmActionID ().originatingStationId << ","
-  //                    << denm.getDenmActionID ().sequenceNumber << ","
-  //                    << denm.getDenmMgmtReferenceTime () << ","
-  //                    << denm.getDenmMgmtDetectionTime () << ","
-  //                    << denm.getDenmHeaderStationID () << std::endl;
-  //   }
-
-  //   /* Start the DENM timer. If after 1.5 seconds no other DENM is received, than go back to the normal speed */
-  //   m_denmTimeout = Simulator::Schedule(Seconds(1.5),&tlmClient80211p::denmTimeout,this);
-  }
-
-  void
-  tlmClient80211p::denmTimeout ()
-  {
-  //  /* If vehicle hasn't received any denm for 1.5 second, change color
-  //   * for fast-moving vehicles to orange, and increase their speed to 75km/h */
-  //   libsumo::TraCIColor orange;
-  //   orange.r=255;orange.g=99;orange.b=71;orange.a=255;
-  //   m_client->TraCIAPI::vehicle.setColor (m_id,orange);
-  //   double speedLimit = 75/3.6;
-  //   m_client->TraCIAPI::vehicle.setMaxSpeed (m_id,speedLimit);
-  }
 }
 
 
 
 
 
+    // // 1. Проверяем, есть ли данные о перекрестке в пакете
+    // if (spatem->spat.intersections.list.count > 0) {
+        
+    //     // Берем первый перекресток
+    //     auto intersection = spatem->spat.intersections.list.array[0];
+        
+    //     // 2. В реальном V2X машина должна узнать свою полосу. 
+    //     // Но для симуляции давай просто проверим первую полосу (SignalGroup 1)
+    //     if (intersection->states.list.count > 0) {
+    //         auto first_movement = intersection->states.list.array[0];
+    //         //std::cout << first_movement << std::endl;
+            
+    //         // Проверяем, есть ли события (фазы) для этой полосы
+    //         if (first_movement->state_time_speed.list.count > 0 && first_movement->signalGroup == upcomingTLS[0].tlIndex) {
+                
+    //             // 3. ДОСТАЕМ ЦВЕТ СВЕТОФОРА
+    //             long current_light_state = first_movement->state_time_speed.list.array[0]->eventState;
+                
+    //             // 4. ЛОГИКА ТОРМОЖЕНИЯ:
+    //             // 3 = stop-And-Remain (Красный свет)
+    //             if (current_light_state == 3) {
+    //                 // Заставляем машину остановиться (устанавливаем скорость 0)
+    //                 m_client->TraCIAPI::vehicle.setSpeed(m_id, 0.0);
+                    
+    //                 // Красим машину в красный, чтобы визуально видеть, что она тормозит из-за SPATEM
+    //                 libsumo::TraCIColor red;
+    //                 red.r = 255; red.g = 0; red.b = 0; red.a = 255;
+    //                 m_client->TraCIAPI::vehicle.setColor(m_id, red);
+                    
+    //             } else if (current_light_state == 6 || current_light_state == 5) {
+    //                 // Если свет зеленый, сбрасываем ограничение скорости, пусть едет нормально
+    //                 m_client->TraCIAPI::vehicle.setSpeed(m_id, -1.0); // -1.0 в TraCI возвращает контроль SUMO
+                    
+    //                 // Красим машину в синий (едет по SPATEM)
+    //                 libsumo::TraCIColor blue;
+    //                 blue.r = 0; blue.g = 0; blue.b = 255; blue.a = 255;
+    //                 m_client->TraCIAPI::vehicle.setColor(m_id, blue);
+    //             }
+    //         }
+    //     }
+    // }

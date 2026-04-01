@@ -5,7 +5,6 @@
 #include "ns3/application.h"
 #include "ns3/asn_utils.h"
 #include "ns3/tlmBasicService.h"
-#include "ns3/denBasicService.h"
 #include "ns3/caBasicService.h"
 #include "ns3/btp.h"
 #include "ns3/btpHeader.h"
@@ -36,7 +35,7 @@ class tlmServer80211p : public Application
     // void receiveCAM (CAM_t *cam, Address address);
     void receiveCAM (asn1cpp::Seq<CAM> cam, Address from);
 
-    void receiveDENM(denData denm, Address from);
+    //void receiveDENM(denData denm, Address from);
 
     void StopApplicationNow ();
 
@@ -47,7 +46,7 @@ class tlmServer80211p : public Application
 
   private:
 
-    DENBasicService m_denService; //!< DEN Basic Service object
+    //DENBasicService m_denService; //!< DEN Basic Service object
     CABasicService m_caService; //!< CA Basic Service object
     TLMBasicService m_tlmBasicService; //!< TLM Basic Service object
 
@@ -58,16 +57,6 @@ class tlmServer80211p : public Application
 
     virtual void StartApplication (void);
     virtual void StopApplication (void);
-
-    /**
-     * \brief Trigger a new DENM (i.e. call appDENM_trigger as foreseen by ETSI EN 302 637-3 V1.3.1)
-     *
-     * This function can be called to send a new DENM.
-     *
-     */
-    void TriggerDenm();
-    void UpdateDenm();
-    void TerminateDenmTransmission();
 
     /**
      * @brief This function compute the milliseconds elapsed from 2004-01-01
@@ -84,22 +73,15 @@ class tlmServer80211p : public Application
     std::string m_csv_name; //!< CSV log file name
     std::ofstream m_csv_ofstream_cam;
 
-    DEN_ActionID_t m_current_action_id;
-
-    bool m_isTransmittingDENM;
-
     bool m_send_cam;
 
     std::string m_id;
 
     /* Counters */
     u_int m_cam_received;
-    u_int m_denm_sent;
     u_int m_spatem_sent;
 
     EventId m_aggegateOutputEvent; //!< Event to create aggregate output
-    EventId m_update_denm_ev; //!< Event to update the DENM
-    EventId m_terminate_denm_ev; //!< Event to terminate the DENM
 
     Ptr<MetricSupervisor> m_metric_supervisor = nullptr;
 

@@ -1,7 +1,6 @@
 #include "tlmServer80211p.h"
 
 #include "ns3/CAM.h"
-#include "ns3/DENM.h"
 #include "ns3/SPATEM.h"
 #include "ns3/Seq.hpp"
 #include "ns3/Getter.hpp"
@@ -67,8 +66,6 @@ namespace ns3
     NS_LOG_FUNCTION(this);
     m_client = nullptr;
     m_cam_received = 0;
-    m_denm_sent = 0;
-    m_isTransmittingDENM = false;
   }
 
   tlmServer80211p::~tlmServer80211p ()
@@ -122,22 +119,14 @@ namespace ns3
     }
 
     m_btp->setGeoNet(m_geoNet);
-    m_denService.setBTP(m_btp);
     m_caService.setBTP(m_btp);
     m_tlmBasicService.setBTP(m_btp);
-  
-      /* Set sockets, callback and station properties in DENBasicService */
-
-    /* Set sockets, callback and station properties in DENBasicService */
-    m_denService.setSocketTx (m_socket);
-    m_denService.setSocketRx (m_socket);
-    m_denService.addDENRxCallback (std::bind(&tlmServer80211p::receiveDENM,this,std::placeholders::_1,std::placeholders::_2));
 
     size_t start = m_id.find("_") + 1;
     size_t end = m_id.find_first_not_of("0123456789", start); // find the end of the id
     std::string id_str = m_id.substr(start, end - start);
     uint64_t id = std::stoull(id_str);
-    m_denService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
+    //m_denService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
 
     /* Set callback and station properties in CABasicService */
     m_caService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
@@ -148,37 +137,18 @@ namespace ns3
     m_tlmBasicService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
     m_tlmBasicService.setSocketRx (m_socket);
     m_tlmBasicService.setSocketTx (m_socket);
-    // m_tlmBasicService.addTLMRxCallback (std::bind(&tlmServer80211p::receiveSPATEM,this,std::placeholders::_1,std::placeholders::_2));
 
     libsumo::TraCIPosition rsuPosXY = m_client->TraCIAPI::poi.getPosition (m_id);
     libsumo::TraCIPosition rsuPosLonLat = m_client->TraCIAPI::simulation.convertXYtoLonLat (rsuPosXY.x,rsuPosXY.y);
 
-    /* Compute GeoArea for DENMs */
-    GeoArea_t geoArea;
-    // Longitude and Latitude in [0.1 microdegree]
-    geoArea.posLong = rsuPosLonLat.x*DOT_ONE_MICRO;
-    geoArea.posLat = rsuPosLonLat.y*DOT_ONE_MICRO;
-    // Radius [m] of the circle that covers the whole square area of the map in (x,y)
-    geoArea.distA = 90;
-    // DistB [m] and angle [deg] equal to zero because we are defining a circular area as specified in ETSI EN 302 636-4-1 [9.8.5.2]
-    geoArea.distB = 0;
-    geoArea.angle = 0;
-    geoArea.shape = CIRCULAR;
-
-    m_denService.setGeoArea (geoArea);
-    m_tlmBasicService.setGeoArea (geoArea);
-
-    m_denService.setFixedPositionRSU (rsuPosLonLat.y,rsuPosLonLat.x);
+    //m_denService.setFixedPositionRSU (rsuPosLonLat.y,rsuPosLonLat.x);
     m_caService.setFixedPositionRSU (rsuPosLonLat.y,rsuPosLonLat.x);
     m_tlmBasicService.setFixedPositionRSU (rsuPosLonLat.y,rsuPosLonLat.x);
 
     std::map<std::string, std::string> rsu_to_tls;
  
     rsu_to_tls["poi_0"] = "c1"; 
-    rsu_to_tls["poi_1"] = "c1"; 
-    rsu_to_tls["poi_2"] = "c2"; 
-    rsu_to_tls["poi_3"] = "c1"; 
-    rsu_to_tls["poi_4"] = "c2"; 
+    rsu_to_tls["poi_1"] = "c2"; 
 
     // 2. Ищем, какой светофор привязан к текущей RSU (которая сейчас запускается)
     std::string target_tls_id = "";
@@ -189,21 +159,41 @@ namespace ns3
         target_tls_id = "c1"; 
     }
 
+    // Задаем индивидуальный радиус зоны распространения для каждого светофора
+    std::map<std::string, uint16_t> tls_to_radius;
+    tls_to_radius["c1"] = 50;  // Радиус для светофора c1
+    tls_to_radius["c2"] = 50; // Радиус для светофора c2
+    // tls_to_radius["c3"] = 120; // для других...
+    
+    uint16_t area_radius = 50; // Радиус по умолчанию
+    if (tls_to_radius.count(target_tls_id) > 0) {
+        area_radius = tls_to_radius[target_tls_id];
+    }
+
+    /* Compute GeoArea for DENMs and SPATEMs (TLM) */
+    GeoArea_t geoArea;
+    // Longitude and Latitude in [0.1 microdegree]
+    geoArea.posLong = rsuPosLonLat.x*DOT_ONE_MICRO;
+    geoArea.posLat = rsuPosLonLat.y*DOT_ONE_MICRO;
+    // Radius [m] of the circle that covers the area
+    geoArea.distA = area_radius;
+    // DistB [m] and angle [deg] equal to zero because we are defining a circular area as specified in ETSI EN 302 636-4-1 [9.8.5.2]
+    geoArea.distB = 0;
+    geoArea.angle = 0;
+    geoArea.shape = CIRCULAR;
+
+    m_tlmBasicService.setGeoArea (geoArea);
+
     // 3. Вызываем наш НОВЫЙ конструктор, передавая ему правильный ID светофора!
     VDP* traci_vdp = new VDPTraCI(m_client, m_id, true, target_tls_id);
     
-    //VDP* traci_vdp = new VDPTraCI(m_client, m_id, true);
+    m_btp->setVDP(traci_vdp); 
 
     m_caService.setVDP(traci_vdp);
 
-    m_denService.setVDP(traci_vdp);
 
     m_tlmBasicService.setVDP(traci_vdp);
 
-    /*if(m_PRR_supervisor!=nullptr)
-    {
-      m_PRR_supervisor->addExcludedID (777888999);
-    }*/
 
 
     m_tlmBasicService.startSpatemDissemination();
@@ -231,16 +221,12 @@ namespace ns3
   {
     NS_LOG_FUNCTION(this);
     Simulator::Cancel (m_aggegateOutputEvent);
-    Simulator::Cancel (m_terminate_denm_ev);
-    Simulator::Cancel (m_update_denm_ev);
-
-    m_denService.cleanup();
 
     if (!m_csv_name.empty ())
       m_csv_ofstream_cam.close ();
 
     if (m_aggregate_output)
-      std::cout << Simulator::Now () << "," << m_cam_received  << "," << m_denm_sent << std::endl;
+      std::cout << Simulator::Now () << "," << m_cam_received << std::endl;
   }
 
   void
@@ -251,106 +237,12 @@ namespace ns3
   }
 
   void
-  tlmServer80211p::TriggerDenm ()
-  {
-    denData data;
-    DEN_RoadWorksContainerExtended_t roadworks;
-    denData::denDataAlacarte alacartedata;
-    DENBasicService_error_t trigger_retval;
-
-//    /* Build DENM data */
-    data.setDenmMandatoryFields (compute_timestampIts(),Latitude_unavailable,Longitude_unavailable);
-
-
-    //Roadworks
-   // As there is no proper "SpeedLimit" field inside a DENM message, for an area speed Advisor, we rely on the
-   // RoadWorksContainerExtended, inside the "A la carte" container, which actually has a "SpeedLimit" field
-
-    // Set a speed limit Advisor inside the DENM message
-
-    roadworks.speedLimit.setData (25);
-
-    alacartedata.roadWorks.setData (roadworks); 
-
-    data.setDenmAlacarteData_asn_types (alacartedata);
-
-    trigger_retval=m_denService.appDENM_trigger(data,m_current_action_id);
-    if(trigger_retval!=DENM_NO_ERROR)
-    {
-      NS_LOG_ERROR("Cannot trigger DENM. Error code: " << trigger_retval);
-    }
-    else
-    {
-      m_denm_sent++;
-    }
-
-    m_update_denm_ev = Simulator::Schedule (Seconds (1), &tlmServer80211p::UpdateDenm, this);
-  }
-
-  void
-  tlmServer80211p::UpdateDenm()
-  {
-    denData data;
-    DEN_RoadWorksContainerExtended_t roadworks;
-    denData::denDataAlacarte alacartedata;
-    DENBasicService_error_t update_retval;
-
-    /* Build DENM data */
-    data.setDenmMandatoryFields (compute_timestampIts(),Latitude_unavailable,Longitude_unavailable);
-
-    //Roadworks
-   // As there is no proper "SpeedLimit" field inside a DENM message, for an area speed Advisor, we rely on the
-   // RoadWorksContainerExtended, inside the "A la carte" container, which actually has a "SpeedLimit" field
-
-    // Set a speed limit Advisor inside the DENM message
-
-    roadworks.speedLimit.setData (25);
-
-    alacartedata.roadWorks.setData (roadworks);
-    data.setDenmAlacarteData_asn_types (alacartedata);
-
-    update_retval = m_denService.appDENM_update (data,m_current_action_id);
-    if(update_retval!=DENM_NO_ERROR)
-      {
-        NS_LOG_ERROR("Cannot terminate DENM. Error code: " << update_retval);
-      }
-    else
-      {
-        m_denm_sent++;
-      }
-
-    m_update_denm_ev = Simulator::Schedule (Seconds (1), &tlmServer80211p::UpdateDenm, this);
-
-  }
-
-  void
-  tlmServer80211p::TerminateDenmTransmission()
-  {
-    m_isTransmittingDENM=false;
-    Simulator::Cancel (m_update_denm_ev);
-  }
-
-  void
   tlmServer80211p::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
   {
     /* The reception of a CAM, in this case, woarks as a trigger to generate DENMs.
      * If no CAMs are received, then no DENMs are generated */
     m_cam_received++;
 
-    if(m_isTransmittingDENM)
-    {
-      /* If a CAM is received when the server is already sending DENMs, then reset the "timer" to stop the DENM generation */
-      Simulator::Cancel (m_terminate_denm_ev);
-      m_terminate_denm_ev = Simulator::Schedule (Seconds (5), &tlmServer80211p::TerminateDenmTransmission, this);
-    }
-    else
-    {
-        /* If a CAM is received when the server is not sending DENMs, then start the DENM generation and call the
-         * TerminateDenmTransmission after 5 seconds */
-        m_isTransmittingDENM=true;
-        tlmServer80211p::TriggerDenm();
-        m_terminate_denm_ev = Simulator::Schedule (Seconds (5), &tlmServer80211p::TerminateDenmTransmission, this);
-    }
 
     if (!m_csv_name.empty ())
       {
@@ -363,15 +255,6 @@ namespace ns3
       }
 
 //    ASN_STRUCT_FREE(asn_DEF_CAM,cam);
-  }
-
-  void
-  tlmServer80211p::receiveDENM (denData denm, Address from)
-  {
-    /* This is just a sample dummy receiveDENM function. The user can customize it to parse the content of a DENM when it is received. */
-    (void) denm; // Contains the data received from the DENM
-    (void) from; // Contains the address from which the DENM has been received
-    std::cout<<"Received a new DENM."<<std::endl;
   }
 
   long
@@ -389,7 +272,7 @@ namespace ns3
   void
   tlmServer80211p::aggregateOutput()
   {
-    std::cout << Simulator::Now () << "," << m_cam_received << "," << m_denm_sent << std::endl;
+    std::cout << Simulator::Now () << "," << m_cam_received << std::endl;
     m_aggegateOutputEvent = Simulator::Schedule (Seconds(1), &tlmServer80211p::aggregateOutput, this);
   }
 

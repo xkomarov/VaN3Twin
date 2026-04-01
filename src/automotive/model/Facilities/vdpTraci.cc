@@ -22,7 +22,6 @@
 #include <functional> 
 #include <vector>
 #include <cmath>
-#include "ns3/BitString.hpp"
 
 extern "C" {
   #include "ns3/CAM.h"

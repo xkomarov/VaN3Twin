@@ -34,6 +34,7 @@ namespace ns3
     m_T_GenSpatem_ms=T_GenSpatemMax_ms;
     m_N_GenSpatemMax=1000;
     m_N_GenSpatem=T_GenSpatemMin_ms;
+    lastSpatemGen = 0;
   }
 
   bool
@@ -146,8 +147,6 @@ namespace ns3
 
     spatem_mandatory_data=m_vdp->getSPATEMMandatoryData();
 
-    //SPATEM_mandatory_data_t spatData = m_vdp->getSPATEMMandatoryData();
-
     if(spatem_mandatory_data.optional_data)
     {
       asn1cpp::setField(spatem->spat.timeStamp, 0);
@@ -157,17 +156,28 @@ namespace ns3
 
     auto intersectionState = asn1cpp::makeSeq(IntersectionState);
     asn1cpp::setField(intersectionState->id.id, spatem_mandatory_data.intersectionId);
-    //asn1cpp::setField(intersectionState->status, spatem_mandatory_data.status);  
-    intersectionState->status.buf = spatem_mandatory_data.status.buf;
+
+    intersectionState->status.buf = (uint8_t*)calloc(1, spatem_mandatory_data.status.size);
+     if(intersectionState->status.buf == nullptr)
+    {
+        NS_LOG_ERROR("Memory allocation failed for status.buf");
+        return SPATEM_ALLOC_ERROR;
+    }
+    memcpy(intersectionState->status.buf, spatem_mandatory_data.status.buf, spatem_mandatory_data.status.size);
     intersectionState->status.size = spatem_mandatory_data.status.size;
     intersectionState->status.bits_unused = spatem_mandatory_data.status.bits_unused;
-    memcpy(intersectionState->status.buf, spatem_mandatory_data.status.buf, spatem_mandatory_data.status.size);
+
+
+    if (intersectionState->status.buf == nullptr) {
+      NS_LOG_ERROR("Warning: memory allocation failed for intersectionState->status.buf");
+      return SPATEM_ALLOC_ERROR; // Или другой подходящий код ошибки
+    }
+
+    // intersectionState->status.buf = spatem_mandatory_data.status.buf;
+    // intersectionState->status.size = spatem_mandatory_data.status.size;
+    // intersectionState->status.bits_unused = spatem_mandatory_data.status.bits_unused;
     asn1cpp::setField(intersectionState->revision, spatem_mandatory_data.revision);   
     
-    // if (spatData.status.buf != nullptr) {
-    //     free(spatData.status.buf);
-    //     spatData.status.buf = nullptr; // Хорошая практика на всякий случай
-    // }
 
     //option
     if(spatem_mandatory_data.optional_data)
@@ -245,6 +255,11 @@ namespace ns3
     
     asn1cpp::sequenceof::pushList(spatem->spat.intersections, intersectionState);
     
+    // if (spatem_mandatory_data.status.buf != nullptr) {
+    //     free(spatem_mandatory_data.status.buf);
+    //     spatem_mandatory_data.status.buf = nullptr; 
+    // }
+
     encode_result = asn1cpp::uper::encode(spatem);
     if(encode_result.size()<1)
     {
@@ -294,10 +309,23 @@ namespace ns3
 
     packet = dataIndication.data;
 
-    uint8_t *buffer; //= new uint8_t[packet->GetSize ()];
-    buffer=(uint8_t *)malloc((packet->GetSize ())*sizeof(uint8_t));
-    packet->CopyData (buffer, packet->GetSize ());
-    std::string packetContent((char *)buffer,(int) dataIndication.data->GetSize ());
+    // Современный и безопасный подход:
+    uint32_t packetSize = packet->GetSize();
+    std::vector<uint8_t> buffer(packetSize); 
+    packet->CopyData(buffer.data(), packetSize);
+
+    std::string packetContent(reinterpret_cast<char*>(buffer.data()), packetSize);
+
+    if (buffer.size() > 1 && buffer[1] != FIX_SPATEMID)
+    {
+      NS_LOG_ERROR("Warning: received a message which has messageID '" << (int)buffer[1] << "' but '2' was expected.");
+      return; // Не нужно писать free(), вектор сам очистит память!
+    }
+
+    // uint8_t *buffer; //= new uint8_t[packet->GetSize ()];
+    // buffer=(uint8_t *)malloc((packet->GetSize ())*sizeof(uint8_t));
+    // packet->CopyData (buffer, packet->GetSize ());
+    // std::string packetContent((char *)buffer,(int) dataIndication.data->GetSize ());
     
     RssiTag rssi;
     bool rssi_result = dataIndication.data->PeekPacketTag(rssi);
@@ -340,14 +368,14 @@ namespace ns3
 
     SetSignalInfo(timestamp.Get(), size.Get(), rssi.Get(), snr.Get(), sinr.Get(), rsrp.Get());
     
-    if (buffer[1]!=FIX_SPATEMID)
-    {
-      NS_LOG_ERROR("Warning: received a message which has messageID '"<<buffer[1]<<"' but '2' was expected.");
-      free(buffer);
-      return;
-    }
+    // if (buffer[1]!=FIX_SPATEMID)
+    // {
+    //   NS_LOG_ERROR("Warning: received a message which has messageID '"<<buffer[1]<<"' but '2' was expected.");
+    //   free(buffer);
+    //   return;
+    // }
 
-    free(buffer);
+    //free(buffer);
 
     decoded_spatem = asn1cpp::uper::decodeASN(packetContent, SPATEM);
 

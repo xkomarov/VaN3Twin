@@ -88,7 +88,7 @@ namespace ns3
      * This function sets the VDP object to be used by the CA Basic Service.
      * @param vdp   The VDP object to be used by the CA Basic Service
      */
-    void setVDP(VDP* vdp) {m_vdp=vdp;}
+    void setVDP(VDP* vdp) {m_vdp = vdp;}
 
     /**
      * @brief Process a received SPATEM message.

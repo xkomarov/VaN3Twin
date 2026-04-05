@@ -93,7 +93,6 @@ namespace ns3
   {
     //m_denService.cleanup();
     NS_LOG_FUNCTION(this);
-    delete m_traci_vdp;
   }
 
   void
@@ -166,11 +165,11 @@ namespace ns3
     m_caService.addCARxCallback (std::bind(&areaSpeedAdvisorClient80211p::receiveCAM,this,std::placeholders::_1,std::placeholders::_2));
     m_caService.setStationProperties (std::stol(m_id.substr (3)), StationType_passengerCar);
     m_caService.setRealTime (m_real_time);
-    m_traci_vdp = new VDPTraCI(m_client,m_id);
+    VDP* traci_vdp = new VDPTraCI(m_client,m_id);
 
-    m_caService.setVDP(m_traci_vdp);
+    m_caService.setVDP(traci_vdp);
 
-    m_denService.setVDP(m_traci_vdp);
+    m_denService.setVDP(traci_vdp);
 
     /* Create CSV file, if requested */
     if (!m_csv_name.empty ())

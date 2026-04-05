@@ -138,7 +138,6 @@ namespace ns3
 
     void setRealTime(bool real_time){m_real_time=real_time;}
     void setGeoArea(GeoArea_t geoArea){m_geoArea = geoArea;}
-    void setLTEAddresses(std::set<Address>* addresses) { m_lte_addresses = addresses; }
     /* Cleanup function - always call this before terminating the simulation */
     void cleanup(void);
 
@@ -168,8 +167,6 @@ namespace ns3
     VDP* m_vdp; //! VDP object
     GeoArea_t m_geoArea;
     Ptr<Socket> m_socket_tx; // Socket TX
-
-    std::set<Address>* m_lte_addresses = nullptr;
 
     long m_T_CheckSpatemGen_ms;
     long m_T_GenSpatem_ms; //!< Текущий интервал генерации CPM

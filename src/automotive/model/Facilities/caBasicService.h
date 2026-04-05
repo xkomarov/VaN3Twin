@@ -171,8 +171,6 @@ namespace ns3
     void addCARxCallbackExtended(std::function<void(asn1cpp::Seq<CAM>, Address, StationId_t, StationType_t, SignalInfo)> rx_callback) {m_CAReceiveCallbackExtended=rx_callback;}
     void setRealTime(bool real_time){m_real_time=real_time;}
 
-    void setLTEAddresses(std::set<Address>* addresses) { m_lte_addresses = addresses; }
-
     void setLowFrequencyContainer(bool enable) {m_lowFreqContainerEnabled = enable;}
     void setSpecialVehicleContainer(bool enabled) {m_specialVehContainerEnabled = enabled;}
 
@@ -242,8 +240,6 @@ namespace ns3
     std::function<void(asn1cpp::Seq<CAM>, Address, StationId_t, StationType_t, SignalInfo)> m_CAReceiveCallbackExtended;
 
     Ptr<btp> m_btp; //! BTP object
-
-    std::set<Address>* m_lte_addresses = nullptr;
 
     double m_T_CheckCamGen_ms; //! CAM generation check interval
 

@@ -75,7 +75,6 @@ class areaSpeedAdvisorClient80211p : public Application
     bool m_send_cam;
 
     Ptr<MetricSupervisor> m_metric_supervisor = nullptr;
-    VDP* m_traci_vdp = nullptr; //!< VDP object to be cleaned up
   };
 
 } // namespace ns3

@@ -93,11 +93,11 @@ namespace ns3
     m_socket = Socket::CreateSocket (GetNode (), tid);
 
     /* Bind the socket to local address */
-    PacketSocketAddress local_spatem;
-    local_spatem.SetSingleDevice (GetNode ()->GetDevice (0)->GetIfIndex ());
-    local_spatem.SetPhysicalAddress (GetNode ()->GetDevice (0)->GetAddress ());
-    local_spatem.SetProtocol (0x8947);
-    if (m_socket->Bind (local_spatem) == -1)
+    PacketSocketAddress local_denm;
+    local_denm.SetSingleDevice (GetNode ()->GetDevice (0)->GetIfIndex ());
+    local_denm.SetPhysicalAddress (GetNode ()->GetDevice (0)->GetAddress ());
+    local_denm.SetProtocol (0x8947);
+    if (m_socket->Bind (local_denm) == -1)
     {
       NS_FATAL_ERROR ("Failed to bind server socket");
     }
@@ -135,7 +135,7 @@ namespace ns3
     m_caService.addCARxCallback (std::bind(&tlmServer80211p::receiveCAM,this,std::placeholders::_1,std::placeholders::_2));
 
     m_tlmBasicService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
-    // m_tlmBasicService.setSocketRx (m_socket);
+    m_tlmBasicService.setSocketRx (m_socket);
     m_tlmBasicService.setSocketTx (m_socket);
 
     libsumo::TraCIPosition rsuPosXY = m_client->TraCIAPI::poi.getPosition (m_id);
@@ -191,7 +191,10 @@ namespace ns3
 
     m_caService.setVDP(traci_vdp);
 
+
     m_tlmBasicService.setVDP(traci_vdp);
+
+
 
     m_tlmBasicService.startSpatemDissemination();
 

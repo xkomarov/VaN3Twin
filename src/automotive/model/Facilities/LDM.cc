@@ -269,6 +269,16 @@ namespace ns3 {
     }
     m_count++;
     //writeAllContents();
+    
+    // TLM cleanup: do not delete static coordinates, just clear signal group states
+    for (auto it = m_TrafficLights.begin(); it != m_TrafficLights.end(); ++it) {
+        if (!it->second.signalGroupStates.empty()) {
+            if (((double)(now - it->second.timestamp_us)) / 1000.0 > DB_DELETE_OLDER_THAN_SECONDS * 1000) {
+                it->second.signalGroupStates.clear();
+            }
+        }
+    }
+
     m_event_deleteOlderThan = Simulator::Schedule(Seconds(DB_CLEANER_INTERVAL_SECONDS),&LDM::deleteOlderThan,this);
   }
 
@@ -312,6 +322,15 @@ namespace ns3 {
             } else {
               ++it;
             }
+    }
+
+    // TLM cleanup: do not delete static coordinates, just clear signal group states
+    for (auto it = m_TrafficLights.begin(); it != m_TrafficLights.end(); ++it) {
+        if (!it->second.signalGroupStates.empty()) {
+            if (((double)(now - it->second.timestamp_us)) / 1000.0 > DB_DELETE_OLDER_THAN_SECONDS * 1000) {
+                it->second.signalGroupStates.clear();
+            }
+        }
     }
   }
 
@@ -521,4 +540,51 @@ namespace ns3 {
     retPos.z = 1.0;
     return retPos;
   }
+
+  LDM::LDM_error_t
+  LDM::insertStaticTL(trafficLightData_t staticTLData)
+  {
+      staticTLData.isStaticLoaded = true;
+      staticTLData.timestamp_us = Simulator::Now().GetMicroSeconds();
+      m_TrafficLights[staticTLData.intersectionID] = staticTLData;
+      return LDM_OK;
+  }
+
+  LDM::LDM_error_t
+  LDM::updateTLState(uint64_t intersectionID, long signalGroup, long state)
+  {
+      auto it = m_TrafficLights.find(intersectionID);
+      if (it == m_TrafficLights.end()) {
+          // If we receive SPATEM but no static data is available
+          return LDM_ITEM_NOT_FOUND; 
+      }
+      
+      it->second.signalGroupStates[signalGroup] = state;
+      it->second.timestamp_us = Simulator::Now().GetMicroSeconds();
+      return LDM_UPDATED;
+  }
+
+  LDM::LDM_error_t
+  LDM::lookupTL(uint64_t intersectionID, trafficLightData_t &retTLData)
+  {
+      auto it = m_TrafficLights.find(intersectionID);
+      if (it == m_TrafficLights.end()) {
+          return LDM_ITEM_NOT_FOUND;
+      }
+      
+      retTLData = it->second;
+      return LDM_OK;
+  }
+
+  LDM::LDM_error_t
+  LDM::rangeSelectTL(double range_m, double lat, double lon, std::vector<trafficLightData_t> &selectedTLs)
+  {
+      for (auto it = m_TrafficLights.begin(); it != m_TrafficLights.end(); ++it) {
+          if (compute_dist(lat, lon, it->second.lat, it->second.lon) <= range_m) {
+              selectedTLs.push_back(it->second);
+          }
+      }
+      return LDM_OK;
+  }
+
 }

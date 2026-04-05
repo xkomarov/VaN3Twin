@@ -281,15 +281,44 @@ namespace ns3
     dataRequest.GNMaxHL = 1;
     dataRequest.GNTraClass = 0x02; // Store carry foward: no - Channel offload: no - Traffic Class ID: 2
     dataRequest.lenght = packet->GetSize ();
-    dataRequest.data = packet;
-    std::tuple<GNDataConfirm_t, MessageId_t> status = m_btp->sendBTP(dataRequest, 0, MessageId_spatem);
-    GNDataConfirm_t dataConfirm = std::get<0>(status);
-    MessageId_t message_id = std::get<1>(status);
-    /* Update the CAM statistics */
-    if(dataConfirm == ACCEPTED) {
-        if (message_id == MessageId_spatem) m_spatem_sent++;
-      }
+    
+   if (m_lte_addresses != nullptr && !m_lte_addresses->empty())
+{
+    // Если есть машины в зоне действия LTE, отправляем пакет каждой индивидуально
+    for (auto const& addr : *m_lte_addresses)
+    {
+        // 1. Устанавливаем соединение с конкретным автомобилем
+        m_socket_tx->Connect(addr);
 
+        // 2. Создаем локальную копию запроса для ТЕКУЩЕЙ итерации.
+        // Это важно, потому что внутри m_btp->sendBTP к пакету прикрепляются
+        // заголовки, и структура dataRequest может мутировать.
+        BTPDataRequest_t req_copy = dataRequest; 
+        
+        // 3. Делаем глубокую копию полезной нагрузки (пакета).
+        // (Примечание: в стандартном ms-van3t поле обычно называется 'packet', 
+        // но если у вас в структуре оно называется 'data', используйте req_copy.data)
+        req_copy.data = packet->Copy(); 
+
+        // 4. Отправляем копию пакета
+        std::tuple<GNDataConfirm_t, MessageId_t> status = m_btp->sendBTP(req_copy, 0, MessageId_spatem);
+        
+        // 5. Проверяем статус отправки
+        if(std::get<0>(status) == ACCEPTED) 
+        {
+            m_spatem_sent++;
+        }
+    }
+}
+else
+{
+    // БЛОК ELSE: Автомобилей в зоне действия нет.
+    // В LTE (в отличие от 802.11p) мы не можем сделать "широковещательный" (broadcast) бросок в эфир.
+    // Поэтому мы просто НИЧЕГО НЕ ОТПРАВЛЯЕМ и уничтожаем пакет (он удалится сам, т.к. это Ptr<Packet>).
+    
+    // Можно просто вывести отладочное сообщение, чтобы понимать, что сервер работает:
+    NS_LOG_INFO("No active LTE vehicles around. SPATEM packet dropped.");
+}
     // Estimation of the transmission time
     m_last_transmission = (double) Simulator::Now().GetMilliSeconds();
 

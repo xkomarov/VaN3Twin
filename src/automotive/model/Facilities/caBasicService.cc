@@ -995,15 +995,31 @@ namespace ns3
     dataRequest.GNMaxHL = 1;
     dataRequest.GNTraClass = 0x02; // Store carry foward: no - Channel offload: no - Traffic Class ID: 2
     dataRequest.lenght = packet->GetSize ();
-    dataRequest.data = packet;
-    std::tuple<GNDataConfirm_t, MessageId_t> status = m_btp->sendBTP(dataRequest, 0, MessageId_cam);
-    GNDataConfirm_t dataConfirm = std::get<0>(status);
-    MessageId_t message_id = std::get<1>(status);
-    m_wannabe_sent ++;
-    /* Update the CAM statistics */
-    if(dataConfirm == ACCEPTED) {
-        if (message_id == MessageId_cam) m_cam_sent++;
+    
+    if (m_lte_addresses && !m_lte_addresses->empty())
+    {
+      for (auto const& addr : *m_lte_addresses)
+      {
+        m_socket_tx->Connect(addr);
+        dataRequest.data = packet->Copy();
+        std::tuple<GNDataConfirm_t, MessageId_t> status = m_btp->sendBTP(dataRequest, 0, MessageId_cam);
+        if(std::get<0>(status) == ACCEPTED) {
+          m_cam_sent++;
+        }
       }
+    }
+    else
+    {
+      dataRequest.data = packet;
+      std::tuple<GNDataConfirm_t, MessageId_t> status = m_btp->sendBTP(dataRequest, 0, MessageId_cam);
+      GNDataConfirm_t dataConfirm = std::get<0>(status);
+      MessageId_t message_id = std::get<1>(status);
+      /* Update the CAM statistics */
+      if(dataConfirm == ACCEPTED) {
+          if (message_id == MessageId_cam) m_cam_sent++;
+        }
+    }
+    m_wannabe_sent ++;
 
     // Estimation of the transmission time
     m_last_transmission = (double) Simulator::Now().GetMilliSeconds();

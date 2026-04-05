@@ -1,113 +1,109 @@
-#include "tlmServer80211p.h"
+#include "tlmServerLTE.h"
 
 #include "ns3/CAM.h"
+#include "ns3/DENM.h"
 #include "ns3/SPATEM.h"
-#include "ns3/Seq.hpp"
-#include "ns3/Getter.hpp"
-#include "ns3/Setter.hpp"
-#include "ns3/Encoding.hpp"
-#include "ns3/SetOf.hpp"
-#include "ns3/SequenceOf.hpp"
 #include "ns3/socket.h"
 #include "ns3/btpdatarequest.h"
 #include "ns3/network-module.h"
+
 #include <map>
 
 namespace ns3
 {
-  NS_LOG_COMPONENT_DEFINE("tlmServer80211p");
+  NS_LOG_COMPONENT_DEFINE("tlmServerLTE");
 
-  NS_OBJECT_ENSURE_REGISTERED(tlmServer80211p);
+  NS_OBJECT_ENSURE_REGISTERED(tlmServerLTE);
 
   TypeId
-  tlmServer80211p::GetTypeId (void)
+  tlmServerLTE::GetTypeId (void)
   {
     static TypeId tid =
-        TypeId ("ns3::tlmServer80211p")
+        TypeId ("ns3::tlmServerLTE")
         .SetParent<Application> ()
         .SetGroupName ("Applications")
-        .AddConstructor<tlmServer80211p> ()
+        .AddConstructor<tlmServerLTE> ()
         .AddAttribute ("AggregateOutput",
            "If it is true, the server will print every second an aggregate output about cam and denm",
            BooleanValue (false),
-           MakeBooleanAccessor (&tlmServer80211p::m_aggregate_output),
+           MakeBooleanAccessor (&tlmServerLTE::m_aggregate_output),
            MakeBooleanChecker ())
         .AddAttribute ("RealTime",
            "To compute properly timestamps",
            BooleanValue(false),
-           MakeBooleanAccessor (&tlmServer80211p::m_real_time),
+           MakeBooleanAccessor (&tlmServerLTE::m_real_time),
            MakeBooleanChecker ())
         .AddAttribute ("CSV",
             "CSV log name",
             StringValue (),
-            MakeStringAccessor (&tlmServer80211p::m_csv_name),
+            MakeStringAccessor (&tlmServerLTE::m_csv_name),
             MakeStringChecker ())
         .AddAttribute ("Client",
            "TraCI client for SUMO",
            PointerValue (0),
-           MakePointerAccessor (&tlmServer80211p::m_client),
+           MakePointerAccessor (&tlmServerLTE::m_client),
            MakePointerChecker<TraciClient> ())
         .AddAttribute ("MetricSupervisor",
             "Metric Supervisor to compute metric according to 3GPP TR36.885 V14.0.0 page 70",
             PointerValue (0),
-            MakePointerAccessor (&tlmServer80211p::m_metric_supervisor),
+            MakePointerAccessor (&tlmServerLTE::m_metric_supervisor),
             MakePointerChecker<MetricSupervisor> ())
         .AddAttribute ("SendCAM",
              "To enable/disable the transmission of CAM messages",
              BooleanValue(true),
-             MakeBooleanAccessor (&tlmServer80211p::m_send_cam),
+             MakeBooleanAccessor (&tlmServerLTE::m_send_cam),
              MakeBooleanChecker ());
 
         return tid;
   }
 
-  tlmServer80211p::tlmServer80211p ()
+  tlmServerLTE::tlmServerLTE ()
   {
     NS_LOG_FUNCTION(this);
     m_client = nullptr;
     m_cam_received = 0;
   }
 
-  tlmServer80211p::~tlmServer80211p ()
+  tlmServerLTE::~tlmServerLTE ()
   {
     NS_LOG_FUNCTION(this);
   }
 
   void
-  tlmServer80211p::DoDispose (void)
+  tlmServerLTE::DoDispose (void)
   {
     NS_LOG_FUNCTION(this);
     Application::DoDispose ();
   }
 
   void
-  tlmServer80211p::StartApplication (void)
+  tlmServerLTE::StartApplication (void)
   {
     NS_LOG_FUNCTION(this);
 
     m_id = m_client->GetStationId (this -> GetNode ());
+    if (m_id.empty()) {
+        NS_LOG_INFO("m_id was empty, defaulting to poi_0");
+        m_id = "poi_0";
+    }
 
-    /* TX socket for DENMs and RX socket for CAMs (one socket only is necessary) */
-    TypeId tid = TypeId::LookupByName ("ns3::PacketSocketFactory");
+    /* TX socket for DENMs and RX socket for CAMs */
+    TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
 
     m_socket = Socket::CreateSocket (GetNode (), tid);
 
-    /* Bind the socket to local address */
-    PacketSocketAddress local_spatem;
-    local_spatem.SetSingleDevice (GetNode ()->GetDevice (0)->GetIfIndex ());
-    local_spatem.SetPhysicalAddress (GetNode ()->GetDevice (0)->GetAddress ());
-    local_spatem.SetProtocol (0x8947);
-    if (m_socket->Bind (local_spatem) == -1)
-    {
-      NS_FATAL_ERROR ("Failed to bind server socket");
-    }
+    /* Bind the socket to receive packets coming from every IP */
+    InetSocketAddress local_denm = InetSocketAddress (Ipv4Address::GetAny (), 9);
 
-    /* Set socket to broacdcast */
-    PacketSocketAddress remote;
-    remote.SetSingleDevice (GetNode ()->GetDevice (0)->GetIfIndex ());
-    remote.SetPhysicalAddress (GetNode ()->GetDevice (0)->GetBroadcast ());
-    remote.SetProtocol (0x8947);
-    m_socket->Connect(remote);
+    // Bind the socket to local address
+    if (m_socket->Bind (local_denm) == -1)
+    {
+      NS_FATAL_ERROR ("Failed to bind server UDP socket");
+    }
+    
+    // Pass the active vehicles set to TLM and CA basic services for LTE unicast
+    m_tlmBasicService.setLTEAddresses(&m_active_vehicles);
+    m_caService.setLTEAddresses(&m_active_vehicles);
 
     /* Create new BTP and GeoNet objects and set them in DENBasicService and CABasicService */
     m_btp = CreateObject <btp>();
@@ -122,24 +118,39 @@ namespace ns3
     m_caService.setBTP(m_btp);
     m_tlmBasicService.setBTP(m_btp);
 
-    size_t start = m_id.find("_") + 1;
-    size_t end = m_id.find_first_not_of("0123456789", start); // find the end of the id
-    std::string id_str = m_id.substr(start, end - start);
-    uint64_t id = std::stoull(id_str);
-    //m_denService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
+    uint64_t id = 777888999; // Default ID for LTE server
+    if (!m_id.empty() && m_id.find("_") != std::string::npos) {
+        size_t start = m_id.find("_") + 1;
+        size_t end = m_id.find_first_not_of("0123456789", start); // find the end of the id
+        if (start < m_id.length()) {
+            std::string id_str = m_id.substr(start, end - start);
+            try {
+                id = m_stationId_baseline + std::stoull(id_str);
+            } catch (...) {}
+        }
+    }
 
     /* Set callback and station properties in CABasicService */
-    m_caService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
+    m_caService.setStationProperties (id, StationType_roadSideUnit);
     m_caService.setSocketRx (m_socket);
     m_caService.setSocketTx (m_socket);
-    m_caService.addCARxCallback (std::bind(&tlmServer80211p::receiveCAM,this,std::placeholders::_1,std::placeholders::_2));
+    m_caService.addCARxCallback (std::bind(&tlmServerLTE::receiveCAM,this,std::placeholders::_1,std::placeholders::_2));
 
-    m_tlmBasicService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
+    m_tlmBasicService.setStationProperties (id, StationType_roadSideUnit);
     // m_tlmBasicService.setSocketRx (m_socket);
     m_tlmBasicService.setSocketTx (m_socket);
 
-    libsumo::TraCIPosition rsuPosXY = m_client->TraCIAPI::poi.getPosition (m_id);
-    libsumo::TraCIPosition rsuPosLonLat = m_client->TraCIAPI::simulation.convertXYtoLonLat (rsuPosXY.x,rsuPosXY.y);
+    libsumo::TraCIPosition rsuPosLonLat;
+    try {
+        if (!m_id.empty()) {
+            libsumo::TraCIPosition rsuPosXY = m_client->TraCIAPI::poi.getPosition (m_id);
+            rsuPosLonLat = m_client->TraCIAPI::simulation.convertXYtoLonLat (rsuPosXY.x,rsuPosXY.y);
+        } else {
+            rsuPosLonLat = m_client->TraCIAPI::simulation.convertXYtoLonLat (0,0);
+        }
+    } catch (...) {
+        rsuPosLonLat = m_client->TraCIAPI::simulation.convertXYtoLonLat (0,0);
+    }
 
     //m_denService.setFixedPositionRSU (rsuPosLonLat.y,rsuPosLonLat.x);
     m_caService.setFixedPositionRSU (rsuPosLonLat.y,rsuPosLonLat.x);
@@ -210,11 +221,11 @@ namespace ns3
 
     /* If aggregate output is enabled, start it */
     if (m_aggregate_output)
-      m_aggegateOutputEvent = Simulator::Schedule (Seconds(1), &tlmServer80211p::aggregateOutput, this);
+      m_aggegateOutputEvent = Simulator::Schedule (Seconds(1), &tlmServerLTE::aggregateOutput, this);
   }
 
   void
-  tlmServer80211p::StopApplication ()
+  tlmServerLTE::StopApplication ()
   {
     NS_LOG_FUNCTION(this);
     Simulator::Cancel (m_aggegateOutputEvent);
@@ -227,19 +238,23 @@ namespace ns3
   }
 
   void
-  tlmServer80211p::StopApplicationNow ()
+  tlmServerLTE::StopApplicationNow ()
   {
     NS_LOG_FUNCTION(this);
     StopApplication ();
   }
 
   void
-  tlmServer80211p::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
+  tlmServerLTE::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
   {
     /* The reception of a CAM, in this case, woarks as a trigger to generate DENMs.
      * If no CAMs are received, then no DENMs are generated */
     m_cam_received++;
 
+    if (m_active_vehicles.find(from) == m_active_vehicles.end())
+    {
+        m_active_vehicles.insert(from);
+    }
 
     if (!m_csv_name.empty ())
       {
@@ -255,7 +270,7 @@ namespace ns3
   }
 
   long
-  tlmServer80211p::compute_timestampIts ()
+  tlmServerLTE::compute_timestampIts ()
   {
     /* To get millisec since  2004-01-01T00:00:00:000Z */
     auto time = std::chrono::system_clock::now(); // get the current time
@@ -267,10 +282,10 @@ namespace ns3
   }
 
   void
-  tlmServer80211p::aggregateOutput()
+  tlmServerLTE::aggregateOutput()
   {
     std::cout << Simulator::Now () << "," << m_cam_received << std::endl;
-    m_aggegateOutputEvent = Simulator::Schedule (Seconds(1), &tlmServer80211p::aggregateOutput, this);
+    m_aggegateOutputEvent = Simulator::Schedule (Seconds(1), &tlmServerLTE::aggregateOutput, this);
   }
 
 }

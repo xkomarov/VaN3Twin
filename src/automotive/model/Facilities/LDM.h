@@ -119,6 +119,7 @@ public:
      * */
     LDM_error_t rangeSelect(double range_m, uint64_t stationID, std::vector<returnedVehicleData_t> &selectedVehicles);
 
+
     /**
      * @brief This function updates the timestamp indicating the last time the given object has been included in a CPM
      *
@@ -138,6 +139,41 @@ public:
      * @return
      */
     bool getAllPOs(std::vector<returnedVehicleData_t> &selectedVehicles);
+
+    /**
+     * @brief Insert static traffic light topology
+     * @param staticTLData the traffic light static data
+     * @return LDM_error_t the result of the operation
+     */
+    LDM_error_t insertStaticTL(trafficLightData_t staticTLData);
+
+    /**
+     * @brief Update dynamic traffic light state according to SPATEM
+     * @param intersectionID the intersection ID
+     * @param signalGroup the signal group ID
+     * @param state the event state
+     * @return LDM_error_t the result of the operation
+     */
+    LDM_error_t updateTLState(uint64_t intersectionID, long signalGroup, long state);
+
+    /**
+     * @brief Lookup traffic light data
+     * @param intersectionID the intersection ID
+     * @param retTLData the structure in which the traffic light data will be returned
+     * @return LDM_error_t the result of the operation
+     */
+    LDM_error_t lookupTL(uint64_t intersectionID, trafficLightData_t &retTLData);
+
+    /**
+     * @brief Retrieve traffic lights within range
+     * @param range_m the search radius
+     * @param lat the search center latitude
+     * @param lon the search center longitude
+     * @param selectedTLs the sorted-out vector
+     * @return LDM_error_t the result of the operation
+     */
+    LDM_error_t rangeSelectTL(double range_m, double lat, double lon, std::vector<trafficLightData_t> &selectedTLs);
+
     /**
      * @brief This function returns all Connected Vehicles (CVs) that are currently in the LDM, false if there are not CVs in LDM
      * @param selectedVehicles
@@ -235,6 +271,8 @@ private:
 
 	// Main database structure
 	std::unordered_map<uint64_t,returnedVehicleData_t> m_LDM;
+	// Traffic lights datastructure
+	std::unordered_map<uint64_t,trafficLightData_t> m_TrafficLights;
 	// Database cardinality (number of entries stored in the database)
 	uint64_t m_card;
 	long m_count;

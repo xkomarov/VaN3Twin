@@ -47,12 +47,13 @@ namespace ns3 {
     VDPTraCI(Ptr<TraciClient> traci_client, std::string node_id, bool isStatic, std::string tls_id);
 
     void setProperties(Ptr<TraciClient> traci_client,std::string node_id) {m_traci_client=traci_client; m_id=node_id;}
+    void setTargetTls(std::string tls_id) { m_tls_id = tls_id; }
 
     /**
-   * @brief This function returns the mandatory data of the SPATEM message.
-   * @return The mandatory data of the SPATEM message.
+   * @brief This function returns the mandatory data of the SPATEM message for all traffic lights.
+   * @return The mandatory data of the SPATEM message for all traffic lights.
    */
-    SPATEM_mandatory_data_t getSPATEMMandatoryData();
+    std::vector<SPATEM_mandatory_data_t> getSPATEMMandatoryData();
     
     /**
      * @brief This function returns the mandatory data of the CAM message.

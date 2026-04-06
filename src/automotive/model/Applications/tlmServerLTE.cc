@@ -140,30 +140,10 @@ namespace ns3
     m_caService.setFixedPositionRSU (rsuPosLonLat.y,rsuPosLonLat.x);
     m_tlmBasicService.setFixedPositionRSU (rsuPosLonLat.y,rsuPosLonLat.x);
 
-    std::map<std::string, std::string> rsu_to_tls;
- 
-    rsu_to_tls["poi_0"] = "c1"; 
-    rsu_to_tls["poi_1"] = "c2"; 
-
-    // 2. Ищем, какой светофор привязан к текущей RSU (которая сейчас запускается)
-    std::string target_tls_id = "";
-    if (rsu_to_tls.count(m_id) > 0) {
-        target_tls_id = rsu_to_tls[m_id];
-    } else {
-        // Если вдруг появилась новая RSU, но мы забыли добавить ее в словарь выше
-        target_tls_id = "c1"; 
-    }
-
-    // Задаем индивидуальный радиус зоны распространения для каждого светофора
-    std::map<std::string, uint16_t> tls_to_radius;
-    tls_to_radius["c1"] = 50;  // Радиус для светофора c1
-    tls_to_radius["c2"] = 50; // Радиус для светофора c2
-    // tls_to_radius["c3"] = 120; // для других...
+    // VDP for the global server: Empty string pulls all Traffic Lights
+    VDP* traci_vdp = new VDPTraCI(m_client, m_sumo_id, true, ""); 
     
-    uint16_t area_radius = 50; // Радиус по умолчанию
-    if (tls_to_radius.count(target_tls_id) > 0) {
-        area_radius = tls_to_radius[target_tls_id];
-    }
+    uint16_t area_radius = 5000; // Global map radius for the consolidated SPATEM geocast
 
     /* Compute GeoArea for DENMs and SPATEMs (TLM) */
     GeoArea_t geoArea;
@@ -179,9 +159,6 @@ namespace ns3
 
     m_tlmBasicService.setGeoArea (geoArea);
 
-    // 3. Вызываем наш НОВЫЙ конструктор, передавая ему правильный ID светофора!
-    VDP* traci_vdp = new VDPTraCI(m_client, m_id, true, target_tls_id);
-    
     m_btp->setVDP(traci_vdp); 
 
     m_caService.setVDP(traci_vdp);

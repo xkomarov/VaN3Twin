@@ -87,6 +87,8 @@ class tlmServerLTE : public Application
     Ptr<MetricSupervisor> m_metric_supervisor = nullptr;
 
     uint64_t m_stationId_baseline = 1000000;
+    bool m_massiveAssembly; //!< To define if the server generates 1 massive or N localized SPATEMs.
+    VDP* traci_vdp; //!< VDP pointer
   };
 
 } // namespace ns3

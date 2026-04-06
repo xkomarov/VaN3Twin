@@ -131,7 +131,7 @@ namespace ns3
   TLMBasicService_error_t
   TLMBasicService::doGenerateAndEncodeSPATEM()
   {
-    VDP::SPATEM_mandatory_data_t spatem_mandatory_data;
+
     TLMBasicService_error_t errval=SPATEM_NO_ERROR;
 
     Ptr<Packet> packet;
@@ -156,13 +156,15 @@ namespace ns3
     asn1cpp::setField(spatem->header.protocolVersion , 2);
     asn1cpp::setField(spatem->header.stationId, m_station_id);
 
-    spatem_mandatory_data=m_vdp->getSPATEMMandatoryData();
+    std::vector<VDP::SPATEM_mandatory_data_t> spatem_mandatory_data_list = m_vdp->getSPATEMMandatoryData();
 
-    if(spatem_mandatory_data.optional_data)
+    if (!spatem_mandatory_data_list.empty() && spatem_mandatory_data_list[0].optional_data)
     {
       asn1cpp::setField(spatem->spat.timeStamp, 0);
       asn1cpp::setField(spatem->spat.name, "0");
     }
+
+    for (const auto& spatem_mandatory_data : spatem_mandatory_data_list) {
 
 
     auto intersectionState = asn1cpp::makeSeq(IntersectionState);
@@ -265,6 +267,7 @@ namespace ns3
     }
     
     asn1cpp::sequenceof::pushList(spatem->spat.intersections, intersectionState);
+    }
     
     // if (spatem_mandatory_data.status.buf != nullptr) {
     //     free(spatem_mandatory_data.status.buf);

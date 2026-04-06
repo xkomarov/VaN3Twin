@@ -151,11 +151,8 @@ namespace ns3
     /* Create CSV file, if requested */
     if (!m_csv_name.empty ())
     {
-      long messageID = spatem->header.messageId;
-      long stationID = spatem->header.stationId;
       m_csv_ofstream.open (m_csv_name+"-"+m_id+".csv",std::ofstream::trunc);
-      m_csv_ofstream << messageID << "," << stationID << "," 
-      << "messageID,originatingStationId,sequence,referenceTime,detectionTime,stationID" << std::endl;
+      m_csv_ofstream << "messageID,originatingStationId,sequence,referenceTime,detectionTime,stationID" << std::endl;
     }
 
     /* Schedule CAM dissemination */
@@ -217,6 +214,13 @@ namespace ns3
 
     /* Implement SPATEM strategy here */
     m_spatem_received++;
+
+    if (!m_csv_name.empty () && m_csv_ofstream.is_open())
+    {
+      long messageID = asn1cpp::getField(spatem->header.messageId, long);
+      long stationID = asn1cpp::getField(spatem->header.stationId, long);
+      m_csv_ofstream << messageID << ",0,0,0,0," << stationID << std::endl;
+    }
 
     //asn_fprint(stdout, &asn_DEF_SPATEM, &(*spatem));
     //std::cout << m_client->TraCIAPI::vehicle.getLaneID(m_id) << std::endl;
@@ -316,7 +320,7 @@ namespace ns3
       }
     }
 
-    m_spatemTimeout = Simulator::Schedule(Seconds(0.2),&tlmClientLTE::spatemTimeout,this);
+    m_spatemTimeout = Simulator::Schedule(Seconds(0.7),&tlmClientLTE::spatemTimeout,this);
   }
 
   void

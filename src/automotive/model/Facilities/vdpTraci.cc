@@ -372,73 +372,82 @@ namespace ns3
     return CPMdata;
   }
 
-  VDPTraCI::SPATEM_mandatory_data_t
+  std::vector<VDP::SPATEM_mandatory_data_t>
   VDPTraCI::getSPATEMMandatoryData()
   {
-      SPATEM_mandatory_data_t spatData;
-
-      spatData.optional_data = false;
-
-      std::string target_id = m_tls_id.empty() ? m_id : m_tls_id;
-
-      try {
-            spatData.intersectionId = (uint16_t)std::hash<std::string>{}(target_id);
-          } catch (...) {
-            spatData.intersectionId = 0;
-          }
-
-      // Если нужно установить, например, 0-й бит (manualControlIsEnabled)
-      spatData.status.size = 2; // IntersectionStatusObject обычно 16 бит
-      spatData.status.bits_unused = 0;
-      spatData.status.buf = (uint8_t*)calloc(2, sizeof(uint8_t));
-      spatData.status.buf[0] = 0x80; // Установка первого бита
-      spatData.revision = 0;
-
-      std::string stateString = m_traci_client->TraCIAPI::trafficlights.getRedYellowGreenState(target_id);
-
-      double nextSwitch = m_traci_client->TraCIAPI::trafficlights.getNextSwitch(target_id);
-      double simTime = m_traci_client->TraCIAPI::simulation.getTime();
-      double timeLeft = nextSwitch - simTime;
-      if (timeLeft < 0) timeLeft = 0.0;
-      uint16_t timeLeftDeciSeconds = (uint16_t)(std::round(timeLeft * 10.0));      
-
-      for (size_t i = 0; i < stateString.length(); ++i) {
-          SPATEM_SignalGroupState_t groupState;
-          groupState.signalGroupID = (int)i + 1; 
-          groupState.minEndTime = timeLeftDeciSeconds;
-
-          char s = stateString[i];
-          
-          switch (s) {
-                      case 'r': 
-                      case 'R': 
-                          groupState.eventState = 3; // stop-And-Remain
-                          break;
-                      case 'y': 
-                      case 'Y': 
-                          groupState.eventState = 7; // intersection-clearance
-                          break;
-                      case 'g': 
-                          groupState.eventState = 5; // permissive-Movement-Allowed
-                          break;
-                      case 'G': 
-                          groupState.eventState = 6; // protected-Movement-Allowed
-                          break;
-                      case 'u': 
-                          groupState.eventState = 3; 
-                          break; 
-                      case 'o': 
-                          groupState.eventState = 1; // unavailable / off
-                          break;
-                      default:
-                          groupState.eventState = 1; // unavailable
-                          break;
-                  }
-
-          spatData.states.push_back(groupState);
-      }
+      std::vector<SPATEM_mandatory_data_t> result;
+      std::vector<std::string> tls_ids;
       
-      return spatData;
+      if (!m_tls_id.empty()) {
+          tls_ids.push_back(m_tls_id);
+      } else {
+          tls_ids = m_traci_client->TraCIAPI::trafficlights.getIDList();
+      }
+
+      for (const auto& target_id : tls_ids) {
+          SPATEM_mandatory_data_t spatData;
+
+          spatData.optional_data = false;
+
+          try {
+                spatData.intersectionId = (uint16_t)std::hash<std::string>{}(target_id);
+              } catch (...) {
+                spatData.intersectionId = 0;
+              }
+
+          // Если нужно установить, например, 0-й бит (manualControlIsEnabled)
+          spatData.status.size = 2; // IntersectionStatusObject обычно 16 бит
+          spatData.status.bits_unused = 0;
+          spatData.status.buf = (uint8_t*)calloc(2, sizeof(uint8_t));
+          spatData.status.buf[0] = 0x80; // Установка первого бита
+          spatData.revision = 0;
+
+          std::string stateString = m_traci_client->TraCIAPI::trafficlights.getRedYellowGreenState(target_id);
+
+          double nextSwitch = m_traci_client->TraCIAPI::trafficlights.getNextSwitch(target_id);
+          double simTime = m_traci_client->TraCIAPI::simulation.getTime();
+          double timeLeft = nextSwitch - simTime;
+          if (timeLeft < 0) timeLeft = 0.0;
+          uint16_t timeLeftDeciSeconds = (uint16_t)(std::round(timeLeft * 10.0));      
+
+          for (size_t i = 0; i < stateString.length(); ++i) {
+              SPATEM_SignalGroupState_t groupState;
+              groupState.signalGroupID = (int)i + 1; 
+              groupState.minEndTime = timeLeftDeciSeconds;
+
+              char s = stateString[i];
+              
+              switch (s) {
+                          case 'r': 
+                          case 'R': 
+                              groupState.eventState = 3; // stop-And-Remain
+                              break;
+                          case 'y': 
+                          case 'Y': 
+                              groupState.eventState = 7; // intersection-clearance
+                              break;
+                          case 'g': 
+                              groupState.eventState = 5; // permissive-Movement-Allowed
+                              break;
+                          case 'G': 
+                              groupState.eventState = 6; // protected-Movement-Allowed
+                              break;
+                          case 'u': 
+                              groupState.eventState = 3; 
+                              break; 
+                          case 'o': 
+                              groupState.eventState = 1; // unavailable / off
+                              break;
+                          default:
+                              groupState.eventState = 1; // unavailable
+                              break;
+                      }
+
+              spatData.states.push_back(groupState);
+          }
+          result.push_back(spatData);
+      }
+      return result;
   }
 
   VDPDataItem<int>

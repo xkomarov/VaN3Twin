@@ -149,9 +149,10 @@ namespace ns3
     return CPMdata;
   }
 
-  VDP::SPATEM_mandatory_data_t
+  std::vector<VDP::SPATEM_mandatory_data_t>
   VDPGPSTraceClient::getSPATEMMandatoryData()
   {
+    std::vector<VDP::SPATEM_mandatory_data_t> result;
     VDP::SPATEM_mandatory_data_t emptyData;
     emptyData.intersectionId = 0;
     emptyData.status.buf = nullptr;
@@ -162,7 +163,8 @@ namespace ns3
     emptyData.timeStamp = 0; 
     emptyData.optional_data = false;   
     
-    return emptyData;
+    result.push_back(emptyData);
+    return result;
   }
 
   VDP::VDP_position_latlon_t

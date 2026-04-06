@@ -115,7 +115,21 @@ namespace ns3
   }
 
   TLMBasicService_error_t
+  TLMBasicService::appTLM_trigger()
+  {
+    return doGenerateAndEncodeSPATEM();
+  }
+
+  TLMBasicService_error_t
   TLMBasicService::generateAndEncodeSPATEM()
+  {
+    m_event_spatemSend = Simulator::Schedule (MilliSeconds (m_N_GenSpatem),
+                                           &TLMBasicService::generateAndEncodeSPATEM, this);
+    return doGenerateAndEncodeSPATEM();
+  }
+
+  TLMBasicService_error_t
+  TLMBasicService::doGenerateAndEncodeSPATEM()
   {
     VDP::SPATEM_mandatory_data_t spatem_mandatory_data;
     TLMBasicService_error_t errval=SPATEM_NO_ERROR;
@@ -136,9 +150,6 @@ namespace ns3
       {
         return SPATEM_ALLOC_ERROR;
       }
-
-    m_event_spatemSend = Simulator::Schedule (MilliSeconds (m_N_GenSpatem),
-                                           &TLMBasicService::generateAndEncodeSPATEM, this);
 
 
     asn1cpp::setField(spatem->header.messageId, FIX_SPATEMID);

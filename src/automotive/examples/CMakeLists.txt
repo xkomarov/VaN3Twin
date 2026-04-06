@@ -8,7 +8,16 @@ build_lib_example(
     ${libtraci}
 )
     
-    
+build_lib_example(
+    NAME v2i-tlm-lte 
+    SOURCE_FILES v2i-tlm-lte.cc
+    LIBRARIES_TO_LINK
+    ${libcarla}
+    ${libautomotive}
+    ${liblte}
+    ${libtraci}
+)
+
 build_lib_example(
     NAME v2i-areaSpeedAdvisor-80211p
     SOURCE_FILES v2i-areaSpeedAdvisor-80211p.cc

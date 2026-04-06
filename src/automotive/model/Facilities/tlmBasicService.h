@@ -132,6 +132,12 @@ namespace ns3
     void startSpatemDissemination();
     uint64_t terminateDissemination();
 
+    /**
+     * @brief Trigger the generation and transmission of a SPATEM manually.
+     * This is useful for Unicast LTE scenarios where the periodic loop is not suitable.
+     */
+    TLMBasicService_error_t appTLM_trigger();
+
     const long T_GenSpatemMin_ms = 100;    //!< Минимальный интервал между генерациями CPM (100 мс)
     const long T_GenSpatem_ms = 100;       //!< Стандартный интервал генерации CPM (100 мс)
     const long T_GenSpatemMax_ms = 1000;   //!< Максимальный интервал между генерациями CPM (1000 мс)
@@ -148,6 +154,7 @@ namespace ns3
 
     int64_t computeTimestampUInt64();
     TLMBasicService_error_t generateAndEncodeSPATEM();
+    TLMBasicService_error_t doGenerateAndEncodeSPATEM();
 
 
     std::function<void(asn1cpp::Seq<SPATEM>, Address)> m_TLMReceiveCallback;

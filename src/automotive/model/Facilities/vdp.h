@@ -219,7 +219,7 @@ namespace ns3
 
       virtual CAM_mandatory_data_t getCAMMandatoryData() = 0;
       virtual CPM_mandatory_data_t getCPMMandatoryData() = 0;
-      virtual SPATEM_mandatory_data_t getSPATEMMandatoryData() = 0;
+      virtual std::vector<SPATEM_mandatory_data_t> getSPATEMMandatoryData() = 0;
 
       // These methods are used by the CAM generation frequency management mechanism,
       // as mandated by ETSI, and they should return values which are not already

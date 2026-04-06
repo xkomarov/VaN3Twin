@@ -1,4 +1,4 @@
-#include "tlmServer80211p.h"
+#include "tlmServerLTE.h"
 
 #include "ns3/CAM.h"
 #include "ns3/SPATEM.h"
@@ -15,99 +15,94 @@
 
 namespace ns3
 {
-  NS_LOG_COMPONENT_DEFINE("tlmServer80211p");
+  NS_LOG_COMPONENT_DEFINE("tlmServerLTE");
 
-  NS_OBJECT_ENSURE_REGISTERED(tlmServer80211p);
+  NS_OBJECT_ENSURE_REGISTERED(tlmServerLTE);
 
   TypeId
-  tlmServer80211p::GetTypeId (void)
+  tlmServerLTE::GetTypeId (void)
   {
     static TypeId tid =
-        TypeId ("ns3::tlmServer80211p")
+        TypeId ("ns3::tlmServerLTE")
         .SetParent<Application> ()
         .SetGroupName ("Applications")
-        .AddConstructor<tlmServer80211p> ()
+        .AddConstructor<tlmServerLTE> ()
         .AddAttribute ("AggregateOutput",
            "If it is true, the server will print every second an aggregate output about cam and denm",
            BooleanValue (false),
-           MakeBooleanAccessor (&tlmServer80211p::m_aggregate_output),
+           MakeBooleanAccessor (&tlmServerLTE::m_aggregate_output),
            MakeBooleanChecker ())
         .AddAttribute ("RealTime",
            "To compute properly timestamps",
            BooleanValue(false),
-           MakeBooleanAccessor (&tlmServer80211p::m_real_time),
+           MakeBooleanAccessor (&tlmServerLTE::m_real_time),
            MakeBooleanChecker ())
         .AddAttribute ("CSV",
             "CSV log name",
             StringValue (),
-            MakeStringAccessor (&tlmServer80211p::m_csv_name),
+            MakeStringAccessor (&tlmServerLTE::m_csv_name),
             MakeStringChecker ())
         .AddAttribute ("Client",
            "TraCI client for SUMO",
            PointerValue (0),
-           MakePointerAccessor (&tlmServer80211p::m_client),
+           MakePointerAccessor (&tlmServerLTE::m_client),
            MakePointerChecker<TraciClient> ())
         .AddAttribute ("MetricSupervisor",
             "Metric Supervisor to compute metric according to 3GPP TR36.885 V14.0.0 page 70",
             PointerValue (0),
-            MakePointerAccessor (&tlmServer80211p::m_metric_supervisor),
+            MakePointerAccessor (&tlmServerLTE::m_metric_supervisor),
             MakePointerChecker<MetricSupervisor> ())
         .AddAttribute ("SendCAM",
              "To enable/disable the transmission of CAM messages",
              BooleanValue(true),
-             MakeBooleanAccessor (&tlmServer80211p::m_send_cam),
-             MakeBooleanChecker ());
+             MakeBooleanAccessor (&tlmServerLTE::m_send_cam),
+             MakeBooleanChecker ())
+        .AddAttribute ("SumoId",
+             "SUMO ID of the POI/RSU this server represents",
+             StringValue ("poi_0"),
+             MakeStringAccessor (&tlmServerLTE::m_sumo_id),
+             MakeStringChecker ());
 
         return tid;
   }
 
-  tlmServer80211p::tlmServer80211p ()
+  tlmServerLTE::tlmServerLTE ()
   {
     NS_LOG_FUNCTION(this);
     m_client = nullptr;
     m_cam_received = 0;
   }
 
-  tlmServer80211p::~tlmServer80211p ()
+  tlmServerLTE::~tlmServerLTE ()
   {
     NS_LOG_FUNCTION(this);
   }
 
   void
-  tlmServer80211p::DoDispose (void)
+  tlmServerLTE::DoDispose (void)
   {
     NS_LOG_FUNCTION(this);
     Application::DoDispose ();
   }
 
   void
-  tlmServer80211p::StartApplication (void)
+  tlmServerLTE::StartApplication (void)
   {
     NS_LOG_FUNCTION(this);
 
-    m_id = m_client->GetStationId (this -> GetNode ());
+    m_id = m_sumo_id;
 
     /* TX socket for DENMs and RX socket for CAMs (one socket only is necessary) */
-    TypeId tid = TypeId::LookupByName ("ns3::PacketSocketFactory");
+    TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
 
     m_socket = Socket::CreateSocket (GetNode (), tid);
 
     /* Bind the socket to local address */
-    PacketSocketAddress local_denm;
-    local_denm.SetSingleDevice (GetNode ()->GetDevice (0)->GetIfIndex ());
-    local_denm.SetPhysicalAddress (GetNode ()->GetDevice (0)->GetAddress ());
-    local_denm.SetProtocol (0x8947);
-    if (m_socket->Bind (local_denm) == -1)
+    InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 9);
+    if (m_socket->Bind (local) == -1)
     {
       NS_FATAL_ERROR ("Failed to bind server socket");
     }
-
-    /* Set socket to broacdcast */
-    PacketSocketAddress remote;
-    remote.SetSingleDevice (GetNode ()->GetDevice (0)->GetIfIndex ());
-    remote.SetPhysicalAddress (GetNode ()->GetDevice (0)->GetBroadcast ());
-    remote.SetProtocol (0x8947);
-    m_socket->Connect(remote);
 
     /* Create new BTP and GeoNet objects and set them in DENBasicService and CABasicService */
     m_btp = CreateObject <btp>();
@@ -132,10 +127,10 @@ namespace ns3
     m_caService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
     m_caService.setSocketRx (m_socket);
     m_caService.setSocketTx (m_socket);
-    m_caService.addCARxCallback (std::bind(&tlmServer80211p::receiveCAM,this,std::placeholders::_1,std::placeholders::_2));
+    m_caService.addCARxCallback (std::bind(&tlmServerLTE::receiveCAM,this,std::placeholders::_1,std::placeholders::_2));
 
     m_tlmBasicService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
-    //m_tlmBasicService.setSocketRx (m_socket);
+    m_tlmBasicService.setSocketRx (m_socket);
     m_tlmBasicService.setSocketTx (m_socket);
 
     libsumo::TraCIPosition rsuPosXY = m_client->TraCIAPI::poi.getPosition (m_id);
@@ -196,7 +191,8 @@ namespace ns3
 
 
 
-    m_tlmBasicService.startSpatemDissemination();
+    // Removed periodic dissemination in LTE. Will be triggered strictly in receiveCAM.
+    // m_tlmBasicService.startSpatemDissemination();
 
     if(m_send_cam)
       {
@@ -213,11 +209,11 @@ namespace ns3
 
     /* If aggregate output is enabled, start it */
     if (m_aggregate_output)
-      m_aggegateOutputEvent = Simulator::Schedule (Seconds(1), &tlmServer80211p::aggregateOutput, this);
+      m_aggegateOutputEvent = Simulator::Schedule (Seconds(1), &tlmServerLTE::aggregateOutput, this);
   }
 
   void
-  tlmServer80211p::StopApplication ()
+  tlmServerLTE::StopApplication ()
   {
     NS_LOG_FUNCTION(this);
     Simulator::Cancel (m_aggegateOutputEvent);
@@ -230,19 +226,18 @@ namespace ns3
   }
 
   void
-  tlmServer80211p::StopApplicationNow ()
+  tlmServerLTE::StopApplicationNow ()
   {
     NS_LOG_FUNCTION(this);
     StopApplication ();
   }
 
   void
-  tlmServer80211p::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
+  tlmServerLTE::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
   {
-    /* The reception of a CAM, in this case, woarks as a trigger to generate DENMs.
-     * If no CAMs are received, then no DENMs are generated */
+    /* The reception of a CAM works as a trigger to generate/reply with SPATEMs.
+     * If no CAMs are received, then no SPATEMs are generated */
     m_cam_received++;
-
 
     if (!m_csv_name.empty ())
       {
@@ -254,11 +249,18 @@ namespace ns3
         m_csv_ofstream_cam << asn1cpp::getField(cam->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.longitudinalAcceleration.value,double)/DECI << std::endl;
       }
 
-//    ASN_STRUCT_FREE(asn_DEF_CAM,cam);
+    // Connect socket to specific vehicle UE IP and fire unicast SPATEM message
+    m_socket->Connect (from);
+    TLMBasicService_error_t trigger_retval = m_tlmBasicService.appTLM_trigger();
+    
+    if(trigger_retval != SPATEM_NO_ERROR)
+    {
+      NS_LOG_ERROR("Cannot trigger SPATEM. Error code: " << trigger_retval);
+    }
   }
 
   long
-  tlmServer80211p::compute_timestampIts ()
+  tlmServerLTE::compute_timestampIts ()
   {
     /* To get millisec since  2004-01-01T00:00:00:000Z */
     auto time = std::chrono::system_clock::now(); // get the current time
@@ -270,10 +272,10 @@ namespace ns3
   }
 
   void
-  tlmServer80211p::aggregateOutput()
+  tlmServerLTE::aggregateOutput()
   {
     std::cout << Simulator::Now () << "," << m_cam_received << std::endl;
-    m_aggegateOutputEvent = Simulator::Schedule (Seconds(1), &tlmServer80211p::aggregateOutput, this);
+    m_aggegateOutputEvent = Simulator::Schedule (Seconds(1), &tlmServerLTE::aggregateOutput, this);
   }
 
 }

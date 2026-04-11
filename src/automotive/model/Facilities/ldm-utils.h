@@ -150,6 +150,17 @@ namespace ns3 {
   /**
    * \ingroup automotive
    *
+   * @brief Per-lane stop-line position in SUMO XY coordinates
+   */
+  typedef struct _laneStopLinePos {
+      double x;        // SUMO X coordinate of stop line
+      double y;        // SUMO Y coordinate of stop line
+      double laneLen;   // Total lane length (for distance computation)
+  } laneStopLinePos_t;
+
+  /**
+   * \ingroup automotive
+   *
    * @brief Structure to store the data of a Traffic Light (SPATEM + static position) in the LDM
    */
   typedef struct _trafficLightData {
@@ -159,7 +170,19 @@ namespace ns3 {
 
       // Dictionary of signal group states:
       // key: signalGroup ID, value: eventState (from SPATEM)
-      std::unordered_map<long, long> signalGroupStates; 
+      std::unordered_map<long, long> signalGroupStates;
+
+      // Lane-to-signal-group mapping (simulates MAPEM lane topology):
+      // key: SUMO lane ID, value: signalGroup ID (tlIndex + 1)
+      std::unordered_map<std::string, long> laneToSignalGroup;
+
+      // Per-lane stop-line position for distance computation:
+      // key: SUMO lane ID, value: stop-line XY coordinates + lane length
+      std::unordered_map<std::string, laneStopLinePos_t> laneStopLines;
+
+      // Dictionary of signal group timing data (minEndTime from SPATEM):
+      // key: signalGroup ID, value: minEndTime in tenths of seconds
+      std::unordered_map<long, double> signalGroupTimings;
 
       uint64_t timestamp_us;       // Last update timestamp for SPATEM data
       bool isStaticLoaded;         // Flag to identify if topology was loaded from SUMO

@@ -68,6 +68,8 @@ namespace ns3
     m_cam_sent = 0;
     //m_denm_received = 0;
     m_spatem_received = 0;
+    m_glosaActive = false;
+    m_passedIntersectionID = 0;
   }
 
   tlmClientLTE::~tlmClientLTE ()
@@ -148,6 +150,13 @@ namespace ns3
 
     m_tlmBasicService.setVDP(traci_vdp);
 
+    /* Create LDM and mock-populate traffic light static topology (simulates MAPEM) */
+    m_LDM = CreateObject<LDM> ();
+    m_LDM->setStationID (m_id);
+    m_LDM->setTraCIclient (m_client);
+    m_LDM->setVDP (traci_vdp);
+    populateStaticTLData ();
+
     /* Create CSV file, if requested */
     if (!m_csv_name.empty ())
     {
@@ -170,6 +179,19 @@ namespace ns3
     NS_LOG_FUNCTION(this);
     Simulator::Cancel(m_sendCamEvent);
     Simulator::Cancel(m_spatemTimeout);
+
+    // Ensure GLOSA is disengaged before shutdown
+    if (m_glosaActive)
+      {
+        m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+        m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+        m_glosaActive = false;
+      }
+
+    if (m_LDM)
+      {
+        m_LDM->cleanup ();
+      }
 
     uint64_t cam_sent;
     cam_sent = m_caService.terminateDissemination ();
@@ -222,115 +244,360 @@ namespace ns3
       m_csv_ofstream << messageID << ",0,0,0,0," << stationID << std::endl;
     }
 
-    //asn_fprint(stdout, &asn_DEF_SPATEM, &(*spatem));
-    //std::cout << m_client->TraCIAPI::vehicle.getLaneID(m_id) << std::endl;
-    //std::cout << m_client->TraCIAPI::vehicle.getRoadID(m_id) << std::endl;
-    //std::cout << m_client->TraCIAPI::vehicle.getPosition(m_id) << std::endl;
-    //std::cout << m_id << std::endl;
-    auto upcomingTLS = m_client->TraCIAPI::vehicle.getNextTLS(m_id);
-    
-    if (upcomingTLS.size() > 0) {
-      std::string sumo_tls_id = upcomingTLS[0].id;
-      long expected_intersection_id = (uint16_t)std::hash<std::string>{}(sumo_tls_id);
-      long target_tl_index = upcomingTLS[0].tlIndex + 1; 
+    // === Step 1: Update LDM with received SPATEM data (states + timing) ===
+    for (int j = 0; j < spatem->spat.intersections.list.count; ++j)
+      {
+        auto intersection = spatem->spat.intersections.list.array[j];
+        uint64_t intersectionID = intersection->id.id;
 
-      for (int j = 0; j < spatem->spat.intersections.list.count; ++j) {
-          auto intersection = spatem->spat.intersections.list.array[j];
-          
-          if (intersection->id.id == expected_intersection_id) {
-              for (int i = 0; i < intersection->states.list.count; ++i) {
-                  auto movement = intersection->states.list.array[i];
-                  
-                  if (movement->signalGroup == target_tl_index && movement->state_time_speed.list.count > 0) {
-                      
-                      long current_light_state = movement->state_time_speed.list.array[0]->eventState;
-                      
-                      // Расстояние до стоп-линии из TraCI
-                      double dist = upcomingTLS[0].dist;
-                      
-                      // Получаем время до переключения фазы светофора из SPATEM
-                      double timeToSwitch = 0.0;
-                      if (movement->state_time_speed.list.array[0]->timing != nullptr) {
-                          // minEndTime передается в десятых долях секунды (согласно vdpTraci.cc)
-                          timeToSwitch = movement->state_time_speed.list.array[0]->timing->minEndTime / 10.0;
-                      } else {
-                          // Резервный вариант, если поля timing нет в пакете
-                          double currentTime = m_client->TraCIAPI::simulation.getTime();
-                          double nextSwitch = m_client->TraCIAPI::trafficlights.getNextSwitch(sumo_tls_id);
-                          timeToSwitch = nextSwitch - currentTime;
-                      }
-                      
-                      // Параметры для ограничений скорости
-                      double maxSpeed = m_client->TraCIAPI::vehicle.getAllowedSpeed(m_id); 
-                      double minSpeed = 5.0;  // м/с (около 18 км/ч)
-                      double currentSpeed = m_client->TraCIAPI::vehicle.getSpeed(m_id);
+        for (int i = 0; i < intersection->states.list.count; ++i)
+          {
+            auto movement = intersection->states.list.array[i];
+            if (movement->state_time_speed.list.count > 0)
+              {
+                long eventState = movement->state_time_speed.list.array[0]->eventState;
+                m_LDM->updateTLState (intersectionID, movement->signalGroup, eventState);
 
-                      // === ЛОГИКА GLOSA ===
-                      if (current_light_state == 3) {
-                          // Красный: пытаемся ехать так, чтобы приехать к зеленому
-                          double targetSpeed = dist / timeToSwitch;
-                          
-                          if (targetSpeed <= maxSpeed && targetSpeed >= minSpeed) {
-                              m_client->TraCIAPI::vehicle.setSpeed(m_id, targetSpeed);
-                              
-                              libsumo::TraCIColor glosaGreen;
-                              glosaGreen.r = 50; glosaGreen.g = 205; glosaGreen.b = 50; glosaGreen.a = 255;
-                              m_client->TraCIAPI::vehicle.setColor(m_id, glosaGreen);
-                          } else {
-                              // Не можем подстроиться - просто останавливаемся
-                              m_client->TraCIAPI::vehicle.setSpeed(m_id, -1.0);
-                              
-                              libsumo::TraCIColor red;
-                              red.r = 255; red.g = 0; red.b = 0; red.a = 255;
-                              m_client->TraCIAPI::vehicle.setColor(m_id, red);
-                          }
-                      } else if (current_light_state == 6 || current_light_state == 5) {
-                          // Зеленый: проверяем, успеваем ли проехать
-                          double estimatedArrivalTime = dist / std::max(currentSpeed, 1.0);
-                          
-                          if (estimatedArrivalTime < timeToSwitch) {
-                              // Успеваем! Едем с обычной скоростью
-                              m_client->TraCIAPI::vehicle.setSpeed(m_id, -1.0);
-                              
-                              libsumo::TraCIColor blue;
-                              blue.r = 0; blue.g = 0; blue.b = 255; blue.a = 255;
-                              m_client->TraCIAPI::vehicle.setColor(m_id, blue);
-                          } else {
-                              // Не успеваем (приедем на красный). Тормозим заранее.
-                              double targetSpeed = dist / timeToSwitch;
-                              
-                              if (targetSpeed <= maxSpeed && targetSpeed >= minSpeed) {
-                                  m_client->TraCIAPI::vehicle.setSpeed(m_id, targetSpeed);
-                                  
-                                  libsumo::TraCIColor yellow;
-                                  yellow.r = 255; yellow.g = 215; yellow.b = 0; yellow.a = 255;
-                                  m_client->TraCIAPI::vehicle.setColor(m_id, yellow);
-                              } else {
-                                  // Просто едем и останавливаемся
-                                  m_client->TraCIAPI::vehicle.setSpeed(m_id, -1.0); 
-                              }
-                          }
+                // Also store timing data in the LDM
+                trafficLightData_t tlData;
+                if (m_LDM->lookupTL (intersectionID, tlData) == LDM::LDM_OK)
+                  {
+                    if (movement->state_time_speed.list.array[0]->timing != nullptr)
+                      {
+                        tlData.signalGroupTimings[movement->signalGroup] =
+                            movement->state_time_speed.list.array[0]->timing->minEndTime;
                       }
-                      
-                      break;
+                    // Re-insert to update the timing data
+                    m_LDM->insertStaticTL (tlData);
                   }
               }
-              break;
           }
       }
-    }
 
-    m_spatemTimeout = Simulator::Schedule(Seconds(0.7),&tlmClientLTE::spatemTimeout,this);
+    // === Step 2: Get ego vehicle position and current lane ===
+    std::string currentLane = m_client->TraCIAPI::vehicle.getLaneID (m_id);
+    libsumo::TraCIPosition egoXY = m_client->TraCIAPI::vehicle.getPosition (m_id);
+    libsumo::TraCIPosition egoLL =
+        m_client->TraCIAPI::simulation.convertXYtoLonLat (egoXY.x, egoXY.y);
+
+    // === Step 3: Find nearby traffic lights from LDM ===
+    std::vector<trafficLightData_t> nearbyTLs;
+    m_LDM->rangeSelectTL (200.0, egoLL.y, egoLL.x, nearbyTLs);
+
+    if (nearbyTLs.empty ())
+      {
+        m_spatemTimeout = Simulator::Schedule (Seconds (1.0), &tlmClientLTE::spatemTimeout, this);
+        return;
+      }
+
+    // === Step 4: Find the TL that controls the vehicle's current lane ===
+    trafficLightData_t matchedTL;
+    long matchedSignalGroup = -1;
+    bool found = false;
+
+    for (const auto &tl : nearbyTLs)
+      {
+        auto sgIt = tl.laneToSignalGroup.find (currentLane);
+        if (sgIt != tl.laneToSignalGroup.end ())
+          {
+            matchedTL = tl;
+            matchedSignalGroup = sgIt->second;
+            found = true;
+            break;
+          }
+      }
+
+    if (!found || matchedTL.signalGroupStates.empty ())
+      {
+        m_passedIntersectionID = 0;
+        m_spatemTimeout = Simulator::Schedule (Seconds (1.0), &tlmClientLTE::spatemTimeout, this);
+        return;
+      }
+
+    if (matchedTL.intersectionID == m_passedIntersectionID)
+      {
+        return;
+      }
+
+    // === Step 5: Get traffic light state from LDM ===
+    auto stateIt = matchedTL.signalGroupStates.find (matchedSignalGroup);
+    if (stateIt == matchedTL.signalGroupStates.end ())
+      {
+        m_spatemTimeout = Simulator::Schedule (Seconds (1.0), &tlmClientLTE::spatemTimeout, this);
+        return;
+      }
+    long current_light_state = stateIt->second;
+
+    // === Step 6: Compute distance to stop line using LDM stop-line data ===
+    double dist = 0.0;
+    auto slIt = matchedTL.laneStopLines.find (currentLane);
+    if (slIt != matchedTL.laneStopLines.end ())
+      {
+        double dx = egoXY.x - slIt->second.x;
+        double dy = egoXY.y - slIt->second.y;
+        dist = std::sqrt (dx * dx + dy * dy);
+
+        double lanePos = m_client->TraCIAPI::vehicle.getLanePosition (m_id);
+        if (lanePos >= slIt->second.laneLen - 2.0)
+          {
+            m_passedIntersectionID = matchedTL.intersectionID;
+            m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+            spatemTimeout ();
+            return;
+          }
+      }
+    else
+      {
+        // Fallback: Haversine to intersection center
+        dist = 999.0;
+      }
+
+    // === Step 7: Get timing from LDM ===
+    double timeToSwitch = 0.0;
+    auto timingIt = matchedTL.signalGroupTimings.find (matchedSignalGroup);
+    if (timingIt != matchedTL.signalGroupTimings.end ())
+      {
+        timeToSwitch = timingIt->second / 10.0;
+      }
+
+    // === Step 8: Ego vehicle parameters ===
+    double maxSpeed = m_client->TraCIAPI::vehicle.getAllowedSpeed (m_id);
+    double minSpeed = 3.0; // m/s (~11 km/h) — below this GLOSA is impractical
+    double currentSpeed = m_client->TraCIAPI::vehicle.getSpeed (m_id);
+    double maxAccel = 2.6; // m/s² — standard passenger car
+    double comfortDecel = 2.5; // m/s² — comfortable deceleration
+
+    // === Step 9: GLOSA activation range ===
+    const double GLOSA_MIN_DIST = 10.0; // Too close to stop line — GLOSA useless
+    const double GLOSA_MAX_DIST = 350.0; // Too far — timing info unreliable
+
+    if (dist < GLOSA_MIN_DIST || dist > GLOSA_MAX_DIST)
+      {
+        if (m_glosaActive)
+          {
+            m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+            m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+            m_glosaActive = false;
+          }
+        m_spatemTimeout = Simulator::Schedule (Seconds (1.0), &tlmClientLTE::spatemTimeout, this);
+        return;
+      }
+
+    // === Step 10: GLOSA Logic ===
+    if (current_light_state == 3)
+      {
+        if (timeToSwitch > 0.5)
+          {
+            double bufferTime = 3.0; // Стремимся прибыть через 3 секунды после включения зеленого
+            double targetSpeed = dist / (timeToSwitch + bufferTime);
+
+            if (targetSpeed >= minSpeed && targetSpeed <= maxSpeed)
+              {
+                double decelNeeded = (currentSpeed > targetSpeed)
+                                         ? (currentSpeed - targetSpeed) / 1.0 // over ~1 second
+                                         : 0.0;
+
+                if (decelNeeded <= comfortDecel * 2.0)
+                  {
+                    if (std::abs(currentSpeed - targetSpeed) > 0.5 || !m_glosaActive) 
+                      {
+                        m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+                        m_client->TraCIAPI::vehicle.setSpeed (m_id, targetSpeed);
+                        m_glosaActive = true;
+
+                        libsumo::TraCIColor glosaGreen;
+                        glosaGreen.r = 50; glosaGreen.g = 205; glosaGreen.b = 50; glosaGreen.a = 255;
+                        m_client->TraCIAPI::vehicle.setColor (m_id, glosaGreen);
+                      }
+                  }
+                else
+                  {
+                    if (m_glosaActive)
+                      {
+                        m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+                        m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+                        m_glosaActive = false;
+                      }
+                  }
+              }
+            else if (targetSpeed < minSpeed)
+              {
+                if (m_glosaActive)
+                  {
+                    m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+                    m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+                    m_glosaActive = false;
+                  }
+                libsumo::TraCIColor red;
+                red.r = 255; red.g = 0; red.b = 0; red.a = 255;
+                m_client->TraCIAPI::vehicle.setColor (m_id, red);
+              }
+            else
+              {
+                if (m_glosaActive)
+                  {
+                    m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+                    m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+                    m_glosaActive = false;
+                  }
+              }
+          }
+        else
+          {
+            if (m_glosaActive)
+              {
+                m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+                m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+                m_glosaActive = false;
+              }
+          }
+      }
+    else if (current_light_state == 6 || current_light_state == 5)
+      {
+        double estimatedArrivalTime = dist / std::max (currentSpeed, 1.0);
+
+        if (estimatedArrivalTime < timeToSwitch * 0.9)
+          {
+            if (m_glosaActive)
+              {
+                m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+                m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+                m_glosaActive = false;
+              }
+            libsumo::TraCIColor blue;
+            blue.r = 0; blue.g = 100; blue.b = 255; blue.a = 255;
+            m_client->TraCIAPI::vehicle.setColor (m_id, blue);
+          }
+        else if (timeToSwitch > 1.0)
+          {
+            double targetSpeed = dist / (timeToSwitch * 0.85); 
+
+            if (targetSpeed > maxSpeed)
+              {
+                targetSpeed = maxSpeed;
+              }
+
+            double arrivalAtMax = dist / targetSpeed;
+            if (arrivalAtMax < timeToSwitch && targetSpeed >= minSpeed)
+              {
+                double accelNeeded = (targetSpeed > currentSpeed)
+                                         ? (targetSpeed - currentSpeed) / 1.0 
+                                         : 0.0;
+
+                if (accelNeeded <= maxAccel * 1.5)
+                  {
+                    if (std::abs(currentSpeed - targetSpeed) > 0.5 || !m_glosaActive)
+                      {
+                        m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+                        m_client->TraCIAPI::vehicle.setSpeed (m_id, targetSpeed);
+                        m_glosaActive = true;
+
+                        libsumo::TraCIColor yellow;
+                        yellow.r = 255; yellow.g = 215; yellow.b = 0; yellow.a = 255;
+                        m_client->TraCIAPI::vehicle.setColor (m_id, yellow);
+                      }
+                  }
+                else
+                  {
+                    if (m_glosaActive)
+                      {
+                        m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+                        m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+                        m_glosaActive = false;
+                      }
+                  }
+              }
+            else
+              {
+                if (m_glosaActive)
+                  {
+                    m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+                    m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+                    m_glosaActive = false;
+                  }
+              }
+          }
+        else
+          {
+            if (m_glosaActive)
+              {
+                m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+                m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+                m_glosaActive = false;
+              }
+          }
+      }
+    else
+      {
+        if (m_glosaActive)
+          {
+            m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+            m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+            m_glosaActive = false;
+          }
+      }
+
+    m_spatemTimeout = Simulator::Schedule(Seconds(1.0),&tlmClientLTE::spatemTimeout,this);
   }
 
   void
   tlmClientLTE::spatemTimeout()
   {
+    if (m_glosaActive)
+      {
+        m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+        m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+        m_glosaActive = false;
+      }
     libsumo::TraCIColor orange;
     orange.r=255;orange.g=99;orange.b=71;orange.a=255;
     m_client->TraCIAPI::vehicle.setColor (m_id,orange);
-    // double speedLimit = 75/3.6;
-    // m_client->TraCIAPI::vehicle.setMaxSpeed (m_id,speedLimit);
+  }
+
+  void
+  tlmClientLTE::populateStaticTLData (void)
+  {
+    auto tlsIDs = m_client->TraCIAPI::trafficlights.getIDList ();
+    for (const auto &tlsId : tlsIDs)
+      {
+        trafficLightData_t tlData;
+        tlData.intersectionID = (uint16_t) std::hash<std::string>{}(tlsId);
+
+        libsumo::TraCIPosition posXY = m_client->TraCIAPI::junction.getPosition (tlsId);
+        libsumo::TraCIPosition posLonLat =
+            m_client->TraCIAPI::simulation.convertXYtoLonLat (posXY.x, posXY.y);
+        tlData.lat = posLonLat.y;
+        tlData.lon = posLonLat.x;
+
+        auto controlledLanes = m_client->TraCIAPI::trafficlights.getControlledLanes (tlsId);
+        for (int idx = 0; idx < (int) controlledLanes.size (); ++idx)
+          {
+            const std::string &laneId = controlledLanes[idx];
+            long signalGroup = idx + 1;
+
+            if (tlData.laneToSignalGroup.find (laneId) == tlData.laneToSignalGroup.end ())
+              {
+                tlData.laneToSignalGroup[laneId] = signalGroup;
+              }
+
+            if (tlData.laneStopLines.find (laneId) == tlData.laneStopLines.end ())
+              {
+                auto laneShape = m_client->TraCIAPI::lane.getShape (laneId);
+                if (!laneShape.empty ())
+                  {
+                    laneStopLinePos_t stopLine;
+                    stopLine.x = laneShape.back ().x;
+                    stopLine.y = laneShape.back ().y;
+                    stopLine.laneLen = m_client->TraCIAPI::lane.getLength (laneId);
+                    tlData.laneStopLines[laneId] = stopLine;
+                  }
+              }
+          }
+
+        tlData.isStaticLoaded = true;
+        tlData.timestamp_us = 0;
+        m_LDM->insertStaticTL (tlData);
+      }
   }
 
   long

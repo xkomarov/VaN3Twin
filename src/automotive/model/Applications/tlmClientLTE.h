@@ -8,6 +8,7 @@
 #include "ns3/caBasicService.h"
 #include "ns3/btp.h"
 #include "ns3/traci-client.h"
+#include "ns3/LDM.h"
 
 
 namespace ns3 {
@@ -41,6 +42,9 @@ class tlmClientLTE : public Application
     Ptr<GeoNet> m_geoNet; //! GeoNetworking Object
 
     Ptr<Socket> m_socket; //!< Client socket
+    
+    Ptr<LDM> m_LDM;
+    void populateStaticTLData(void);
 
     virtual void StartApplication (void);
     virtual void StopApplication (void);
@@ -70,6 +74,9 @@ class tlmClientLTE : public Application
     int m_cam_sent;
     int m_spatem_received;
     bool m_send_cam;
+    
+    bool m_glosaActive;
+    uint64_t m_passedIntersectionID;
 
     Ptr<MetricSupervisor> m_metric_supervisor = nullptr;
   };

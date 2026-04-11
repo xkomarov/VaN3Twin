@@ -74,6 +74,7 @@ class tlmServer80211p : public Application
     std::ofstream m_csv_ofstream_cam;
 
     bool m_send_cam;
+    bool m_send_spatem;
 
     std::string m_id;
 

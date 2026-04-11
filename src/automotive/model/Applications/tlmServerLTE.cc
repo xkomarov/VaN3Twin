@@ -57,6 +57,11 @@ namespace ns3
              BooleanValue(true),
              MakeBooleanAccessor (&tlmServerLTE::m_send_cam),
              MakeBooleanChecker ())
+        .AddAttribute ("SendSPATEM",
+             "To enable/disable the transmission of SPATEM messages",
+             BooleanValue(true),
+             MakeBooleanAccessor (&tlmServerLTE::m_send_spatem),
+             MakeBooleanChecker ())
         .AddAttribute ("SumoId",
              "SUMO ID of the POI/RSU this server represents",
              StringValue ("poi_0"),
@@ -227,12 +232,15 @@ namespace ns3
       }
 
     // Connect socket to specific vehicle UE IP and fire unicast SPATEM message
-    m_socket->Connect (from);
-    TLMBasicService_error_t trigger_retval = m_tlmBasicService.appTLM_trigger();
-    
-    if(trigger_retval != SPATEM_NO_ERROR)
+    if(m_send_spatem)
     {
-      NS_LOG_ERROR("Cannot trigger SPATEM. Error code: " << trigger_retval);
+      m_socket->Connect (from);
+      TLMBasicService_error_t trigger_retval = m_tlmBasicService.appTLM_trigger();
+      
+      if(trigger_retval != SPATEM_NO_ERROR)
+      {
+        NS_LOG_ERROR("Cannot trigger SPATEM. Error code: " << trigger_retval);
+      }
     }
   }
 

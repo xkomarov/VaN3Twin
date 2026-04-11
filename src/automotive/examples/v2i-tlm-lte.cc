@@ -62,7 +62,7 @@ main (int argc, char *argv[])
 
   // Disabling this option turns off the whole V2X application (useful for comparing the situation when the application is enabled and the one in which it is disabled)
   bool send_cam = true;
-  //bool send_spatem = true;
+  bool send_spatem = true;
   double m_baseline_prr = 150.0;
   bool m_metric_sup = true;
 
@@ -89,6 +89,7 @@ main (int argc, char *argv[])
   cmd.AddValue ("summary", "Print a summary for each vehicle at the end of the simulation", print_summary);
   cmd.AddValue ("vehicle-visualizer", "Activate the web-based vehicle visualizer for ms-van3t", vehicle_vis);
   cmd.AddValue ("send-cam", "Turn on or off the transmission of CAMs, thus turning on or off the whole V2X application",send_cam);
+  cmd.AddValue ("send-spatem", "Turn on or off the transmission of SPATEM messages from the server",send_spatem);
   cmd.AddValue ("csv-log-cumulative", "Name of the CSV log file for the cumulative (average) PRR and latency data", csv_name_cumulative);
   cmd.AddValue ("netstate-dump-file", "Name of the SUMO netstate-dump file containing the vehicle-related information throughout the whole simulation", sumo_netstate_file_name);
   cmd.AddValue ("baseline", "Baseline for PRR calculation", m_baseline_prr);
@@ -283,6 +284,7 @@ main (int argc, char *argv[])
   tlmServerLTEHelper.SetAttribute ("AggregateOutput", BooleanValue(aggregate_out));
   tlmServerLTEHelper.SetAttribute ("CSV", StringValue(csv_name));
   tlmServerLTEHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
+  tlmServerLTEHelper.SetAttribute ("SendSPATEM", BooleanValue (send_spatem));
 
   int i = 0;
   for (auto rsu : rsuData)

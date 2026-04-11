@@ -8,6 +8,7 @@
 #include "ns3/caBasicService.h"
 #include "ns3/btp.h"
 #include "ns3/traci-client.h"
+#include "ns3/LDM.h"
 
 
 namespace ns3 {
@@ -36,6 +37,7 @@ class tlmClient80211p : public Application
 
     CABasicService m_caService; //!< CA Basic Service object
     TLMBasicService m_tlmBasicService; //!< TLM Basic Service object
+    Ptr<LDM> m_LDM; //!< Local Dynamic Map for traffic light data
 
     Ptr<btp> m_btp; //! BTP object
     Ptr<GeoNet> m_geoNet; //! GeoNetworking Object
@@ -52,6 +54,7 @@ class tlmClient80211p : public Application
     long compute_timestampIts ();
     //void denmTimeout(void);
     void spatemTimeout(void);
+    void populateStaticTLData(void); //!< Mock-populate TL topology into LDM (simulates MAPEM)
 
     Ptr<TraciClient> m_client; //!< TraCI client
     std::string m_id; //!< vehicle id
@@ -72,6 +75,9 @@ class tlmClient80211p : public Application
     bool m_send_cam;
 
     Ptr<MetricSupervisor> m_metric_supervisor = nullptr;
+
+    uint64_t m_passedIntersectionID = 0; //!< ID проеханного перекрёстка (игнорировать SPATEM от него)
+    bool m_glosaActive = false;          //!< Whether GLOSA is currently overriding vehicle speed
   };
 
 } // namespace ns3

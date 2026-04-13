@@ -5,6 +5,8 @@
 #include "ns3/vdpTraci.h"
 #include "ns3/socket.h"
 #include "ns3/network-module.h"
+#include "ns3/asn_utils.h"
+
 
 namespace ns3
 {
@@ -236,6 +238,8 @@ namespace ns3
 
     /* Implement SPATEM strategy here */
     m_spatem_received++;
+    // asn_fprint(stdout, &asn_DEF_SPATEM, &(*spatem));
+    // fflush(stdout);
 
     if (!m_csv_name.empty () && m_csv_ofstream.is_open())
     {

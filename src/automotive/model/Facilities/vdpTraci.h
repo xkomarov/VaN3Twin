@@ -3,6 +3,8 @@
 
 #include "vdp.h"
 #include "ns3/traci-client.h"
+#include <unordered_map>
+
 
 namespace ns3 {
 
@@ -117,17 +119,17 @@ namespace ns3 {
      */
     double getCartesianDist (double lon1, double lat1, double lon2, double lat2);
 
-    VDPDataItem<uint8_t> getAccelerationControl() {return VDPDataItem<uint8_t>(false);}
+    VDPDataItem<uint8_t> getAccelerationControl() {return VDPDataItem<uint8_t>();}
     /**
      * @brief This function returns the vehicle's lane position in the road.
      * @return lane id
      */
     VDPDataItem<int> getLanePosition();
-    VDPDataItem<VDPValueConfidence<int,int>> getSteeringWheelAngle() {return VDPDataItem<VDPValueConfidence<int,int>>(false);}
-    VDPDataItem<VDPValueConfidence<int,int>> getLateralAcceleration() {return VDPDataItem<VDPValueConfidence<int,int>>(false);}
-    VDPDataItem<VDPValueConfidence<int,int>> getVerticalAcceleration() {return VDPDataItem<VDPValueConfidence<int,int>>(false);}
-    VDPDataItem<int> getPerformanceClass() {return VDPDataItem<int>(false);}
-    VDPDataItem<VDP_CEN_DSRC_tolling_zone_t> getCenDsrcTollingZone() {return VDPDataItem<VDP_CEN_DSRC_tolling_zone_t>(false);}
+    VDPDataItem<VDPValueConfidence<int,int>> getSteeringWheelAngle() {return VDPDataItem<VDPValueConfidence<int,int>>();}
+    VDPDataItem<VDPValueConfidence<int,int>> getLateralAcceleration() {return VDPDataItem<VDPValueConfidence<int,int>>();}
+    VDPDataItem<VDPValueConfidence<int,int>> getVerticalAcceleration() {return VDPDataItem<VDPValueConfidence<int,int>>();}
+    VDPDataItem<int> getPerformanceClass() {return VDPDataItem<int>();}
+    VDPDataItem<VDP_CEN_DSRC_tolling_zone_t> getCenDsrcTollingZone() {return VDPDataItem<VDP_CEN_DSRC_tolling_zone_t>();}
 
     VDPDataItem<unsigned int> getVehicleRole() {return m_vehicleRole;}
     /**
@@ -160,6 +162,8 @@ namespace ns3 {
       std::string m_tls_id;
       Ptr<TraciClient> m_traci_client;
       bool m_isStatic;
+      std::unordered_map<std::string, std::string> m_tls_prev_states;
+      std::unordered_map<std::string, uint8_t> m_tls_revisions;
   };
 }
 

@@ -1,0 +1,78 @@
+[0/2] Re-checking globbed directories...
+[1/48] Building CXX object src/automotive/CMakeFiles/libautomotive-obj.dir/model/Facilities/vdpTraci.cc.o
+FAILED: src/automotive/CMakeFiles/libautomotive-obj.dir/model/Facilities/vdpTraci.cc.o 
+ccache /usr/bin/c++  -DCMAKE_EXAMPLE_AS_TEST -DHAVE_GSL -DHAVE_LIBXML2 -DHAVE_SQLITE3 -DNS3_BUILD_PROFILE_OPTIMIZED -DNS3_ENABLE_EXAMPLES -DPROJECT_SOURCE_PATH=\"/home/kirill/VaN3Twin/ns-3-dev\" -D__LINUX__ -I/usr -I../build/include -I/usr/include/freetype2 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/gtk-3.0 -I/usr/include/cairo -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/atk-1.0 -I/usr/include/libxml2 -I/usr/include/python3.8 -isystem /usr/local/include/opencv4 -O3 -DNDEBUG -fPIC   -fno-semantic-interposition -fdiagnostics-color=always -Wall -march=native -mtune=native -std=gnu++17 -MD -MT src/automotive/CMakeFiles/libautomotive-obj.dir/model/Facilities/vdpTraci.cc.o -MF src/automotive/CMakeFiles/libautomotive-obj.dir/model/Facilities/vdpTraci.cc.o.d -o src/automotive/CMakeFiles/libautomotive-obj.dir/model/Facilities/vdpTraci.cc.o -c ../src/automotive/model/Facilities/vdpTraci.cc
+../src/automotive/model/Facilities/vdpTraci.cc: In member function ‘virtual std::vector<ns3::VDP::SPATEM_mandatory_data> ns3::VDPTraCI::getSPATEMMandatoryData()’:
+../src/automotive/model/Facilities/vdpTraci.cc:391:17: error: expected primary-expression before ‘catch’
+  391 |               } catch (...) {
+      |                 ^~~~~
+../src/automotive/model/Facilities/vdpTraci.cc:396:11: error: ‘spatData’ was not declared in this scope
+  396 |           spatData.status.size = 2; // IntersectionStatusObject обычно 16 бит
+      |           ^~~~~~~~
+../src/automotive/model/Facilities/vdpTraci.cc:402:100: error: ‘target_id’ was not declared in this scope
+  402 |           std::string stateString = m_traci_client->TraCIAPI::trafficlights.getRedYellowGreenState(target_id);
+      |                                                                                                    ^~~~~~~~~
+../src/automotive/model/Facilities/vdpTraci.cc:446:7: warning: no return statement in function returning non-void [-Wreturn-type]
+  446 |       }
+      |       ^
+../src/automotive/model/Facilities/vdpTraci.cc: At global scope:
+../src/automotive/model/Facilities/vdpTraci.cc:447:7: error: expected unqualified-id before ‘return’
+  447 |       return result;
+      |       ^~~~~~
+../src/automotive/model/Facilities/vdpTraci.cc:450:3: error: ‘VDPDataItem’ does not name a type
+  450 |   VDPDataItem<int>
+      |   ^~~~~~~~~~~
+../src/automotive/model/Facilities/vdpTraci.cc:472:3: error: ‘VDPDataItem’ does not name a type
+  472 |   VDPDataItem<uint8_t>
+      |   ^~~~~~~~~~~
+../src/automotive/model/Facilities/vdpTraci.cc:495:1: error: expected declaration before ‘}’ token
+  495 | }
+      | ^
+[2/48] Building CXX object src/automotive/CMakeFiles/libautomotive-obj.dir/helper/v2xEmulator-helper.cc.o
+[3/48] Building CXX object src/automotive/CMakeFiles/libautomotive-obj.dir/helper/emergencyVehicleAlert-helper.cc.o
+[4/48] Building CXX object src/automotive/CMakeFiles/libautomotive-obj.dir/model/Facilities/BSContainer.cc.o
+../src/automotive/model/Facilities/BSContainer.cc: In member function ‘void ns3::BSContainer::receiveCPM(asn1cpp::Seq<CollectivePerceptionMessage>, ns3::Address)’:
+../src/automotive/model/Facilities/BSContainer.cc:313:9: warning: unused variable ‘POs_ok’ [-Wunused-variable]
+  313 |    bool POs_ok;
+      |         ^~~~~~
+../src/automotive/model/Facilities/BSContainer.cc: In member function ‘ns3::vehicleData_t ns3::BSContainer::translateCPMdata(asn1cpp::Seq<CollectivePerceptionMessage>, asn1cpp::Seq<PerceivedObject>, int, int)’:
+../src/automotive/model/Facilities/BSContainer.cc:400:21: warning: ‘objectPosition.ns3::VDP::VDP_position_cartesian::x’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  400 |    objectPosition.x += asn1cpp::getField(object->position.xCoordinate.value,long)/CENTI;
+../src/automotive/model/Facilities/BSContainer.cc:401:21: warning: ‘objectPosition.ns3::VDP::VDP_position_cartesian::y’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  401 |    objectPosition.y += asn1cpp::getField(object->position.yCoordinate.value,long)/CENTI;
+../src/automotive/model/Facilities/BSContainer.cc:399:31: warning: ‘objectPositionGeo.ns3::VDP::VDP_position_latlon::lon’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  399 |    VDP::VDP_position_latlon_t objectPositionGeo;
+      |                               ^~~~~~~~~~~~~~~~~
+../src/automotive/model/Facilities/BSContainer.cc:399:31: warning: ‘objectPositionGeo.ns3::VDP::VDP_position_latlon::lat’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+[5/48] Building CXX object src/automotive/CMakeFiles/libautomotive-obj.dir/model/Facilities/denBasicService.cc.o
+../src/automotive/model/Facilities/denBasicService.cc: In member function ‘ns3::DENBasicService_error_t ns3::DENBasicService::appDENM_trigger(ns3::denData, ns3::DEN_ActionID_t&)’:
+../src/automotive/model/Facilities/denBasicService.cc:580:21: warning: unused variable ‘dataConfirm’ [-Wunused-variable]
+  580 |     GNDataConfirm_t dataConfirm = std::get<0>(status);
+      |                     ^~~~~~~~~~~
+../src/automotive/model/Facilities/denBasicService.cc:581:17: warning: unused variable ‘message_id’ [-Wunused-variable]
+  581 |     MessageId_t message_id = std::get<1>(status);
+      |                 ^~~~~~~~~~
+../src/automotive/model/Facilities/denBasicService.cc: In member function ‘ns3::DENBasicService_error_t ns3::DENBasicService::appDENM_update(ns3::denData, ns3::DEN_ActionID_t)’:
+../src/automotive/model/Facilities/denBasicService.cc:683:21: warning: unused variable ‘dataConfirm’ [-Wunused-variable]
+  683 |     GNDataConfirm_t dataConfirm = std::get<0>(status);
+      |                     ^~~~~~~~~~~
+../src/automotive/model/Facilities/denBasicService.cc:684:17: warning: unused variable ‘message_id’ [-Wunused-variable]
+  684 |     MessageId_t message_id = std::get<1>(status);
+      |                 ^~~~~~~~~~
+../src/automotive/model/Facilities/denBasicService.cc: In member function ‘ns3::DENBasicService_error_t ns3::DENBasicService::appDENM_termination(ns3::denData, ns3::DEN_ActionID_t)’:
+../src/automotive/model/Facilities/denBasicService.cc:850:21: warning: unused variable ‘dataConfirm’ [-Wunused-variable]
+  850 |     GNDataConfirm_t dataConfirm = std::get<0>(status);
+      |                     ^~~~~~~~~~~
+../src/automotive/model/Facilities/denBasicService.cc:851:17: warning: unused variable ‘message_id’ [-Wunused-variable]
+  851 |     MessageId_t message_id = std::get<1>(status);
+      |                 ^~~~~~~~~~
+../src/automotive/model/Facilities/denBasicService.cc: In member function ‘void ns3::DENBasicService::T_RepetitionStop(ns3::DEN_ActionID_t)’:
+../src/automotive/model/Facilities/denBasicService.cc:1139:21: warning: unused variable ‘dataConfirm’ [-Wunused-variable]
+ 1139 |     GNDataConfirm_t dataConfirm = std::get<0>(status);
+      |                     ^~~~~~~~~~~
+../src/automotive/model/Facilities/denBasicService.cc:1140:17: warning: unused variable ‘message_id’ [-Wunused-variable]
+ 1140 |     MessageId_t message_id = std::get<1>(status);
+      |                 ^~~~~~~~~~
+ninja: build stopped: subcommand failed.
+Finished executing the following commands:
+cd cmake-cache; cmake --build . -j 5 --target libautomotive ; cd ..

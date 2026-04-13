@@ -159,9 +159,6 @@ namespace ns3
     emptyData.status.size = 0;
     emptyData.status.bits_unused = 0;
     emptyData.revision = 0;
-    emptyData.moy = 0;
-    emptyData.timeStamp = 0; 
-    emptyData.optional_data = false;   
     
     result.push_back(emptyData);
     return result;

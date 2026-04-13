@@ -15,21 +15,9 @@
 #include "ns3/vehicle-visualizer-module.h"
 #include "ns3/MetricSupervisor.h"
 #include <unistd.h>
-#include <map>
-#include <fstream>
-#include <iomanip>
-#include <functional>
-
-struct VehicleMetrics
-{
-  double totalCO2_mg = 0.0; ///< Accumulated CO2 emissions [mg]
-  double totalTravelTime_s = 0.0; ///< Total time vehicle was active [s]
-  double totalStoppedTime_s = 0.0; ///< Total time with speed < 0.1 m/s [s]
-  double totalDistance_m = 0.0; ///< Total distance traveled [m]
-  double baselineDistance_m = 0.0; ///< Odometer reading at first observation [m]
-  bool initialized = false; ///< Whether first sample has been taken
-};
-
+// #include "ns3/nr-helper.h"
+// #include "ns3/nr-point-to-point-epc-helper.h"
+#include "ns3/nr-module.h"
 using namespace ns3;
 NS_LOG_COMPONENT_DEFINE("v2i-tlm-LTE");
 
@@ -70,8 +58,6 @@ main (int argc, char *argv[])
   std::string sumo_netstate_file_name;
   bool print_summary = false;
   bool vehicle_vis = false;
-  bool log_metrics = false;
-  std::string metrics_csv_name;
 
   /*** 0.b LENA Options ***/
   double interPacketInterval = 100;
@@ -111,9 +97,6 @@ main (int argc, char *argv[])
   cmd.AddValue ("netstate-dump-file", "Name of the SUMO netstate-dump file containing the vehicle-related information throughout the whole simulation", sumo_netstate_file_name);
   cmd.AddValue ("baseline", "Baseline for PRR calculation", m_baseline_prr);
   cmd.AddValue ("met-sup","Use the Metric supervisor or not",m_metric_sup);
-  cmd.AddValue ("log-metrics",
-                "Enable per-vehicle metric logging (CO2, travel time, stopped time, avg speed)",
-                log_metrics);
 
 
   /* Cmd Line option for Lena */
@@ -196,11 +179,6 @@ main (int argc, char *argv[])
   /*** 3. Create LTE objects & EPC ***/
   Ptr<LteHelper> lteHelper = CreateObject<LteHelper> ();
   Ptr<PointToPointEpcHelper> epcHelper = CreateObject<PointToPointEpcHelper> ();
-  // Enable PCAP tracing on S1-U (eNB <-> SGW) and X2 (eNB <-> eNB) links
-  //epcHelper->SetAttribute ("S1uLinkEnablePcap", BooleanValue (true));
-  //epcHelper->SetAttribute ("S1uLinkPcapPrefix", StringValue ("v2i-tlm-lte-s1u"));
-  //epcHelper->SetAttribute ("X2LinkEnablePcap", BooleanValue (true));
-  //epcHelper->SetAttribute ("X2LinkPcapPrefix", StringValue ("v2i-tlm-lte-x2"));
   lteHelper->SetEpcHelper (epcHelper);
 
   ConfigStore inputConfig;
@@ -226,9 +204,6 @@ main (int argc, char *argv[])
   Ipv4InterfaceContainer internetIpIfaces = ipv4h.Assign (internetDevices);
   /* interface 0 is localhost, 1 is the p2p device */
   Ipv4Address remoteHostAddr = internetIpIfaces.GetAddress (1);
-
-  //p2ph.EnablePcap("v2i-tlm-lte-remote", internetDevices);
-
 
   Ipv4StaticRoutingHelper ipv4RoutingHelper;
   Ptr<Ipv4StaticRouting> remoteHostStaticRouting = ipv4RoutingHelper.GetStaticRouting (remoteHost->GetObject<Ipv4> ());
@@ -261,6 +236,7 @@ main (int argc, char *argv[])
     }
 
   lteHelper->AddX2Interface (rsuNodes);
+
   /*** 5. Setup Traci and start SUMO ***/
   Ptr<TraciClient> sumoClient = CreateObject<TraciClient> ();
   sumoClient->SetAttribute ("SumoConfigPath", StringValue (sumo_config));
@@ -325,8 +301,6 @@ main (int argc, char *argv[])
       ++i;
     }
 
-
-
   // We don't install the server app on the eNB (rsuNode) in LTE, we install it on the remoteHost.
   // Install only a single centralized server to manage TLM data.
   ApplicationContainer AppServer = tlmServerLTEHelper.Install (remoteHostContainer.Get (0));
@@ -380,127 +354,32 @@ main (int argc, char *argv[])
   /* Start traci client with given function pointers */
   sumoClient->SumoSetup (setupNewWifiNode, shutdownWifiNode);
 
-  /*** 8. Vehicle Metrics Logging Setup ***/
-  std::map<std::string, VehicleMetrics> vehicleMetricsMap;
-  EventId metricsEvent;
-  const double metricsInterval = 0.1; // seconds — finer interval for accurate CO2 accumulation
-
-  std::function<void ()> updateVehicleMetrics;
-  updateVehicleMetrics = [&] () {
-    auto activeVehicles = sumoClient->TraCIAPI::vehicle.getIDList ();
-
-    for (const auto &vehId : activeVehicles)
-      {
-        auto &m = vehicleMetricsMap[vehId]; // creates entry on first access
-
-        double speed = sumoClient->TraCIAPI::vehicle.getSpeed (vehId);
-        double co2Rate = sumoClient->TraCIAPI::vehicle.getCO2Emission (vehId); // mg/s
-        double dist = sumoClient->TraCIAPI::vehicle.getDistance (vehId); // cumulative odometer [m]
-
-        // Accumulate CO2: rate [mg/s] × interval [s] = [mg]
-        m.totalCO2_mg += co2Rate * metricsInterval;
-        m.totalTravelTime_s += metricsInterval;
-
-        if (speed < 0.1)
-          {
-            m.totalStoppedTime_s += metricsInterval;
-          }
-
-        if (!m.initialized)
-          {
-            m.baselineDistance_m = dist;
-            m.initialized = true;
-          }
-        m.totalDistance_m = dist - m.baselineDistance_m;
-      }
-
-    metricsEvent = Simulator::Schedule (Seconds (metricsInterval), updateVehicleMetrics);
-  };
-
-  if (log_metrics)
-    {
-      NS_LOG_INFO ("Vehicle metrics logging ENABLED (interval=" << metricsInterval << "s)");
-      metricsEvent = Simulator::Schedule (Seconds (1.0), updateVehicleMetrics);
-    }
-
   /*** 8. Start Simulation ***/
   Simulator::Stop (simulationTime);
   Simulator::Run ();
   Simulator::Destroy ();
 
-  /*** 9. Vehicle Metrics Output ***/
-  if (log_metrics && !vehicleMetricsMap.empty ())
+  if(m_metric_sup)
     {
-      Simulator::Cancel (metricsEvent);
+      if(csv_name_cumulative!="")
+      {
+        std::ofstream csv_cum_ofstream;
+        std::string full_csv_name = csv_name_cumulative + ".csv";
 
-      std::cout << "\n===== Vehicle Metrics Summary (" << vehicleMetricsMap.size ()
-                << " vehicles) =====" << std::endl;
-      std::cout << std::left << std::setw (15) << "VehicleID" << std::setw (14) << "CO2_mg"
-                << std::setw (14) << "CO2_g" << std::setw (14) << "TravelTime_s" << std::setw (14)
-                << "StoppedTime_s" << std::setw (14) << "Distance_m" << std::setw (14)
-                << "AvgSpeed_ms" << std::endl;
-      std::cout << std::string (99, '-') << std::endl;
-
-      std::ofstream csvFile;
-      if (!metrics_csv_name.empty ())
+        if(access(full_csv_name.c_str(),F_OK)!=-1)
         {
-          csvFile.open (metrics_csv_name + ".csv", std::ofstream::trunc);
-          csvFile << "vehicleID,co2_mg,co2_g,travel_time_s,stopped_time_s,distance_m,avg_speed_ms"
-                  << std::endl;
+          // The file already exists
+          csv_cum_ofstream.open(full_csv_name,std::ofstream::out | std::ofstream::app);
+        }
+        else
+        {
+          // The file does not exist yet
+          csv_cum_ofstream.open(full_csv_name);
+        csv_cum_ofstream << "avg_PRR,avg_latency_ms" << std::endl;
         }
 
-      for (const auto &pair : vehicleMetricsMap)
-        {
-          const std::string &id = pair.first;
-          const VehicleMetrics &m = pair.second;
-          double avgSpeed =
-              (m.totalTravelTime_s > 0.0) ? (m.totalDistance_m / m.totalTravelTime_s) : 0.0;
-
-          std::cout << std::left << std::setw (15) << id << std::setw (14) << std::fixed
-                    << std::setprecision (2) << m.totalCO2_mg << std::setw (14)
-                    << m.totalCO2_mg / 1000.0 << std::setw (14) << m.totalTravelTime_s
-                    << std::setw (14) << m.totalStoppedTime_s << std::setw (14) << m.totalDistance_m
-                    << std::setw (14) << avgSpeed << std::endl;
-
-          if (csvFile.is_open ())
-            {
-              csvFile << id << "," << std::fixed << std::setprecision (2) << m.totalCO2_mg << ","
-                      << m.totalCO2_mg / 1000.0 << "," << m.totalTravelTime_s << ","
-                      << m.totalStoppedTime_s << "," << m.totalDistance_m << "," << avgSpeed
-                      << std::endl;
-            }
-        }
-
-      if (csvFile.is_open ())
-        {
-          csvFile.close ();
-          std::cout << "\nMetrics written to: " << metrics_csv_name << ".csv" << std::endl;
-        }
-      std::cout << "===================================" << std::endl;
-    }
-
-  if (m_metric_sup)
-    {
-      if (csv_name_cumulative != "")
-        {
-          std::ofstream csv_cum_ofstream;
-          std::string full_csv_name = csv_name_cumulative + ".csv";
-
-          if (access (full_csv_name.c_str (), F_OK) != -1)
-            {
-              // The file already exists
-              csv_cum_ofstream.open (full_csv_name, std::ofstream::out | std::ofstream::app);
-            }
-          else
-            {
-              // The file does not exist yet
-              csv_cum_ofstream.open (full_csv_name);
-              csv_cum_ofstream << "avg_PRR,avg_latency_ms" << std::endl;
-            }
-
-          csv_cum_ofstream << metSup->getAveragePRR_overall () << ","
-                           << metSup->getAverageLatency_overall () << std::endl;
-        }
+        csv_cum_ofstream << metSup->getAveragePRR_overall () << "," << metSup->getAverageLatency_overall () << std::endl;
+      }
       std::cout << "Average PRR: " << metSup->getAveragePRR_overall () << std::endl;
       std::cout << "Average latency (ms): " << metSup->getAverageLatency_overall () << std::endl;
     }

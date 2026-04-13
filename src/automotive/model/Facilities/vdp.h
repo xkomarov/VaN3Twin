@@ -2,6 +2,7 @@
 #define VDP_H
 
 #include "asn_utils.h"
+#include <cstdint>
 #include <float.h>
 #include "ns3/Seq.hpp"
 #include "ns3/Getter.hpp"
@@ -26,10 +27,9 @@ namespace ns3
 
       public:
         VDPDataItem(T data): m_dataitem(data) {m_available=true;}
-        VDPDataItem(bool availability) {m_available=availability;}
         VDPDataItem() {m_available=false;}
-        T getData() {return m_dataitem;}
-        bool isAvailable() {return m_available;}
+        T getData() const {return m_dataitem;}
+        bool isAvailable() const {return m_available;}
         T setData(T data) {m_dataitem=data; m_available=true;}
   };
 
@@ -201,20 +201,51 @@ namespace ns3
       } VDP_SafetyCarContainerData_t;
 
 
+      typedef struct VDP_ConnectionManeuverAssist {
+          uint8_t connectionID;
+          VDPDataItem<uint16_t> queueLength;
+          VDPDataItem<uint16_t> availableStorageLength;
+          VDPDataItem<bool> waitOnStop;
+          VDPDataItem<bool> pedBicycleDetect;
+      } VDP_ConnectionManeuverAssist_t;
+
+      typedef struct VDP_AdvisorySpeed {
+          uint8_t type;
+          uint16_t speed;
+          VDPDataItem<uint8_t> confidence;
+          VDPDataItem<uint16_t> distance;
+          VDPDataItem<uint8_t> Class;
+      } VDP_AdvisorySpeed_t;
+
       typedef struct SPATEM_SignalGroupState {
           uint8_t signalGroupID;      
           uint8_t eventState;         
           uint16_t minEndTime;        
+          VDPDataItem<std::string> movementName;
+          VDPDataItem<std::vector<VDP_ConnectionManeuverAssist_t>> maneuverAssistList;
+          VDPDataItem<uint16_t> startTime;
+          VDPDataItem<uint16_t> maxEndTime;
+          VDPDataItem<uint16_t> likelyTime;
+          VDPDataItem<uint8_t> confidence;
+          VDPDataItem<uint16_t> nextTime;
+          VDPDataItem<std::vector<VDP_AdvisorySpeed_t>> speeds;
+          //VDPDataItem<uint16_t> regionalExtension; 
       } SPATEM_SignalGroupState_t;
 
       typedef struct SPATEM_mandatory_data {
           uint16_t intersectionId;            
           BIT_STRING_t status;
-          uint8_t revision;           
-          uint32_t moy;              
-          uint16_t timeStamp;
-          bool optional_data;        
+          uint8_t revision; 
+          //VDPDataItem<uint16_t> regionId;           
+          VDPDataItem<uint32_t> moy;              
+          VDPDataItem<uint16_t> timeStamp;
+          VDPDataItem<std::string> name;
+          VDPDataItem<std::vector<VDP_ConnectionManeuverAssist_t>> maneuverAssistList;
+          VDPDataItem<uint32_t> spatTimeStamp;
+          VDPDataItem<std::string> spatName;
           std::vector<SPATEM_SignalGroupState_t> states; 
+          VDPDataItem<uint16_t> regionalExtension; 
+          VDPDataItem<std::vector<uint8_t>> enabledLanes;
       } SPATEM_mandatory_data_t;
 
       virtual CAM_mandatory_data_t getCAMMandatoryData() = 0;
@@ -250,7 +281,7 @@ namespace ns3
       // If the information is not provided, they should be implemented
       // such that the returned VDPDataItem has m_available = false
 
-      VDPDataItem<uint8_t> getAccelerationControl() {return VDPDataItem<uint8_t>(false);}
+      VDPDataItem<uint8_t> getAccelerationControl() {return VDPDataItem<uint8_t>();}
       virtual VDPDataItem<int> getLanePosition() = 0;
 
 //      virtual VDPDataItem<VDPValueConfidence<int,int>> getSteeringWheelAngle() = 0;
@@ -259,11 +290,11 @@ namespace ns3
 //      virtual VDPDataItem<int> getPerformanceClass() = 0;
 //      virtual VDPDataItem<VDP_CEN_DSRC_tolling_zone_t> getCenDsrcTollingZone() = 0;
 
-      VDPDataItem<VDPValueConfidence<int,int>> getSteeringWheelAngle() {return VDPDataItem<VDPValueConfidence<int,int>>(false);}
-      VDPDataItem<VDPValueConfidence<int,int>> getLateralAcceleration() {return VDPDataItem<VDPValueConfidence<int,int>>(false);}
-      VDPDataItem<VDPValueConfidence<int,int>> getVerticalAcceleration() {return VDPDataItem<VDPValueConfidence<int,int>>(false);}
-      VDPDataItem<int> getPerformanceClass() {return VDPDataItem<int>(false);}
-      VDPDataItem<VDP_CEN_DSRC_tolling_zone_t> getCenDsrcTollingZone() {return VDPDataItem<VDP_CEN_DSRC_tolling_zone_t>(false);}
+      VDPDataItem<VDPValueConfidence<int,int>> getSteeringWheelAngle() {return VDPDataItem<VDPValueConfidence<int,int>>();}
+      VDPDataItem<VDPValueConfidence<int,int>> getLateralAcceleration() {return VDPDataItem<VDPValueConfidence<int,int>>();}
+      VDPDataItem<VDPValueConfidence<int,int>> getVerticalAcceleration() {return VDPDataItem<VDPValueConfidence<int,int>>();}
+      VDPDataItem<int> getPerformanceClass() {return VDPDataItem<int>();}
+      VDPDataItem<VDP_CEN_DSRC_tolling_zone_t> getCenDsrcTollingZone() {return VDPDataItem<VDP_CEN_DSRC_tolling_zone_t>();}
 
 
       // Low frequency container data (PH should be computed by the CA Basic Service and not provided here)

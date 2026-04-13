@@ -227,6 +227,8 @@ tlmClient80211p::receiveSPATEM (asn1cpp::Seq<SPATEM> spatem, Address from)
 {
   Simulator::Cancel (m_spatemTimeout);
   m_spatem_received++;
+  // asn_fprint(stdout, &asn_DEF_SPATEM, &(*spatem));
+  // fflush(stdout);
 
   // === Step 1: Update LDM with received SPATEM data (states + timing) ===
   for (int j = 0; j < spatem->spat.intersections.list.count; ++j)

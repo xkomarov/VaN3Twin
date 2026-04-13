@@ -158,115 +158,164 @@ namespace ns3
 
     std::vector<VDP::SPATEM_mandatory_data_t> spatem_mandatory_data_list = m_vdp->getSPATEMMandatoryData();
 
-    if (!spatem_mandatory_data_list.empty() && spatem_mandatory_data_list[0].optional_data)
+    if (!spatem_mandatory_data_list.empty())
     {
-      asn1cpp::setField(spatem->spat.timeStamp, 0);
-      asn1cpp::setField(spatem->spat.name, "0");
+      if (spatem_mandatory_data_list[0].spatTimeStamp.isAvailable())
+      {
+        asn1cpp::setField(spatem->spat.timeStamp, spatem_mandatory_data_list[0].spatTimeStamp.getData());
+      }
+      if (spatem_mandatory_data_list[0].spatName.isAvailable())
+      {
+        asn1cpp::setField(spatem->spat.name, spatem_mandatory_data_list[0].spatName.getData());
+      }
     }
 
     for (const auto& spatem_mandatory_data : spatem_mandatory_data_list) {
 
 
-    auto intersectionState = asn1cpp::makeSeq(IntersectionState);
-    asn1cpp::setField(intersectionState->id.id, spatem_mandatory_data.intersectionId);
+      auto intersectionState = asn1cpp::makeSeq(IntersectionState);
+      intersectionState->id.id = spatem_mandatory_data.intersectionId;  
+      // asn1cpp::setField(intersectionState->id.id, spatem_mandatory_data.intersectionId);
 
-    intersectionState->status.buf = (uint8_t*)calloc(1, spatem_mandatory_data.status.size);
-     if(intersectionState->status.buf == nullptr)
-    {
-        NS_LOG_ERROR("Memory allocation failed for status.buf");
-        return SPATEM_ALLOC_ERROR;
-    }
-    memcpy(intersectionState->status.buf, spatem_mandatory_data.status.buf, spatem_mandatory_data.status.size);
-    intersectionState->status.size = spatem_mandatory_data.status.size;
-    intersectionState->status.bits_unused = spatem_mandatory_data.status.bits_unused;
-
-
-    if (intersectionState->status.buf == nullptr) {
-      NS_LOG_ERROR("Warning: memory allocation failed for intersectionState->status.buf");
-      return SPATEM_ALLOC_ERROR; // Или другой подходящий код ошибки
-    }
-
-    // intersectionState->status.buf = spatem_mandatory_data.status.buf;
-    // intersectionState->status.size = spatem_mandatory_data.status.size;
-    // intersectionState->status.bits_unused = spatem_mandatory_data.status.bits_unused;
-    asn1cpp::setField(intersectionState->revision, spatem_mandatory_data.revision);   
-    
-
-    //option
-    if(spatem_mandatory_data.optional_data)
-    {
-      asn1cpp::setField(intersectionState->name, "0");
-      asn1cpp::setField(intersectionState->moy, spatem_mandatory_data.moy);
-      asn1cpp::setField(intersectionState->timeStamp, spatem_mandatory_data.timeStamp);
-      auto enabledLanes = asn1cpp::makeSeq(EnabledLaneList);
-      // for(const auto& laneId : spatem_mandatory_data.enabledLanes)
-      // {
-      //     asn1cpp::sequenceof::pushList(enabledLanes, laneId);
+      // if (spatem_mandatory_data.regionId.isAvailable()) {
+      //     auto regId = (RoadRegulatorID_t*)calloc(1, sizeof(RoadRegulatorID_t));
+      //     *regId = spatem_mandatory_data.regionId.getData();
+      //     intersectionState->id.region = regId;
       // }
-      //asn1cpp::setField(intersectionState->enabledLanes, enabledLanes);
-      auto maneuverAssist = asn1cpp::makeSeq(ConnectionManeuverAssist);
-      asn1cpp::setField(maneuverAssist->connectionID, 1);
-      asn1cpp::setField(maneuverAssist->queueLength, 5000);  // 50 метров
-      asn1cpp::setField(maneuverAssist->availableStorageLength, 10000);
-      asn1cpp::setField(maneuverAssist->waitOnStop, true);
-      asn1cpp::setField(maneuverAssist->pedBicycleDetect, false);
-      asn1cpp::sequenceof::pushList(intersectionState->maneuverAssistList, maneuverAssist);
-    }
 
-    for(const auto& state : spatem_mandatory_data.states)
-    {
-      auto movementState = asn1cpp::makeSeq(MovementState);
-      asn1cpp::setField(movementState->signalGroup, state.signalGroupID);
-
-      //option
-      if(spatem_mandatory_data.optional_data)
+      intersectionState->status.buf = (uint8_t*)calloc(1, spatem_mandatory_data.status.size);
+      if(intersectionState->status.buf == nullptr)
       {
-        asn1cpp::setField(movementState->movementName, "0");
-        auto maneuverAssistMs = asn1cpp::makeSeq(ConnectionManeuverAssist);
-        asn1cpp::setField(maneuverAssistMs->connectionID, 0);
-        asn1cpp::setField(maneuverAssistMs->queueLength, 0);
-        asn1cpp::sequenceof::pushList(movementState->maneuverAssistList, maneuverAssistMs);
+          NS_LOG_ERROR("Memory allocation failed for status.buf");
+          return SPATEM_ALLOC_ERROR;
+      }
+      memcpy(intersectionState->status.buf, spatem_mandatory_data.status.buf, spatem_mandatory_data.status.size);
+      intersectionState->status.size = spatem_mandatory_data.status.size;
+      intersectionState->status.bits_unused = spatem_mandatory_data.status.bits_unused;
+
+
+      if (intersectionState->status.buf == nullptr) {
+        NS_LOG_ERROR("Warning: memory allocation failed for intersectionState->status.buf");
+        return SPATEM_ALLOC_ERROR; // Или другой подходящий код ошибки
       }
 
-      auto movementEvent = asn1cpp::makeSeq(MovementEvent);
-      asn1cpp::setField(movementEvent->eventState, state.eventState);
-        
-
-      auto timing = asn1cpp::makeSeq(TimeChangeDetails);
-      asn1cpp::setField(timing->minEndTime, state.minEndTime);
-      //option
-      if(spatem_mandatory_data.optional_data)
-      {
-        asn1cpp::setField(timing->startTime, 0);
-        asn1cpp::setField(timing->maxEndTime, 0);
-        asn1cpp::setField(timing->likelyTime, 0);
-        asn1cpp::setField(timing->confidence, 0);
-        asn1cpp::setField(timing->nextTime, 0);
+      asn1cpp::setField(intersectionState->revision, spatem_mandatory_data.revision);   
+      
+      // Pushing scalar lane pointers into the Sequence. Memory is managed by asn1c once pushed.
+      if (spatem_mandatory_data.enabledLanes.isAvailable()) {
+          auto elList = asn1cpp::makeSeq(EnabledLaneList);
+          for (const auto& laneIdVal : spatem_mandatory_data.enabledLanes.getData()) {
+              asn1cpp::sequenceof::pushList(*elList, laneIdVal); 
+          }
+          asn1cpp::setField(intersectionState->enabledLanes, elList);
       }
 
-
-      asn1cpp::setField(movementEvent->timing, timing);
-        
+      // if (spatem_mandatory_data.regionalExtension.isAvailable()) {
+      //     // Выделяем память под структуру-обертку списка
+      //     intersectionState->regional = (decltype(intersectionState->regional))calloc(1, sizeof(*intersectionState->regional));
+          
+      //     // Выделяем память под сам элемент RegionalExtension
+      //     RegionalExtension_369P0_t* regExtElement = (RegionalExtension_369P0_t*)calloc(1, sizeof(RegionalExtension_369P0_t));
+          
+      //     // Заполняем ID региона
+      //     regExtElement->regionId = spatem_mandatory_data.regionalExtension.getData(); 
+          
+      //     // Указываем, что payload'а нет, так как сгенерированный выбор пуст (PR_NOTHING)
+      //     regExtElement->regExtValue.present = RegionalExtension_369P0__regExtValue_PR_NOTHING;
+          
+      //     // Добавляем элемент в массив asn1c
+      //     asn_sequence_add(&(intersectionState->regional->list), regExtElement);
+      // }
+      
       //option
-      if(spatem_mandatory_data.optional_data)
+      if(spatem_mandatory_data.name.isAvailable())
       {
-        auto speedObj = asn1cpp::makeSeq(AdvisorySpeed);
-        asn1cpp::setField(speedObj->type, 0);
-        asn1cpp::setField(speedObj->speed, 0);
-        asn1cpp::setField(speedObj->confidence, 0);
-        asn1cpp::setField(speedObj->distance, 0);
-        asn1cpp::setField(speedObj->Class, 0);
-        //auto speedList = asn1cpp::makeSeq(AdvisorySpeedList);
-        //asn1cpp::sequenceof::pushList(speedList, speedObj);
-        //asn1cpp::setField(movementEvent->speeds, speedList);   
+        asn1cpp::setField(intersectionState->name, spatem_mandatory_data.name.getData());
+      }
+      if(spatem_mandatory_data.moy.isAvailable())
+      {
+        asn1cpp::setField(intersectionState->moy, spatem_mandatory_data.moy.getData());
+      }
+      if(spatem_mandatory_data.timeStamp.isAvailable())
+      {
+        asn1cpp::setField(intersectionState->timeStamp, spatem_mandatory_data.timeStamp.getData());
       }
 
-      asn1cpp::sequenceof::pushList(movementState->state_time_speed, movementEvent);
+      if (spatem_mandatory_data.maneuverAssistList.isAvailable())
+      {
+        for (const auto& maneuver : spatem_mandatory_data.maneuverAssistList.getData())
+        {
+          auto maneuverAssist = asn1cpp::makeSeq(ConnectionManeuverAssist);
+          asn1cpp::setField(maneuverAssist->connectionID, maneuver.connectionID);
+          if (maneuver.queueLength.isAvailable()) asn1cpp::setField(maneuverAssist->queueLength, maneuver.queueLength.getData());
+          if (maneuver.availableStorageLength.isAvailable()) asn1cpp::setField(maneuverAssist->availableStorageLength, maneuver.availableStorageLength.getData());
+          if (maneuver.waitOnStop.isAvailable()) asn1cpp::setField(maneuverAssist->waitOnStop, maneuver.waitOnStop.getData());
+          if (maneuver.pedBicycleDetect.isAvailable()) asn1cpp::setField(maneuverAssist->pedBicycleDetect, maneuver.pedBicycleDetect.getData());
+          asn1cpp::sequenceof::pushList(intersectionState->maneuverAssistList, maneuverAssist);
+        }
+      }
+
+      for(const auto& state : spatem_mandatory_data.states)
+      {
+        auto movementState = asn1cpp::makeSeq(MovementState);
+        asn1cpp::setField(movementState->signalGroup, state.signalGroupID);
+        //option
+        if(state.movementName.isAvailable())
+        {
+          asn1cpp::setField(movementState->movementName, state.movementName.getData());
+        }
         
-      asn1cpp::sequenceof::pushList(intersectionState->states, movementState);
-    }
-    
-    asn1cpp::sequenceof::pushList(spatem->spat.intersections, intersectionState);
+        if(state.maneuverAssistList.isAvailable())
+        {
+          for (const auto& maneuver : state.maneuverAssistList.getData())
+          {
+            auto maneuverAssistMs = asn1cpp::makeSeq(ConnectionManeuverAssist);
+            asn1cpp::setField(maneuverAssistMs->connectionID, maneuver.connectionID);
+            if (maneuver.queueLength.isAvailable()) asn1cpp::setField(maneuverAssistMs->queueLength, maneuver.queueLength.getData());
+            if (maneuver.availableStorageLength.isAvailable()) asn1cpp::setField(maneuverAssistMs->availableStorageLength, maneuver.availableStorageLength.getData());
+            if (maneuver.waitOnStop.isAvailable()) asn1cpp::setField(maneuverAssistMs->waitOnStop, maneuver.waitOnStop.getData());
+            if (maneuver.pedBicycleDetect.isAvailable()) asn1cpp::setField(maneuverAssistMs->pedBicycleDetect, maneuver.pedBicycleDetect.getData());
+            asn1cpp::sequenceof::pushList(movementState->maneuverAssistList, maneuverAssistMs);
+          }
+        }
+
+        auto movementEvent = asn1cpp::makeSeq(MovementEvent);
+        asn1cpp::setField(movementEvent->eventState, state.eventState);
+          
+
+        auto timing = asn1cpp::makeSeq(TimeChangeDetails);
+        asn1cpp::setField(timing->minEndTime, state.minEndTime);
+        //option
+        if(state.startTime.isAvailable()) asn1cpp::setField(timing->startTime, state.startTime.getData());
+        if(state.maxEndTime.isAvailable()) asn1cpp::setField(timing->maxEndTime, state.maxEndTime.getData());
+        if(state.likelyTime.isAvailable()) asn1cpp::setField(timing->likelyTime, state.likelyTime.getData());
+        if(state.confidence.isAvailable()) asn1cpp::setField(timing->confidence, state.confidence.getData());
+        if(state.nextTime.isAvailable()) asn1cpp::setField(timing->nextTime, state.nextTime.getData());
+
+
+        asn1cpp::setField(movementEvent->timing, timing);
+          
+        //option
+        if(state.speeds.isAvailable())
+        {
+          for (const auto& advisorySpeed : state.speeds.getData())
+          {
+            auto speedObj = asn1cpp::makeSeq(AdvisorySpeed);
+            asn1cpp::setField(speedObj->type, advisorySpeed.type);
+            asn1cpp::setField(speedObj->speed, advisorySpeed.speed);
+            if (advisorySpeed.confidence.isAvailable()) asn1cpp::setField(speedObj->confidence, advisorySpeed.confidence.getData());
+            if (advisorySpeed.distance.isAvailable()) asn1cpp::setField(speedObj->distance, advisorySpeed.distance.getData());
+            if (advisorySpeed.Class.isAvailable()) asn1cpp::setField(speedObj->Class, advisorySpeed.Class.getData());
+            asn1cpp::sequenceof::pushList(movementEvent->speeds, speedObj);   
+          }
+        }
+
+        asn1cpp::sequenceof::pushList(movementState->state_time_speed, movementEvent);
+          
+        asn1cpp::sequenceof::pushList(intersectionState->states, movementState);
+      }
+      
+      asn1cpp::sequenceof::pushList(spatem->spat.intersections, intersectionState);
     }
     
     // if (spatem_mandatory_data.status.buf != nullptr) {
@@ -310,6 +359,13 @@ namespace ns3
     // Store the time in which the last SPATEM (i.e. this one) has been generated and successfully sent
     m_T_GenSpatem_ms=now-lastSpatemGen;
     lastSpatemGen = now;
+
+    for (auto& spatem_data : spatem_mandatory_data_list) {
+    if (spatem_data.status.buf != nullptr) {
+        free(spatem_data.status.buf);
+        spatem_data.status.buf = nullptr;
+    }
+}
     return SPATEM_NO_ERROR;
   }
 

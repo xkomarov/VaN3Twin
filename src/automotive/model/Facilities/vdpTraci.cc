@@ -22,6 +22,7 @@
 #include <functional> 
 #include <vector>
 #include <cmath>
+#include <algorithm>
 
 extern "C" {
   #include "ns3/CAM.h"
@@ -37,15 +38,15 @@ namespace ns3
     m_isStatic = NULL;
     m_tls_id="";
 
-    m_vehicleRole = VDPDataItem<unsigned int>(false);
+    m_vehicleRole = VDPDataItem<unsigned int>();
     // Special vehicle container
-    m_publicTransportContainerData = VDPDataItem<VDP_PublicTransportContainerData_t>(false);
-    m_specialTransportContainerData = VDPDataItem<VDP_SpecialTransportContainerData_t>(false);
-    m_dangerousGoodsBasicType = VDPDataItem<int>(false); // For the DangerousGoodsContainer
-    m_roadWorksContainerBasicData = VDPDataItem<VDP_RoadWorksContainerBasicData_t>(false);
-    m_rescueContainerLightBarSirenInUse = VDPDataItem<uint8_t>(false);
-    m_emergencyContainerData = VDPDataItem<VDP_EmergencyContainerData_t>(false);
-    m_safetyCarContainerData = VDPDataItem<VDP_SafetyCarContainerData_t>(false);
+    m_publicTransportContainerData = VDPDataItem<VDP_PublicTransportContainerData_t>();
+    m_specialTransportContainerData = VDPDataItem<VDP_SpecialTransportContainerData_t>();
+    m_dangerousGoodsBasicType = VDPDataItem<int>(); // For the DangerousGoodsContainer
+    m_roadWorksContainerBasicData = VDPDataItem<VDP_RoadWorksContainerBasicData_t>();
+    m_rescueContainerLightBarSirenInUse = VDPDataItem<uint8_t>();
+    m_emergencyContainerData = VDPDataItem<VDP_EmergencyContainerData_t>();
+    m_safetyCarContainerData = VDPDataItem<VDP_SafetyCarContainerData_t>();
 
   }
 
@@ -83,15 +84,15 @@ namespace ns3
           }
       }
 
-    m_vehicleRole = VDPDataItem<unsigned int>(false);
+    m_vehicleRole = VDPDataItem<unsigned int>();
     // Special vehicle container
-    m_publicTransportContainerData = VDPDataItem<VDP_PublicTransportContainerData_t>(false);
-    m_specialTransportContainerData = VDPDataItem<VDP_SpecialTransportContainerData_t>(false);
-    m_dangerousGoodsBasicType = VDPDataItem<int>(false); // For the DangerousGoodsContainer
-    m_roadWorksContainerBasicData = VDPDataItem<VDP_RoadWorksContainerBasicData_t>(false);
-    m_rescueContainerLightBarSirenInUse = VDPDataItem<uint8_t>(false);
-    m_emergencyContainerData = VDPDataItem<VDP_EmergencyContainerData_t>(false);
-    m_safetyCarContainerData = VDPDataItem<VDP_SafetyCarContainerData_t>(false);
+    m_publicTransportContainerData = VDPDataItem<VDP_PublicTransportContainerData_t>();
+    m_specialTransportContainerData = VDPDataItem<VDP_SpecialTransportContainerData_t>();
+    m_dangerousGoodsBasicType = VDPDataItem<int>(); // For the DangerousGoodsContainer
+    m_roadWorksContainerBasicData = VDPDataItem<VDP_RoadWorksContainerBasicData_t>();
+    m_rescueContainerLightBarSirenInUse = VDPDataItem<uint8_t>();
+    m_emergencyContainerData = VDPDataItem<VDP_EmergencyContainerData_t>();
+    m_safetyCarContainerData = VDPDataItem<VDP_SafetyCarContainerData_t>();
   }
 
   VDPTraCI::VDPTraCI(Ptr<TraciClient> traci_client, std::string node_id, bool isStatic)
@@ -127,15 +128,15 @@ namespace ns3
             m_vehicle_width = 61;
           }
 
-        m_vehicleRole = VDPDataItem<unsigned int> (false);
+        m_vehicleRole = VDPDataItem<unsigned int> ();
         // Special vehicle container
-        m_publicTransportContainerData = VDPDataItem<VDP_PublicTransportContainerData_t> (false);
-        m_specialTransportContainerData = VDPDataItem<VDP_SpecialTransportContainerData_t> (false);
-        m_dangerousGoodsBasicType = VDPDataItem<int> (false); // For the DangerousGoodsContainer
-        m_roadWorksContainerBasicData = VDPDataItem<VDP_RoadWorksContainerBasicData_t> (false);
-        m_rescueContainerLightBarSirenInUse = VDPDataItem<uint8_t> (false);
-        m_emergencyContainerData = VDPDataItem<VDP_EmergencyContainerData_t> (false);
-        m_safetyCarContainerData = VDPDataItem<VDP_SafetyCarContainerData_t> (false);
+        m_publicTransportContainerData = VDPDataItem<VDP_PublicTransportContainerData_t> ();
+        m_specialTransportContainerData = VDPDataItem<VDP_SpecialTransportContainerData_t> ();
+        m_dangerousGoodsBasicType = VDPDataItem<int> (); // For the DangerousGoodsContainer
+        m_roadWorksContainerBasicData = VDPDataItem<VDP_RoadWorksContainerBasicData_t> ();
+        m_rescueContainerLightBarSirenInUse = VDPDataItem<uint8_t> ();
+        m_emergencyContainerData = VDPDataItem<VDP_EmergencyContainerData_t> ();
+        m_safetyCarContainerData = VDPDataItem<VDP_SafetyCarContainerData_t> ();
       }
   }
 
@@ -172,15 +173,15 @@ namespace ns3
             m_vehicle_width = 61;
           }
 
-        m_vehicleRole = VDPDataItem<unsigned int> (false);
+        m_vehicleRole = VDPDataItem<unsigned int> ();
         // Special vehicle container
-        m_publicTransportContainerData = VDPDataItem<VDP_PublicTransportContainerData_t> (false);
-        m_specialTransportContainerData = VDPDataItem<VDP_SpecialTransportContainerData_t> (false);
-        m_dangerousGoodsBasicType = VDPDataItem<int> (false); // For the DangerousGoodsContainer
-        m_roadWorksContainerBasicData = VDPDataItem<VDP_RoadWorksContainerBasicData_t> (false);
-        m_rescueContainerLightBarSirenInUse = VDPDataItem<uint8_t> (false);
-        m_emergencyContainerData = VDPDataItem<VDP_EmergencyContainerData_t> (false);
-        m_safetyCarContainerData = VDPDataItem<VDP_SafetyCarContainerData_t> (false);
+        m_publicTransportContainerData = VDPDataItem<VDP_PublicTransportContainerData_t> ();
+        m_specialTransportContainerData = VDPDataItem<VDP_SpecialTransportContainerData_t> ();
+        m_dangerousGoodsBasicType = VDPDataItem<int> (); // For the DangerousGoodsContainer
+        m_roadWorksContainerBasicData = VDPDataItem<VDP_RoadWorksContainerBasicData_t> ();
+        m_rescueContainerLightBarSirenInUse = VDPDataItem<uint8_t> ();
+        m_emergencyContainerData = VDPDataItem<VDP_EmergencyContainerData_t> ();
+        m_safetyCarContainerData = VDPDataItem<VDP_SafetyCarContainerData_t> ();
       }
   }
 
@@ -387,25 +388,43 @@ namespace ns3
       for (const auto& target_id : tls_ids) {
           SPATEM_mandatory_data_t spatData;
 
-          spatData.optional_data = false;
-
           try {
                 spatData.intersectionId = (uint16_t)std::hash<std::string>{}(target_id);
               } catch (...) {
                 spatData.intersectionId = 0;
               }
 
-          // Если нужно установить, например, 0-й бит (manualControlIsEnabled)
-          spatData.status.size = 2; // IntersectionStatusObject обычно 16 бит
+          spatData.status.size = 2; // IntersectionStatusObject is exactly 16 bits (2 bytes)
           spatData.status.bits_unused = 0;
           spatData.status.buf = (uint8_t*)calloc(2, sizeof(uint8_t));
-          spatData.status.buf[0] = 0x80; // Установка первого бита
-          spatData.revision = 0;
-
+          spatData.status.buf[0] = 0x00; 
+          
           std::string stateString = m_traci_client->TraCIAPI::trafficlights.getRedYellowGreenState(target_id);
 
-          double nextSwitch = m_traci_client->TraCIAPI::trafficlights.getNextSwitch(target_id);
+          // Логика вычисления поля revision 
+          if (m_tls_prev_states.find(target_id) == m_tls_prev_states.end() || m_tls_prev_states[target_id] != stateString) {
+              m_tls_prev_states[target_id] = stateString;
+              // Закольцовываем инкремент до 127 по стандарту (0..127)
+              m_tls_revisions[target_id] = (m_tls_revisions[target_id] + 1) % 128; 
+          }
+          spatData.revision = m_tls_revisions[target_id];
+
+          // Заполняем время (DSecond и Moy) и имя перекрёстка
           double simTime = m_traci_client->TraCIAPI::simulation.getTime();
+          spatData.moy = VDPDataItem<uint32_t>((uint32_t)(simTime / 60.0));
+          spatData.timeStamp = VDPDataItem<uint16_t>((uint16_t)(std::fmod(simTime, 60.0) * 1000.0));
+          spatData.name = VDPDataItem<std::string>(target_id);
+
+          // Извлекаем полосы и хэшируем ID-шники в uint8_t
+          std::vector<std::string> controlledLanes = m_traci_client->TraCIAPI::trafficlights.getControlledLanes(target_id);
+          std::vector<uint8_t> laneIDs;
+          for (const auto& laneStr : controlledLanes) {
+              uint8_t lid = (uint8_t)std::hash<std::string>{}(laneStr);
+              laneIDs.push_back(lid);
+          }
+          spatData.enabledLanes = VDPDataItem<std::vector<uint8_t>>(laneIDs);
+
+          double nextSwitch = m_traci_client->TraCIAPI::trafficlights.getNextSwitch(target_id);
           double timeLeft = nextSwitch - simTime;
           if (timeLeft < 0) timeLeft = 0.0;
           uint16_t timeLeftDeciSeconds = (uint16_t)(std::round(timeLeft * 10.0));      
@@ -414,39 +433,70 @@ namespace ns3
               SPATEM_SignalGroupState_t groupState;
               groupState.signalGroupID = (int)i + 1; 
               groupState.minEndTime = timeLeftDeciSeconds;
+              
+              // Заполняем предположительные временные рамки (.setData ставит флаг m_available = true)
+              groupState.maxEndTime = VDPDataItem<uint16_t>(timeLeftDeciSeconds);
+              groupState.likelyTime = VDPDataItem<uint16_t>(timeLeftDeciSeconds);
 
               char s = stateString[i];
               
               switch (s) {
-                          case 'r': 
-                          case 'R': 
-                              groupState.eventState = 3; // stop-And-Remain
-                              break;
-                          case 'y': 
-                          case 'Y': 
-                              groupState.eventState = 7; // intersection-clearance
-                              break;
-                          case 'g': 
-                              groupState.eventState = 5; // permissive-Movement-Allowed
-                              break;
-                          case 'G': 
-                              groupState.eventState = 6; // protected-Movement-Allowed
-                              break;
-                          case 'u': 
-                              groupState.eventState = 3; 
-                              break; 
-                          case 'o': 
-                              groupState.eventState = 1; // unavailable / off
-                              break;
-                          default:
-                              groupState.eventState = 1; // unavailable
-                              break;
-                      }
+                  case 'r': 
+                  case 'R': 
+                      groupState.eventState = 3; // stop-And-Remain
+                      break;
+                  case 'y': 
+                  case 'Y': 
+                      groupState.eventState = 7; // intersection-clearance
+                      break;
+                  case 'g': 
+                      groupState.eventState = 5; // permissive-Movement-Allowed
+                      break;
+                  case 'G': 
+                      groupState.eventState = 6; // protected-Movement-Allowed
+                      break;
+                  case 'u': 
+                      groupState.eventState = 3; 
+                      break; 
+                  case 'o': 
+                      groupState.eventState = 1; // unavailable / off
+                      break;
+                  default:
+                      groupState.eventState = 1; // unavailable
+                      break;
+              }
+
+              // Заполнение AdvisorySpeed и ManeuverAssist
+              // Индексы StateString и controlledLanes взаимосвязаны
+              if (i < controlledLanes.size()) {
+                  // Извлекаем Advisory Speed на полосе
+                  double maxSpeed = m_traci_client->TraCIAPI::lane.getMaxSpeed(controlledLanes[i]);
+                  VDP_AdvisorySpeed_t advSpeed;
+                  advSpeed.type = 0; // none/base advisory
+                  advSpeed.speed = (uint16_t)(std::round(maxSpeed * 10.0)); // Конвертация в 0.1 м/с
+                  advSpeed.confidence = VDPDataItem<uint8_t>(100); // 100% уверенности
+
+                  std::vector<VDP_AdvisorySpeed_t> speedsVec{advSpeed};
+                  groupState.speeds = VDPDataItem<std::vector<VDP_AdvisorySpeed_t>>(speedsVec);
+
+                  // ManeuverAssist (расчёт очереди)
+                  int halted = m_traci_client->TraCIAPI::lane.getLastStepHaltingNumber(controlledLanes[i]);
+                  
+                  VDP_ConnectionManeuverAssist_t maneuver;
+                  maneuver.connectionID = groupState.signalGroupID;
+                  // В ASN.1 queueLength исчисляется в единицах 0.1 м
+                  // 1 ТС в среднем занимает ~5 метров. 5м * 10 = 50 единиц (0.1m) на ТС.
+                  maneuver.queueLength = VDPDataItem<uint16_t>((uint16_t)(halted * 50));
+                  
+                  std::vector<VDP_ConnectionManeuverAssist_t> maneuverAssistList{maneuver};
+                  groupState.maneuverAssistList = VDPDataItem<std::vector<VDP_ConnectionManeuverAssist_t>>(maneuverAssistList);
+              }
 
               spatData.states.push_back(groupState);
           }
           result.push_back(spatData);
       }
+
       return result;
   }
 
@@ -476,7 +526,7 @@ namespace ns3
   VDPTraCI::getExteriorLights ()
   {
     if(m_isStatic)
-      return VDPDataItem<uint8_t>(false);
+      return VDPDataItem<uint8_t>();
     int extLights = m_traci_client->TraCIAPI::vehicle.getSignals (m_id);
     uint8_t retval = 0;
     if(extLights & VEH_SIGNAL_BLINKER_RIGHT)

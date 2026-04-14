@@ -238,6 +238,8 @@ namespace ns3
 
     /* Implement SPATEM strategy here */
     m_spatem_received++;
+    NS_LOG_DEBUG ("[SPATEM] " << m_id << " received SPATEM #" << m_spatem_received
+                              << " intersections=" << spatem->spat.intersections.list.count);
     // asn_fprint(stdout, &asn_DEF_SPATEM, &(*spatem));
     // fflush(stdout);
 
@@ -287,9 +289,13 @@ namespace ns3
     // === Step 3: Find nearby traffic lights from LDM ===
     std::vector<trafficLightData_t> nearbyTLs;
     m_LDM->rangeSelectTL (200.0, egoLL.y, egoLL.x, nearbyTLs);
+    NS_LOG_DEBUG ("[SPATEM] " << m_id << " lane=" << currentLane
+                              << " pos=(" << egoXY.x << "," << egoXY.y << ")"
+                              << " nearbyTLs=" << nearbyTLs.size ());
 
     if (nearbyTLs.empty ())
       {
+        NS_LOG_DEBUG ("[SPATEM] " << m_id << " -> no nearby TLs in LDM within 200m, skip");
         m_spatemTimeout = Simulator::Schedule (Seconds (1.0), &tlmClientLTE::spatemTimeout, this);
         return;
       }
@@ -313,6 +319,9 @@ namespace ns3
 
     if (!found || matchedTL.signalGroupStates.empty ())
       {
+        NS_LOG_DEBUG ("[SPATEM] " << m_id << " -> lane '" << currentLane
+                                  << "' not found in any nearby TL, or signalGroupStates empty (found="
+                                  << found << ")" );
         m_passedIntersectionID = 0;
         m_spatemTimeout = Simulator::Schedule (Seconds (1.0), &tlmClientLTE::spatemTimeout, this);
         return;
@@ -375,8 +384,15 @@ namespace ns3
     const double GLOSA_MIN_DIST = 10.0; // Too close to stop line — GLOSA useless
     const double GLOSA_MAX_DIST = 350.0; // Too far — timing info unreliable
 
+    NS_LOG_DEBUG ("[SPATEM] " << m_id << " matched TL id=" << matchedTL.intersectionID
+                              << " sg=" << matchedSignalGroup
+                              << " dist=" << dist
+                              << " state=" << (matchedTL.signalGroupStates.count(matchedSignalGroup)
+                                                  ? matchedTL.signalGroupStates.at(matchedSignalGroup)
+                                                  : -1L));
     if (dist < GLOSA_MIN_DIST || dist > GLOSA_MAX_DIST)
       {
+        NS_LOG_DEBUG ("[SPATEM] " << m_id << " -> dist " << dist << " outside GLOSA range [" << GLOSA_MIN_DIST << "," << GLOSA_MAX_DIST << "], skip");
         if (m_glosaActive)
           {
             m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);

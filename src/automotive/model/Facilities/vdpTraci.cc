@@ -23,6 +23,7 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <set>
 
 extern "C" {
   #include "ns3/CAM.h"
@@ -416,11 +417,20 @@ namespace ns3
           spatData.name = VDPDataItem<std::string>(target_id);
 
           // Извлекаем полосы и хэшируем ID-шники в uint8_t
+          // SUMO возвращает одну полосу на каждое «подключение» (connection),
+          // поэтому одна и та же полоса может повторяться. Дедуплицируем.
           std::vector<std::string> controlledLanes = m_traci_client->TraCIAPI::trafficlights.getControlledLanes(target_id);
           std::vector<uint8_t> laneIDs;
+          std::set<uint8_t> seenLaneIDs;
           for (const auto& laneStr : controlledLanes) {
               uint8_t lid = (uint8_t)std::hash<std::string>{}(laneStr);
-              laneIDs.push_back(lid);
+              if (seenLaneIDs.insert(lid).second) {
+                  laneIDs.push_back(lid);
+              }
+          }
+          // ASN.1 EnabledLaneList имеет ограничение SIZE(1..16)
+          if (laneIDs.size() > 16) {
+              laneIDs.resize(16);
           }
           spatData.enabledLanes = VDPDataItem<std::vector<uint8_t>>(laneIDs);
 

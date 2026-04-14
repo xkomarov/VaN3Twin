@@ -1,7 +1,6 @@
 #include "ns3/carla-module.h"
 //#include "ns3/automotive-module.h"
 #include "ns3/tlmServerLTE-helper.h"
-#include "ns3/tlmServerLTE.h"
 #include "ns3/tlmClientLTE.h"
 #include "ns3/tlmClientLTE-helper.h"
 #include "ns3/traci-module.h"
@@ -55,10 +54,10 @@ main (int argc, char *argv[])
   std::string datarate_config;
 
   /*** 0.a App Options ***/
-  std::string sumo_folder = "src/automotive/examples/tlm_map_1_rsu/";
+  std::string sumo_folder = "src/automotive/examples/tlm_map_1_rsu_copy/";
   std::string mob_trace = "cars.rou.xml";
   std::string rsu_file = "stations.xml";
-  std::string sumo_config ="src/automotive/examples/tlm_map_1_rsu/map.sumo.cfg";
+  std::string sumo_config ="src/automotive/examples/tlm_map_1_rsu_copy/map.sumo.cfg";
 
   bool verbose = true;
   bool realtime = false;

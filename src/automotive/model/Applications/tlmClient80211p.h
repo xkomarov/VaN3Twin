@@ -52,9 +52,17 @@ class tlmClient80211p : public Application
      * @brief This function compute the milliseconds elapsed from 2004-01-01
     */
     long compute_timestampIts ();
-    //void denmTimeout(void);
     void spatemTimeout(void);
     void populateStaticTLData(void); //!< Mock-populate TL topology into LDM (simulates MAPEM)
+
+    /**
+     * @brief Periodic RLVW (Red Light Violation Warning) check.
+     *
+     * Runs every 200 ms while SPATEM data is available. Queries the LDM for
+     * nearby traffic lights, computes stopping distance vs. distance to stop
+     * line, and applies emergency braking if the vehicle cannot stop in time.
+     */
+    void updateRlvwControl(void);
 
     Ptr<TraciClient> m_client; //!< TraCI client
     std::string m_id; //!< vehicle id
@@ -67,17 +75,20 @@ class tlmClient80211p : public Application
 
     EventId m_sendCamEvent; //!< Event to send the CAM
     EventId m_spatemTimeout;
-    
+    EventId m_rlvwUpdateEvent; //!< Periodic RLVW check event
 
     /* Counters */
     int m_cam_sent;
     int m_spatem_received;
+    int m_rlvw_warnings = 0; //!< Number of RLVW warnings issued
     bool m_send_cam;
 
     Ptr<MetricSupervisor> m_metric_supervisor = nullptr;
 
-    uint64_t m_passedIntersectionID = 0; //!< ID проеханного перекрёстка (игнорировать SPATEM от него)
-    bool m_glosaActive = false;          //!< Whether GLOSA is currently overriding vehicle speed
+    /* RLVW state */
+    uint64_t m_passedIntersectionID = 0; //!< ID of intersection already passed (dedup)
+    bool m_rlvwActive = false;           //!< Whether RLVW is currently braking the vehicle
+    bool m_spatemAlive = false;          //!< Whether at least one SPATEM has been received recently
   };
 
 } // namespace ns3

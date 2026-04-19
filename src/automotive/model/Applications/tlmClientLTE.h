@@ -43,8 +43,7 @@ class tlmClientLTE : public Application
 
     Ptr<Socket> m_socket; //!< Client socket
     
-    Ptr<LDM> m_LDM;
-    void populateStaticTLData(void);
+    Ptr<LDM> m_LDM; //!< Local Dynamic Map for traffic light data
 
     virtual void StartApplication (void);
     virtual void StopApplication (void);
@@ -57,6 +56,23 @@ class tlmClientLTE : public Application
     //void denmTimeout(void);
     void spatemTimeout(void);
 
+    /**
+     * @brief Mock-populate TL topology into LDM (simulates MAPEM).
+     *
+     * Iterates all traffic light systems from SUMO, builds lane mappings and
+     * stop-line coordinates, and inserts them into the LDM.
+     */
+    void populateStaticTLData(void);
+
+    /**
+     * @brief Periodic GLOSA speed profile recalculation.
+     *
+     * Runs every 200 ms while SPATEM data is available. Queries the LDM for
+     * nearby traffic lights, computes optimal speed advisory, and applies it
+     * via TraCI with speedMode=6 (disabling SUMO's TL braking).
+     */
+    void updateGlosaControl(void);
+
     Ptr<TraciClient> m_client; //!< TraCI client
     std::string m_id; //!< vehicle id
     bool m_real_time; //!< To decide wheter to use realtime scheduler
@@ -68,15 +84,18 @@ class tlmClientLTE : public Application
 
     EventId m_sendCamEvent; //!< Event to send the CAM
     EventId m_spatemTimeout;
+    EventId m_glosaUpdateEvent; //!< Periodic GLOSA speed recalculation event
     
 
     /* Counters */
     int m_cam_sent;
     int m_spatem_received;
     bool m_send_cam;
-    
-    bool m_glosaActive;
-    uint64_t m_passedIntersectionID;
+
+    /* GLOSA state */
+    bool m_glosaActive = false;          //!< Whether GLOSA is currently overriding vehicle speed
+    uint64_t m_passedIntersectionID = 0; //!< ID of intersection already passed (dedup)
+    bool m_spatemAlive = false;          //!< Whether at least one SPATEM has been received recently
 
     Ptr<MetricSupervisor> m_metric_supervisor = nullptr;
   };
@@ -84,4 +103,3 @@ class tlmClientLTE : public Application
 } // namespace ns3
 
 #endif /* TLMCLIENTLTE_H */
-

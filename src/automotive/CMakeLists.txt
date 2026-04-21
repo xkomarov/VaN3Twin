@@ -12,6 +12,8 @@ Set(source_files
     helper/tlmServer80211p-helper.cc
     helper/tlmClientLTE-helper.cc
     helper/tlmServerLTE-helper.cc
+    helper/glosaClient-helper.cc
+    helper/glosaServer-helper.cc
     helper/emergencyVehicleAlert-helper.cc
     helper/v2xEmulator-helper.cc
     helper/simpleCAMSender-helper.cc
@@ -36,6 +38,8 @@ Set(source_files
     model/Applications/tlmServer80211p.cc
     model/Applications/tlmClientLTE.cc
     model/Applications/tlmServerLTE.cc
+    model/Applications/glosaClient.cc
+    model/Applications/glosaServer.cc
     model/Applications/simpleCAMSender-gps-tc.cc
     model/Applications/simpleVAMSender-gps-tc.cc
     model/Applications/trafficManagerClient80211p.cc
@@ -1344,6 +1348,8 @@ set(header_files
     helper/tlmServer80211p-helper.h
     helper/tlmClientLTE-helper.h
     helper/tlmServerLTE-helper.h
+    helper/glosaClient-helper.h
+    helper/glosaServer-helper.h
     helper/emergencyVehicleAlert-helper.h
     helper/v2xEmulator-helper.h
     helper/simpleCAMSender-helper.h
@@ -1363,6 +1369,8 @@ set(header_files
     model/Applications/tlmServer80211p.h
     model/Applications/tlmClientLTE.h
     model/Applications/tlmServerLTE.h
+    model/Applications/glosaClient.h
+    model/Applications/glosaServer.h
     model/Applications/emergencyVehicleAlert.h
     model/Applications/simpleCAMSender-gps-tc.h
     model/Applications/simpleVAMSender-gps-tc.h

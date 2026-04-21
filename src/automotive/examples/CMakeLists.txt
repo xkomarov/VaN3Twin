@@ -19,13 +19,22 @@ build_lib_example(
 )
 
  build_lib_example(
-    NAME v2i-tlm-nr
-    SOURCE_FILES v2i-tlm-nr.cc
+    NAME v2i-glosa-lte
+    SOURCE_FILES v2i-glosa-lte.cc
     LIBRARIES_TO_LINK
     ${libcarla}
     ${libautomotive}
     ${liblte}
-    ${libnr}
+    ${libtraci}
+ )
+
+ build_lib_example(
+    NAME v2i-glosa-80211p
+    SOURCE_FILES v2i-glosa-80211p.cc
+    LIBRARIES_TO_LINK
+    ${libcarla}
+    ${libautomotive}
+    ${libwave}
     ${libtraci}
  )
 

@@ -1,9 +1,9 @@
 #include "ns3/carla-module.h"
 //#include "ns3/automotive-module.h"
-#include "ns3/tlmServer80211p-helper.h"
-#include "ns3/tlmServer80211p.h"
-#include "ns3/tlmClient80211p.h"
-#include "ns3/tlmClient80211p-helper.h"
+#include "ns3/glosaServer-helper.h"
+#include "ns3/glosaServer.h"
+#include "ns3/glosaClient.h"
+#include "ns3/glosaClient-helper.h"
 #include "ns3/traci-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/wave-module.h"
@@ -36,7 +36,7 @@ struct VehicleMetrics
 };
 
 using namespace ns3;
-NS_LOG_COMPONENT_DEFINE ("v2i-tlm-80211p");
+NS_LOG_COMPONENT_DEFINE ("v2i-glosa-80211p");
 
 int
 main (int argc, char *argv[])
@@ -173,10 +173,10 @@ main (int argc, char *argv[])
 
   if (verbose)
     {
-      LogComponentEnable ("v2i-tlm-80211p", LOG_LEVEL_INFO);
+      LogComponentEnable ("v2i-glosa-80211p", LOG_LEVEL_INFO);
       LogComponentEnable ("CABasicService", LOG_LEVEL_INFO);
       LogComponentEnable ("TLMBasicService", LOG_LEVEL_INFO);
-      LogComponentEnable ("tlmServer80211p", LOG_LEVEL_INFO);
+      LogComponentEnable ("glosaServer", LOG_LEVEL_INFO);
     }
 
   /* Use the realtime scheduler of ns3 */
@@ -251,8 +251,8 @@ main (int argc, char *argv[])
   NetDeviceContainer netRSUs = wifi80211p.Install (wifiPhy, wifi80211pMac, rsuNodes);
   //wifi80211p.EnableLogComponents ();
 
-  wifiPhy.EnablePcap ("v2i-tlm-80211p", netDevices);
-  wifiPhy.EnablePcap ("v2i-tlm-80211p-RSU", netRSUs);
+  wifiPhy.EnablePcap ("v2i-glosa-80211p", netDevices);
+  wifiPhy.EnablePcap ("v2i-glosa-80211p-RSU", netRSUs);
   /* Give packet socket powers to nodes (otherwise, if the app tries to create a PacketSocket, CreateSocket will end up with a segmentation fault */
   PacketSocketHelper packetSocket;
   packetSocket.Install (obuNodes);
@@ -309,13 +309,14 @@ main (int argc, char *argv[])
     }
 
   /*** 6. Create and Setup application for the server ***/
-  tlmServer80211pHelper tlmServer80211pHelper;
-  tlmServer80211pHelper.SetAttribute ("Client", (PointerValue) sumoClient);
-  tlmServer80211pHelper.SetAttribute ("RealTime", BooleanValue (realtime));
-  tlmServer80211pHelper.SetAttribute ("AggregateOutput", BooleanValue (aggregate_out));
-  tlmServer80211pHelper.SetAttribute ("CSV", StringValue (csv_name));
-  tlmServer80211pHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
-  tlmServer80211pHelper.SetAttribute ("SendSPATEM", BooleanValue (send_spatem));
+  glosaServerHelper glosaServerHelper_;
+  glosaServerHelper_.SetAttribute("Model", StringValue("80211p"));
+  glosaServerHelper_.SetAttribute ("Client", (PointerValue) sumoClient);
+  glosaServerHelper_.SetAttribute ("RealTime", BooleanValue (realtime));
+  glosaServerHelper_.SetAttribute ("AggregateOutput", BooleanValue (aggregate_out));
+  glosaServerHelper_.SetAttribute ("CSV", StringValue (csv_name));
+  glosaServerHelper_.SetAttribute ("MetricSupervisor", PointerValue (metSup));
+  glosaServerHelper_.SetAttribute ("SendSPATEM", BooleanValue (send_spatem));
 
   int i = 0;
   for (auto rsu : rsuData)
@@ -325,7 +326,7 @@ main (int argc, char *argv[])
       float y = std::get<2> (rsu);
       Ptr<Node> rsuNode = rsuNodes.Get (i);
       sumoClient->AddStation (id, x, y, 0.0, rsuNode);
-      ApplicationContainer AppServer = tlmServer80211pHelper.Install (rsuNode);
+      ApplicationContainer AppServer = glosaServerHelper_.Install (rsuNode);
       AppServer.Start (Seconds (0.0));
       AppServer.Stop (simulationTime - Seconds (0.1));
       ++rsuCounter;
@@ -333,18 +334,19 @@ main (int argc, char *argv[])
     }
 
   /*** 7. Setup interface and application for dynamic nodes ***/
-  tlmClient80211pHelper tlmClient80211pHelper;
+  glosaClientHelper glosaClientHelper_;
   Ipv4Address remoteHostAddr;
 
-  tlmClient80211pHelper.SetAttribute ("ServerAddr", Ipv4AddressValue (remoteHostAddr));
-  tlmClient80211pHelper.SetAttribute (
+  glosaClientHelper_.SetAttribute("Model", StringValue("80211p"));
+  glosaClientHelper_.SetAttribute ("ServerAddr", Ipv4AddressValue (remoteHostAddr));
+  glosaClientHelper_.SetAttribute (
       "Client",
       (PointerValue) sumoClient); // pass TraciClient object for accessing sumo in application
-  tlmClient80211pHelper.SetAttribute ("PrintSummary", BooleanValue (print_summary));
-  tlmClient80211pHelper.SetAttribute ("RealTime", BooleanValue (realtime));
-  tlmClient80211pHelper.SetAttribute ("CSV", StringValue (csv_name));
-  tlmClient80211pHelper.SetAttribute ("SendCAM", BooleanValue (send_cam));
-  tlmClient80211pHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
+  glosaClientHelper_.SetAttribute ("PrintSummary", BooleanValue (print_summary));
+  glosaClientHelper_.SetAttribute ("RealTime", BooleanValue (realtime));
+  glosaClientHelper_.SetAttribute ("CSV", StringValue (csv_name));
+  glosaClientHelper_.SetAttribute ("SendCAM", BooleanValue (send_cam));
+  glosaClientHelper_.SetAttribute ("MetricSupervisor", PointerValue (metSup));
 
   /* callback function for node creation */
   STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID,
@@ -357,8 +359,8 @@ main (int argc, char *argv[])
     ++nodeCounter; //increment counter for next node
 
     /* Install Application */
-    //tlmClient80211pHelper.SetAttribute ("PRRSupervisor", PointerValue (&prrSup));
-    ApplicationContainer ClientApp = tlmClient80211pHelper.Install (includedNode);
+    //glosaClientHelper_.SetAttribute ("PRRSupervisor", PointerValue (&prrSup));
+    ApplicationContainer ClientApp = glosaClientHelper_.Install (includedNode);
     ClientApp.Start (Seconds (0.0));
     ClientApp.Stop (simulationTime - Simulator::Now () - Seconds (0.1));
 
@@ -368,10 +370,10 @@ main (int argc, char *argv[])
   /* callback function for node shutdown */
   SHUTDOWN_FCN shutdownWifiNode = [] (Ptr<Node> exNode, std::string vehicleID) {
     /* Stop all applications */
-    Ptr<tlmClient80211p> tlmClient80211p_ =
-        exNode->GetApplication (0)->GetObject<tlmClient80211p> ();
-    if (tlmClient80211p_)
-      tlmClient80211p_->StopApplicationNow ();
+    Ptr<glosaClient> glosaClient_ =
+        exNode->GetApplication (0)->GetObject<glosaClient> ();
+    if (glosaClient_)
+      glosaClient_->StopApplicationNow ();
 
     /* Set position outside communication range */
     Ptr<ConstantPositionMobilityModel> mob = exNode->GetObject<ConstantPositionMobilityModel> ();

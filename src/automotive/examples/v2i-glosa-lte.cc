@@ -1,9 +1,9 @@
 #include "ns3/carla-module.h"
 //#include "ns3/automotive-module.h"
-#include "ns3/tlmServerLTE-helper.h"
-#include "ns3/tlmServerLTE.h"
-#include "ns3/tlmClientLTE.h"
-#include "ns3/tlmClientLTE-helper.h"
+#include "ns3/glosaServer-helper.h"
+#include "ns3/glosaServer.h"
+#include "ns3/glosaClient.h"
+#include "ns3/glosaClient-helper.h"
 #include "ns3/traci-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/lte-helper.h"
@@ -19,7 +19,7 @@
 // #include "ns3/nr-point-to-point-epc-helper.h"
 #include "ns3/nr-module.h"
 using namespace ns3;
-NS_LOG_COMPONENT_DEFINE("v2i-tlm-LTE");
+NS_LOG_COMPONENT_DEFINE("v2i-glosa-LTE");
 
 int
 main (int argc, char *argv[])
@@ -43,10 +43,11 @@ main (int argc, char *argv[])
   std::string datarate_config;
 
   /*** 0.a App Options ***/
-  std::string sumo_folder = "src/automotive/examples/tlm_map_1_rsu/";
+  std::string map_name = "tlm_map_3_light"; // Default map
+  std::string sumo_folder = "src/automotive/examples/" + map_name + "/";
   std::string mob_trace = "cars.rou.xml";
   std::string rsu_file = "stations.xml";
-  std::string sumo_config ="src/automotive/examples/tlm_map_1_rsu/map.sumo.cfg";
+  std::string sumo_config = sumo_folder + "map.sumo.cfg";
 
   bool verbose = true;
   bool realtime = false;
@@ -81,6 +82,7 @@ main (int argc, char *argv[])
   xmlDocPtr rou_xml_file;
 
   /* Cmd Line option for vehicular application */
+  cmd.AddValue ("map-name", "Name of the map folder (e.g. tlm_map_1_rsu_62), simplifies setting sumo-folder and sumo-config", map_name);
   cmd.AddValue ("realtime", "Use the realtime scheduler or not", realtime);
   cmd.AddValue ("sumo-gui", "Use SUMO gui or not", sumo_gui);
   cmd.AddValue ("server-aggregate-output", "Print an aggregate output for server", aggregate_out);
@@ -107,6 +109,12 @@ main (int argc, char *argv[])
 
   cmd.Parse (argc, argv);
 
+  if (map_name != "tlm_map_3_light")
+  {
+    sumo_folder = "src/automotive/examples/" + map_name + "/";
+    sumo_config = sumo_folder + "map.sumo.cfg";
+  }
+
   /* Carrier aggregation for LTE */
   if (useCa)
    {
@@ -120,10 +128,10 @@ main (int argc, char *argv[])
 
   if (verbose)
     {
-      LogComponentEnable ("v2i-tlm-LTE", LOG_LEVEL_INFO);
+      LogComponentEnable ("v2i-glosa-LTE", LOG_LEVEL_INFO);
       LogComponentEnable ("CABasicService", LOG_LEVEL_INFO);
       LogComponentEnable ("TLMBasicService", LOG_LEVEL_INFO);
-      LogComponentEnable ("tlmServerLTE", LOG_LEVEL_INFO);
+      LogComponentEnable ("glosaServer", LOG_LEVEL_INFO);
     }
 
   /* Use the realtime scheduler of ns3 */
@@ -281,13 +289,14 @@ main (int argc, char *argv[])
     }
 
   /*** 6. Create and Setup application for the server ***/
-  tlmServerLTEHelper tlmServerLTEHelper;
-  tlmServerLTEHelper.SetAttribute ("Client", (PointerValue) sumoClient);
-  tlmServerLTEHelper.SetAttribute ("RealTime", BooleanValue(realtime));
-  tlmServerLTEHelper.SetAttribute ("AggregateOutput", BooleanValue(aggregate_out));
-  tlmServerLTEHelper.SetAttribute ("CSV", StringValue(csv_name));
-  tlmServerLTEHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
-  tlmServerLTEHelper.SetAttribute ("SendSPATEM", BooleanValue (send_spatem));
+  glosaServerHelper glosaServHelper;
+  glosaServHelper.SetAttribute ("Model", StringValue("lte"));
+  glosaServHelper.SetAttribute ("Client", (PointerValue) sumoClient);
+  glosaServHelper.SetAttribute ("RealTime", BooleanValue(realtime));
+  glosaServHelper.SetAttribute ("AggregateOutput", BooleanValue(aggregate_out));
+  glosaServHelper.SetAttribute ("CSV", StringValue(csv_name));
+  glosaServHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
+  glosaServHelper.SetAttribute ("SendSPATEM", BooleanValue (send_spatem));
 
   int i = 0;
   for (auto rsu : rsuData)
@@ -302,20 +311,21 @@ main (int argc, char *argv[])
     }
 
   // We don't install the server app on the eNB (rsuNode) in LTE, we install it on the remoteHost.
-  // Install only a single centralized server to manage TLM data.
-  ApplicationContainer AppServer = tlmServerLTEHelper.Install (remoteHostContainer.Get (0));
+  // Install only a single centralized server to manage glosa data.
+  ApplicationContainer AppServer = glosaServHelper.Install (remoteHostContainer.Get (0));
   AppServer.Start (Seconds (0.0));
   AppServer.Stop (simulationTime - Seconds (0.1));
 
   /*** 7. Setup interface and application for dynamic nodes ***/
-  tlmClientLTEHelper tlmClientLTEHelper;
-  tlmClientLTEHelper.SetAttribute ("ServerAddr", Ipv4AddressValue(remoteHostAddr));
-  tlmClientLTEHelper.SetAttribute ("Client", (PointerValue) sumoClient); // pass TraciClient object for accessing sumo in application
-  tlmClientLTEHelper.SetAttribute ("PrintSummary", BooleanValue(print_summary));
-  tlmClientLTEHelper.SetAttribute ("RealTime", BooleanValue(realtime));
-  tlmClientLTEHelper.SetAttribute ("CSV", StringValue(csv_name));
-  tlmClientLTEHelper.SetAttribute ("SendCAM", BooleanValue (send_cam));
-  tlmClientLTEHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
+  glosaClientHelper glosaCliHelper;
+  glosaCliHelper.SetAttribute ("Model", StringValue("lte"));
+  glosaCliHelper.SetAttribute ("ServerAddr", Ipv4AddressValue(remoteHostAddr));
+  glosaCliHelper.SetAttribute ("Client", (PointerValue) sumoClient); // pass TraciClient object for accessing sumo in application
+  glosaCliHelper.SetAttribute ("PrintSummary", BooleanValue(print_summary));
+  glosaCliHelper.SetAttribute ("RealTime", BooleanValue(realtime));
+  glosaCliHelper.SetAttribute ("CSV", StringValue(csv_name));
+  glosaCliHelper.SetAttribute ("SendCAM", BooleanValue (send_cam));
+  glosaCliHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
 
   /* callback function for node creation */
   STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID,TraciClient::StationTypeTraCI_t stationType) -> Ptr<Node>
@@ -328,8 +338,8 @@ main (int argc, char *argv[])
       ++nodeCounter; //increment counter for next node
 
       /* Install Application */
-      //tlmClientLTEHelper.SetAttribute ("PRRSupervisor", PointerValue (&prrSup));
-      ApplicationContainer ClientApp = tlmClientLTEHelper.Install (includedNode);
+      //glosaCliHelper.SetAttribute ("PRRSupervisor", PointerValue (&prrSup));
+      ApplicationContainer ClientApp = glosaCliHelper.Install (includedNode);
       ClientApp.Start (Seconds (0.0));
       ClientApp.Stop (simulationTime - Simulator::Now () - Seconds (0.1));
 
@@ -340,9 +350,9 @@ main (int argc, char *argv[])
   SHUTDOWN_FCN shutdownWifiNode = [] (Ptr<Node> exNode,std::string vehicleID)
     {
       /* Stop all applications */
-      Ptr<tlmClientLTE> tlmClientLTE_ = exNode->GetApplication(0)->GetObject<tlmClientLTE>();
-      if(tlmClientLTE_)
-        tlmClientLTE_->StopApplicationNow ();
+      Ptr<glosaClient> glosaClient_ = exNode->GetApplication(0)->GetObject<glosaClient>();
+      if(glosaClient_)
+        glosaClient_->StopApplicationNow ();
 
        /* Set position outside communication range */
       Ptr<ConstantPositionMobilityModel> mob = exNode->GetObject<ConstantPositionMobilityModel>();

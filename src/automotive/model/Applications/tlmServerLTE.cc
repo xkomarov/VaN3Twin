@@ -168,7 +168,6 @@ namespace ns3
 
     m_caService.setVDP(traci_vdp);
 
-
     m_tlmBasicService.setVDP(traci_vdp);
 
 

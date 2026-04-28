@@ -50,6 +50,7 @@ namespace ns3 {
 
     void setProperties(Ptr<TraciClient> traci_client,std::string node_id) {m_traci_client=traci_client; m_id=node_id;}
     void setTargetTls(std::string tls_id) { m_tls_id = tls_id; }
+    void setTargetTlsList(std::vector<std::string> tls_ids) { m_tls_ids = tls_ids; }
 
     /**
    * @brief This function returns the mandatory data of the SPATEM message for all traffic lights.
@@ -160,10 +161,15 @@ namespace ns3 {
     private:
       std::string m_id;
       std::string m_tls_id;
+      std::vector<std::string> m_tls_ids;
       Ptr<TraciClient> m_traci_client;
       bool m_isStatic;
       std::unordered_map<std::string, std::string> m_tls_prev_states;
       std::unordered_map<std::string, uint8_t> m_tls_revisions;
+
+      // Cache for phase durations (deci-seconds) per TLS — fetched once from
+      // getCompleteRedYellowGreenDefinition() and reused on every SPATEM cycle.
+      std::unordered_map<std::string, std::vector<uint16_t>> m_tls_phase_durations_cache;
   };
 }
 

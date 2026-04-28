@@ -38,6 +38,47 @@ build_lib_example(
     ${libtraci}
  )
 
+
+ build_lib_example(
+    NAME v2i-bglosa-lte
+    SOURCE_FILES v2i-bglosa-lte.cc
+    LIBRARIES_TO_LINK
+    ${libcarla}
+    ${libautomotive}
+    ${liblte}
+    ${libtraci}
+ )
+
+ build_lib_example(
+    NAME v2i-bglosa-80211p
+    SOURCE_FILES v2i-bglosa-80211p.cc
+    LIBRARIES_TO_LINK
+    ${libcarla}
+    ${libautomotive}
+    ${libwave}
+    ${libtraci}
+ )
+
+ build_lib_example(
+    NAME v2i-eco-glosa-lte
+    SOURCE_FILES v2i-eco-glosa-lte.cc
+    LIBRARIES_TO_LINK
+    ${libcarla}
+    ${libautomotive}
+    ${liblte}
+    ${libtraci}
+ )
+
+ build_lib_example(
+    NAME v2i-eco-glosa-80211p
+    SOURCE_FILES v2i-eco-glosa-80211p.cc
+    LIBRARIES_TO_LINK
+    ${libcarla}
+    ${libautomotive}
+    ${libwave}
+    ${libtraci}
+ )
+
 build_lib_example(
     NAME v2i-areaSpeedAdvisor-80211p
     SOURCE_FILES v2i-areaSpeedAdvisor-80211p.cc

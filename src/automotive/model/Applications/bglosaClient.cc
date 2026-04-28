@@ -1,4 +1,4 @@
-#include "glosaClient.h"
+#include "bglosaClient.h"
 #include "ns3/SPATEM.h"
 #include "ns3/CAM.h"
 #include "ns3/vdpTraci.h"
@@ -9,62 +9,62 @@
 
 namespace ns3
 {
-  NS_LOG_COMPONENT_DEFINE("glosaClient");
+  NS_LOG_COMPONENT_DEFINE("bglosaClient");
 
-  NS_OBJECT_ENSURE_REGISTERED(glosaClient);
+  NS_OBJECT_ENSURE_REGISTERED(bglosaClient);
 
   TypeId
-  glosaClient::GetTypeId (void)
+  bglosaClient::GetTypeId (void)
   {
     static TypeId tid =
-        TypeId ("ns3::glosaClient")
+        TypeId ("ns3::bglosaClient")
         .SetParent<Application> ()
         .SetGroupName ("Applications")
-        .AddConstructor<glosaClient> ()
+        .AddConstructor<bglosaClient> ()
         .AddAttribute ("Model",
             "Access Technology Model (80211p or lte)",
             StringValue ("lte"),
-            MakeStringAccessor (&glosaClient::m_model),
+            MakeStringAccessor (&bglosaClient::m_model),
             MakeStringChecker ())
         .AddAttribute ("PrintSummary",
             "To print summary at the end of simulation",
             BooleanValue(false),
-            MakeBooleanAccessor (&glosaClient::m_print_summary),
+            MakeBooleanAccessor (&bglosaClient::m_print_summary),
             MakeBooleanChecker ())
         .AddAttribute ("RealTime",
             "To compute properly timestamps",
             BooleanValue(false),
-            MakeBooleanAccessor (&glosaClient::m_real_time),
+            MakeBooleanAccessor (&bglosaClient::m_real_time),
             MakeBooleanChecker ())
         .AddAttribute ("CSV",
             "CSV log name",
             StringValue (),
-            MakeStringAccessor (&glosaClient::m_csv_name),
+            MakeStringAccessor (&bglosaClient::m_csv_name),
             MakeStringChecker ())
         .AddAttribute ("ServerAddr",
             "Ip Addr of the server",
             Ipv4AddressValue("10.0.0.1"),
-            MakeIpv4AddressAccessor (&glosaClient::m_server_addr),
+            MakeIpv4AddressAccessor (&bglosaClient::m_server_addr),
             MakeIpv4AddressChecker ())
         .AddAttribute ("Client",
             "TraCI client for SUMO",
             PointerValue (0),
-            MakePointerAccessor (&glosaClient::m_client),
+            MakePointerAccessor (&bglosaClient::m_client),
             MakePointerChecker<TraciClient> ())
         .AddAttribute ("MetricSupervisor",
             "Metric Supervisor to compute metrics according to 3GPP TR36.885 V14.0.0 page 70",
             PointerValue (0),
-            MakePointerAccessor (&glosaClient::m_metric_supervisor),
+            MakePointerAccessor (&bglosaClient::m_metric_supervisor),
             MakePointerChecker<MetricSupervisor> ())
         .AddAttribute ("SendCAM",
             "To enable/disable the transmission of CAM messages",
             BooleanValue(true),
-            MakeBooleanAccessor (&glosaClient::m_send_cam),
+            MakeBooleanAccessor (&bglosaClient::m_send_cam),
             MakeBooleanChecker ());
         return tid;
   }
 
-  glosaClient::glosaClient ()
+  bglosaClient::bglosaClient ()
   {
     NS_LOG_FUNCTION(this);
 
@@ -75,20 +75,20 @@ namespace ns3
     m_spatem_received = 0;
   }
 
-  glosaClient::~glosaClient ()
+  bglosaClient::~bglosaClient ()
   {
     NS_LOG_FUNCTION(this);
   }
 
   void
-  glosaClient::DoDispose (void)
+  bglosaClient::DoDispose (void)
   {
     NS_LOG_FUNCTION(this);
     Application::DoDispose ();
   }
 
   void
-  glosaClient::StartApplication (void)
+  bglosaClient::StartApplication (void)
   {
     NS_LOG_FUNCTION(this);
 
@@ -155,14 +155,14 @@ namespace ns3
     /* Set sockets, callback, station properties and TraCI VDP in CABasicService */
     m_caService.setSocketTx (m_socket);
     m_caService.setSocketRx (m_socket);
-    m_caService.addCARxCallback (std::bind(&glosaClient::receiveCAM,this,std::placeholders::_1,std::placeholders::_2));
+    m_caService.addCARxCallback (std::bind(&bglosaClient::receiveCAM,this,std::placeholders::_1,std::placeholders::_2));
     m_caService.setStationProperties (std::stol(m_id.substr (3)), StationType_passengerCar);
     m_caService.setRealTime (m_real_time);
 
     m_tlmBasicService.setRealTime (m_real_time);
     m_tlmBasicService.setSocketRx (m_socket);
     m_tlmBasicService.setStationProperties (std::stol(m_id.substr (3)), StationType_passengerCar);
-    m_tlmBasicService.addTLMRxCallback (std::bind(&glosaClient::receiveSPATEM,this,std::placeholders::_1,std::placeholders::_2));
+    m_tlmBasicService.addTLMRxCallback (std::bind(&bglosaClient::receiveSPATEM,this,std::placeholders::_1,std::placeholders::_2));
     
     VDP* traci_vdp = new VDPTraCI(m_client,m_id);
 
@@ -194,19 +194,19 @@ namespace ns3
   }
 
   void
-  glosaClient::StopApplication ()
+  bglosaClient::StopApplication ()
   {
     NS_LOG_FUNCTION(this);
     Simulator::Cancel(m_sendCamEvent);
     Simulator::Cancel(m_spatemTimeout);
-    Simulator::Cancel(m_glosaUpdateEvent);
+    Simulator::Cancel(m_bglosaUpdateEvent);
 
-    // Ensure glosa is disengaged before shutdown
-    if (m_glosaActive)
+    // Ensure bglosa is disengaged before shutdown
+    if (m_bglosaActive)
       {
         m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
         m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
-        m_glosaActive = false;
+        m_bglosaActive = false;
       }
 
     if (m_LDM)
@@ -232,21 +232,21 @@ namespace ns3
   }
 
   void
-  glosaClient::StopApplicationNow ()
+  bglosaClient::StopApplicationNow ()
   {
     NS_LOG_FUNCTION(this);
     StopApplication ();
   }
 
   void
-  glosaClient::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
+  bglosaClient::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
   {
     (void) cam;
     (void) from;
   }
 
   void
-  glosaClient::receiveSPATEM (asn1cpp::Seq<SPATEM> spatem, Address from)
+  bglosaClient::receiveSPATEM (asn1cpp::Seq<SPATEM> spatem, Address from)
   {
     Simulator::Cancel(m_spatemTimeout);
     m_spatem_received++;
@@ -290,19 +290,19 @@ namespace ns3
     // Mark that fresh SPATEM data is available
     m_spatemAlive = true;
 
-    // Start or keep the periodic glosa control loop running
-    if (m_glosaUpdateEvent.IsExpired ())
+    // Start or keep the periodic bglosa control loop running
+    if (m_bglosaUpdateEvent.IsExpired ())
       {
-        m_glosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                  &glosaClient::updateglosaControl, this);
+        m_bglosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
+                                                  &bglosaClient::updatebglosaControl, this);
       }
 
     // Reschedule SPATEM-loss timeout (if no SPATEM for 2 s -> disengage)
-    m_spatemTimeout = Simulator::Schedule (Seconds (2.0), &glosaClient::spatemTimeout, this);
+    m_spatemTimeout = Simulator::Schedule (Seconds (2.0), &bglosaClient::spatemTimeout, this);
   }
 
   // ===========================================================================
-  //  updateglosaControl — periodic Time-to-green speed advisory (every 200 ms)
+  //  updatebglosaControl — periodic Time-to-green speed advisory (every 200 ms)
   //
   //  Time-to-green algorithm:
   //    RED   → v_adv = d / (t_to_green + buffer)  (glide to arrive when green)
@@ -312,7 +312,7 @@ namespace ns3
   //    Other → maintain current speed
   // ===========================================================================
   void
-  glosaClient::updateglosaControl (void)
+  bglosaClient::updatebglosaControl (void)
   {
     // If SPATEM data is stale, do nothing (spatemTimeout will clean up)
     if (!m_spatemAlive)
@@ -331,8 +331,8 @@ namespace ns3
     // --- Algorithm constants ---
     const double minSpeed = 3.0;         // m/s (~11 km/h) — below this GLOSA is impractical
     const double comfortDecel = 2.5;     // m/s² — comfortable deceleration
-    const double glosa_MIN_DIST = 10.0; // m — too close to the stop line
-    const double glosa_MAX_DIST = 350.0;// m — too far, timing unreliable
+    const double bglosa_MIN_DIST = 10.0; // m — too close to the stop line
+    const double bglosa_MAX_DIST = 350.0;// m — too far, timing unreliable
 
     // --- Find nearby traffic lights from LDM ---
     std::vector<trafficLightData_t> nearbyTLs;
@@ -341,15 +341,15 @@ namespace ns3
     if (nearbyTLs.empty ())
       {
         // No TLs nearby — release control
-        if (m_glosaActive)
+        if (m_bglosaActive)
           {
             m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
             m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
-            m_glosaActive = false;
+            m_bglosaActive = false;
           }
         m_passedIntersectionID = 0;
-        m_glosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                  &glosaClient::updateglosaControl, this);
+        m_bglosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
+                                                  &bglosaClient::updatebglosaControl, this);
         return;
       }
 
@@ -372,23 +372,23 @@ namespace ns3
 
     if (!found || matchedTL.signalGroupStates.empty ())
       {
-        if (m_glosaActive)
+        if (m_bglosaActive)
           {
             m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
             m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
-            m_glosaActive = false;
+            m_bglosaActive = false;
           }
         m_passedIntersectionID = 0;
-        m_glosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                  &glosaClient::updateglosaControl, this);
+        m_bglosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
+                                                  &bglosaClient::updatebglosaControl, this);
         return;
       }
 
     // --- Skip intersection we already passed ---
     if (matchedTL.intersectionID == m_passedIntersectionID)
       {
-        m_glosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                  &glosaClient::updateglosaControl, this);
+        m_bglosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
+                                                  &bglosaClient::updatebglosaControl, this);
         return;
       }
 
@@ -396,8 +396,8 @@ namespace ns3
     auto stateIt = matchedTL.signalGroupStates.find (matchedSignalGroup);
     if (stateIt == matchedTL.signalGroupStates.end ())
       {
-        m_glosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                  &glosaClient::updateglosaControl, this);
+        m_bglosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
+                                                  &bglosaClient::updatebglosaControl, this);
         return;
       }
     long currentLightState = stateIt->second;
@@ -418,8 +418,8 @@ namespace ns3
             m_passedIntersectionID = matchedTL.intersectionID;
             spatemTimeout ();
             m_spatemAlive = true;
-            m_glosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                      &glosaClient::updateglosaControl, this);
+            m_bglosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
+                                                      &bglosaClient::updatebglosaControl, this);
             return;
           }
       }
@@ -432,177 +432,168 @@ namespace ns3
       }
 
     // --- GLOSA activation range check ---
-    if (dist < glosa_MIN_DIST || dist > glosa_MAX_DIST)
+    if (dist < bglosa_MIN_DIST || dist > bglosa_MAX_DIST)
       {
-        if (m_glosaActive)
+        if (m_bglosaActive)
           {
             m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
             m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
-            m_glosaActive = false;
+            m_bglosaActive = false;
           }
-        m_glosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                  &glosaClient::updateglosaControl, this);
+        m_bglosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
+                                                  &bglosaClient::updatebglosaControl, this);
         return;
       }
 
     // --- Get timing from LDM ---
-    double t_green_start = 0.0;
-    double t_green_end = 0.0;
-    
-    if (currentLightState == 6 || currentLightState == 5) // GREEN
+    double timeToSwitch = 0.0;
+    auto timingIt = matchedTL.signalGroupTimings.find (matchedSignalGroup);
+    if (timingIt != matchedTL.signalGroupTimings.end ())
       {
-        t_green_start = 0.0;
-        auto timingIt = matchedTL.signalGroupTimings.find (matchedSignalGroup);
-        if (timingIt != matchedTL.signalGroupTimings.end ())
-          {
-            t_green_end = timingIt->second / 10.0;
-          }
-      }
-    else if (currentLightState == 3) // RED
-      {
-        auto timingIt = matchedTL.signalGroupTimings.find (matchedSignalGroup);
-        if (timingIt != matchedTL.signalGroupTimings.end ())
-          {
-            t_green_start = timingIt->second / 10.0;
-          }
-        auto nextTimingIt = matchedTL.signalGroupNextTimings.find (matchedSignalGroup);
-        if (nextTimingIt != matchedTL.signalGroupNextTimings.end () && nextTimingIt->second > 0)
-          {
-            t_green_end = t_green_start + (nextTimingIt->second / 10.0);
-          }
-        else
-          {
-            t_green_end = t_green_start + 15.0; // fallback green duration since nextTime is unavailable (0)
-          }
+        timeToSwitch = timingIt->second / 10.0;
       }
 
     // =====================================================================
-    //  Green Window decision logic (GLOSA)
+    //  Time-to-green decision logic
     // =====================================================================
     if (currentLightState == 3) // stop-And-Remain (RED)
       {
-        if (t_green_start > 0.5)
+        // ---- RED PHASE: glide to arrive when green starts, or stop smoothly ----
+        if (timeToSwitch > 0.5)
           {
-            double bufferTime = 2.0;
-            // Aim for an arrival safely inside the green window
-            double v_req_start = dist / std::max(0.1, t_green_start + bufferTime);
-            double v_req_end = dist / std::max(0.1, t_green_end - bufferTime);
+            double bufferTime = 2.0; // aim to arrive 2 s after green starts
+            double arrivalSpeed = dist / (timeToSwitch + bufferTime);
 
-            if (v_req_start >= minSpeed && v_req_start <= maxSpeed)
+            if (arrivalSpeed >= minSpeed && arrivalSpeed <= maxSpeed)
               {
-                double decelNeeded = (currentSpeed > v_req_start) ? (currentSpeed - v_req_start) / 1.0 : 0.0;
+                // Feasibility: check deceleration rate
+                double decelNeeded = (currentSpeed > arrivalSpeed)
+                                         ? (currentSpeed - arrivalSpeed) / 1.0
+                                         : 0.0;
+
                 if (decelNeeded <= comfortDecel * 2.0)
                   {
+                    // Glide to green — apply advisory speed
                     m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 7);
-                    m_client->TraCIAPI::vehicle.setSpeed (m_id, v_req_start);
-                    m_glosaActive = true;
-                    libsumo::TraCIColor red; red.r = 255; red.g = 0; red.b = 0; red.a = 255;
+                    m_client->TraCIAPI::vehicle.setSpeed (m_id, arrivalSpeed);
+                    m_bglosaActive = true;
+
+                    libsumo::TraCIColor red;
+                    red.r = 255; red.g = 0; red.b = 0; red.a = 255;
                     m_client->TraCIAPI::vehicle.setColor (m_id, red);
                   }
                 else
                   {
+                    // Decel too harsh — smooth stop at the stop line
                     double stopSpeed = std::sqrt (2.0 * comfortDecel * dist);
                     if (stopSpeed > currentSpeed) stopSpeed = currentSpeed;
                     if (stopSpeed < 0.0) stopSpeed = 0.0;
+
                     m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 7);
                     m_client->TraCIAPI::vehicle.setSpeed (m_id, stopSpeed);
-                    m_glosaActive = true;
-                    libsumo::TraCIColor red; red.r = 255; red.g = 0; red.b = 0; red.a = 255;
+                    m_bglosaActive = true;
+
+                    libsumo::TraCIColor red;
+                    red.r = 255; red.g = 0; red.b = 0; red.a = 255;
                     m_client->TraCIAPI::vehicle.setColor (m_id, red);
                   }
               }
-            else if (v_req_start < minSpeed)
+            else if (arrivalSpeed < minSpeed)
               {
-                // Must stop
+                // Green is too far away — must stop at the stop line
                 double stopSpeed = std::sqrt (2.0 * comfortDecel * dist);
                 if (stopSpeed > currentSpeed) stopSpeed = currentSpeed;
                 if (stopSpeed < 0.0) stopSpeed = 0.0;
+
                 m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 7);
                 m_client->TraCIAPI::vehicle.setSpeed (m_id, stopSpeed);
-                m_glosaActive = true;
-                libsumo::TraCIColor red; red.r = 255; red.g = 0; red.b = 0; red.a = 255;
+                m_bglosaActive = true;
+
+                libsumo::TraCIColor red;
+                red.r = 255; red.g = 0; red.b = 0; red.a = 255;
                 m_client->TraCIAPI::vehicle.setColor (m_id, red);
               }
             else
               {
-                // Try to make it before end of green
-                if (v_req_end <= maxSpeed)
-                  {
-                     m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 7);
-                     m_client->TraCIAPI::vehicle.setSpeed (m_id, maxSpeed);
-                     m_glosaActive = true;
-                     libsumo::TraCIColor glosaGreen; glosaGreen.r = 50; glosaGreen.g = 205; glosaGreen.b = 50; glosaGreen.a = 255;
-                     m_client->TraCIAPI::vehicle.setColor (m_id, glosaGreen);
-                  }
-                else
-                  {
-                     m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 7);
-                     m_client->TraCIAPI::vehicle.setSpeed (m_id, maxSpeed);
-                     m_glosaActive = true;
-                     libsumo::TraCIColor glosaGreen; glosaGreen.r = 50; glosaGreen.g = 205; glosaGreen.b = 50; glosaGreen.a = 255;
-                     m_client->TraCIAPI::vehicle.setColor (m_id, glosaGreen);
-                  }
+                // arrivalSpeed > maxSpeed — can't go fast enough; drive at max
+                m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 7);
+                m_client->TraCIAPI::vehicle.setSpeed (m_id, maxSpeed);
+                m_bglosaActive = true;
+
+                libsumo::TraCIColor glosaGreen;
+                glosaGreen.r = 50; glosaGreen.g = 205; glosaGreen.b = 50; glosaGreen.a = 255;
+                m_client->TraCIAPI::vehicle.setColor (m_id, glosaGreen);
               }
           }
         else
           {
-            if (!m_glosaActive)
+            // Phase about to change (<0.5 s left) — hold current speed, green imminent
+            if (!m_bglosaActive)
               {
                 m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 7);
-                m_glosaActive = true;
+                m_bglosaActive = true;
               }
+            // Don't change speed — let the vehicle coast through
           }
       }
     else if (currentLightState == 6 || currentLightState == 5) // GREEN
       {
+        // ---- GREEN PHASE: drive at road speed limit ----
         m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 7);
         m_client->TraCIAPI::vehicle.setSpeed (m_id, maxSpeed);
-        m_glosaActive = true;
-        libsumo::TraCIColor blue; blue.r = 0; blue.g = 100; blue.b = 255; blue.a = 255;
+        m_bglosaActive = true;
+
+        libsumo::TraCIColor blue;
+        blue.r = 0; blue.g = 100; blue.b = 255; blue.a = 255;
         m_client->TraCIAPI::vehicle.setColor (m_id, blue);
       }
-    else if (currentLightState == 7) // YELLOW
+    else if (currentLightState == 7) // intersection-clearance (YELLOW)
       {
+        // YELLOW: if close enough, maintain speed to pass; otherwise prepare to stop
         double eta = dist / std::max (currentSpeed, 1.0);
-        auto timingIt = matchedTL.signalGroupTimings.find (matchedSignalGroup);
-        double timeToSwitch = 0.0;
-        if (timingIt != matchedTL.signalGroupTimings.end ()) timeToSwitch = timingIt->second / 10.0;
-        
         if (eta < timeToSwitch && dist < 30.0)
           {
+            // Close and fast enough — commit to crossing
             m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 7);
             m_client->TraCIAPI::vehicle.setSpeed (m_id, currentSpeed);
-            m_glosaActive = true;
-            libsumo::TraCIColor amber; amber.r = 255; amber.g = 191; amber.b = 0; amber.a = 255;
+            m_bglosaActive = true;
+
+            libsumo::TraCIColor amber;
+            amber.r = 255; amber.g = 191; amber.b = 0; amber.a = 255;
             m_client->TraCIAPI::vehicle.setColor (m_id, amber);
           }
         else
           {
+            // Prepare to stop — smooth decel
             double stopSpeed = std::sqrt (2.0 * comfortDecel * dist);
             if (stopSpeed > currentSpeed) stopSpeed = currentSpeed;
             if (stopSpeed < 0.0) stopSpeed = 0.0;
+
             m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 7);
             m_client->TraCIAPI::vehicle.setSpeed (m_id, stopSpeed);
-            m_glosaActive = true;
-            libsumo::TraCIColor red; red.r = 255; red.g = 0; red.b = 0; red.a = 255;
+            m_bglosaActive = true;
+
+            libsumo::TraCIColor red;
+            red.r = 255; red.g = 0; red.b = 0; red.a = 255;
             m_client->TraCIAPI::vehicle.setColor (m_id, red);
           }
       }
     else
       {
+        // Unknown / off / unavailable — maintain current speed under advisory control
         m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 7);
         m_client->TraCIAPI::vehicle.setSpeed (m_id, currentSpeed);
-        m_glosaActive = true;
+        m_bglosaActive = true;
       }
 
     // Reschedule next GLOSA tick
-    m_glosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                              &glosaClient::updateglosaControl, this);
+    m_bglosaUpdateEvent = Simulator::Schedule (MilliSeconds (200),
+                                              &bglosaClient::updatebglosaControl, this);
   }
 
 
   void
-  glosaClient::populateStaticTLData (void)
+  bglosaClient::populateStaticTLData (void)
   {
     auto tlsIDs = m_client->TraCIAPI::trafficlights.getIDList ();
 
@@ -653,16 +644,16 @@ namespace ns3
   }
 
   void
-  glosaClient::spatemTimeout()
+  bglosaClient::spatemTimeout()
   {
     m_spatemAlive = false;
 
     // Restore full SUMO control
-    if (m_glosaActive)
+    if (m_bglosaActive)
       {
         m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
         m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
-        m_glosaActive = false;
+        m_bglosaActive = false;
       }
 
     libsumo::TraCIColor orange;
@@ -671,7 +662,7 @@ namespace ns3
   }
 
   long
-  glosaClient::compute_timestampIts ()
+  bglosaClient::compute_timestampIts ()
   {
     /* To get millisec since  2004-01-01T00:00:00:000Z */
     auto time = std::chrono::system_clock::now(); // get the current time

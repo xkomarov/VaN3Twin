@@ -380,7 +380,9 @@ namespace ns3
       std::vector<SPATEM_mandatory_data_t> result;
       std::vector<std::string> tls_ids;
       
-      if (!m_tls_id.empty()) {
+      if (!m_tls_ids.empty()) {
+          tls_ids = m_tls_ids;
+      } else if (!m_tls_id.empty()) {
           tls_ids.push_back(m_tls_id);
       } else {
           tls_ids = m_traci_client->TraCIAPI::trafficlights.getIDList();
@@ -439,6 +441,11 @@ namespace ns3
           if (timeLeft < 0) timeLeft = 0.0;
           uint16_t timeLeftDeciSeconds = (uint16_t)(std::round(timeLeft * 10.0));      
 
+          // getCompleteRedYellowGreenDefinition is broken due to TraCI protocol mismatch in newer SUMO versions.
+          // Since GLOSA doesn't strictly need nextPhaseDuration, we just set it to 0 to avoid TraCI crashes.
+          uint16_t nextPhaseDurationDeciSec = 0;
+
+
           for (size_t i = 0; i < stateString.length(); ++i) {
               SPATEM_SignalGroupState_t groupState;
               groupState.signalGroupID = (int)i + 1; 
@@ -447,6 +454,8 @@ namespace ns3
               // Заполняем предположительные временные рамки (.setData ставит флаг m_available = true)
               groupState.maxEndTime = VDPDataItem<uint16_t>(timeLeftDeciSeconds);
               groupState.likelyTime = VDPDataItem<uint16_t>(timeLeftDeciSeconds);
+              // nextTime = duration of the NEXT phase (for Green Window GLOSA)
+              groupState.nextTime = VDPDataItem<uint16_t>(nextPhaseDurationDeciSec);
 
               char s = stateString[i];
               

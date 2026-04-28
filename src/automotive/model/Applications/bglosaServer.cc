@@ -1,4 +1,4 @@
-#include "glosaServer.h"
+#include "bglosaServer.h"
 
 #include "ns3/CAM.h"
 #include "ns3/SPATEM.h"
@@ -14,72 +14,72 @@
 #include <map>
 
 namespace ns3 {
-NS_LOG_COMPONENT_DEFINE ("glosaServer");
+NS_LOG_COMPONENT_DEFINE ("bglosaServer");
 
-NS_OBJECT_ENSURE_REGISTERED (glosaServer);
+NS_OBJECT_ENSURE_REGISTERED (bglosaServer);
 
 TypeId
-glosaServer::GetTypeId (void)
+bglosaServer::GetTypeId (void)
 {
   static TypeId tid =
-      TypeId ("ns3::glosaServer")
+      TypeId ("ns3::bglosaServer")
           .SetParent<Application> ()
           .SetGroupName ("Applications")
-          .AddConstructor<glosaServer> ()
+          .AddConstructor<bglosaServer> ()
           .AddAttribute ("Model", "Access Technology Model (80211p or lte)", StringValue ("lte"),
-                         MakeStringAccessor (&glosaServer::m_model), MakeStringChecker ())
+                         MakeStringAccessor (&bglosaServer::m_model), MakeStringChecker ())
           .AddAttribute ("AggregateOutput",
                          "If it is true, the server will print every second an aggregate output "
                          "about cam and denm",
                          BooleanValue (false),
-                         MakeBooleanAccessor (&glosaServer::m_aggregate_output),
+                         MakeBooleanAccessor (&bglosaServer::m_aggregate_output),
                          MakeBooleanChecker ())
           .AddAttribute ("RealTime", "To compute properly timestamps", BooleanValue (false),
-                         MakeBooleanAccessor (&glosaServer::m_real_time), MakeBooleanChecker ())
+                         MakeBooleanAccessor (&bglosaServer::m_real_time), MakeBooleanChecker ())
           .AddAttribute ("CSV", "CSV log name", StringValue (),
-                         MakeStringAccessor (&glosaServer::m_csv_name), MakeStringChecker ())
+                         MakeStringAccessor (&bglosaServer::m_csv_name), MakeStringChecker ())
           .AddAttribute ("Client", "TraCI client for SUMO", PointerValue (0),
-                         MakePointerAccessor (&glosaServer::m_client),
+                         MakePointerAccessor (&bglosaServer::m_client),
                          MakePointerChecker<TraciClient> ())
           .AddAttribute (
               "MetricSupervisor",
               "Metric Supervisor to compute metric according to 3GPP TR36.885 V14.0.0 page 70",
-              PointerValue (0), MakePointerAccessor (&glosaServer::m_metric_supervisor),
+              PointerValue (0), MakePointerAccessor (&bglosaServer::m_metric_supervisor),
               MakePointerChecker<MetricSupervisor> ())
           .AddAttribute ("SendCAM", "To enable/disable the transmission of CAM messages",
-                         BooleanValue (true), MakeBooleanAccessor (&glosaServer::m_send_cam),
+                         BooleanValue (true), MakeBooleanAccessor (&bglosaServer::m_send_cam),
                          MakeBooleanChecker ())
           .AddAttribute ("SendSPATEM", "To enable/disable the transmission of SPATEM messages",
-                         BooleanValue (true), MakeBooleanAccessor (&glosaServer::m_send_spatem),
+                         BooleanValue (true), MakeBooleanAccessor (&bglosaServer::m_send_spatem),
                          MakeBooleanChecker ())
           .AddAttribute ("SumoId", "SUMO ID of the POI/RSU this server represents",
-                         StringValue ("poi_0"), MakeStringAccessor (&glosaServer::m_sumo_id),
+                         StringValue ("poi_0"), MakeStringAccessor (&bglosaServer::m_sumo_id),
                          MakeStringChecker ());
 
   return tid;
 }
 
-glosaServer::glosaServer ()
+bglosaServer::bglosaServer ()
 {
   NS_LOG_FUNCTION (this);
   m_client = nullptr;
   m_cam_received = 0;
 }
 
-glosaServer::~glosaServer ()
+bglosaServer::~bglosaServer ()
 {
   NS_LOG_FUNCTION (this);
 }
 
 void
-glosaServer::DoDispose (void)
+bglosaServer::DoDispose (void)
 {
   NS_LOG_FUNCTION (this);
   Application::DoDispose ();
 }
 
 void
-glosaServer::StartApplication (void)
+bglosaServer::StartApplication (void)
 {
   NS_LOG_FUNCTION (this);
 
@@ -165,7 +165,7 @@ glosaServer::StartApplication (void)
   m_caService.setSocketRx (m_socket);
   m_caService.setSocketTx (m_socket);
   m_caService.addCARxCallback (
-      std::bind (&glosaServer::receiveCAM, this, std::placeholders::_1, std::placeholders::_2));
+      std::bind (&bglosaServer::receiveCAM, this, std::placeholders::_1, std::placeholders::_2));
 
   m_tlmBasicService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
   if (m_model == "lte")
@@ -279,11 +279,11 @@ glosaServer::StartApplication (void)
 
   /* If aggregate output is enabled, start it */
   if (m_aggregate_output)
-    m_aggegateOutputEvent = Simulator::Schedule (Seconds (1), &glosaServer::aggregateOutput, this);
+    m_aggegateOutputEvent = Simulator::Schedule (Seconds (1), &bglosaServer::aggregateOutput, this);
 }
 
 void
-glosaServer::StopApplication ()
+bglosaServer::StopApplication ()
 {
   NS_LOG_FUNCTION (this);
   Simulator::Cancel (m_aggegateOutputEvent);
@@ -296,14 +296,14 @@ glosaServer::StopApplication ()
 }
 
 void
-glosaServer::StopApplicationNow ()
+bglosaServer::StopApplicationNow ()
 {
   NS_LOG_FUNCTION (this);
   StopApplication ();
 }
 
 void
-glosaServer::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
+bglosaServer::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
 {
   m_cam_received++;
 
@@ -354,7 +354,7 @@ glosaServer::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
 }
 
 long
-glosaServer::compute_timestampIts ()
+bglosaServer::compute_timestampIts ()
 {
   /* To get millisec since  2004-01-01T00:00:00:000Z */
   auto time = std::chrono::system_clock::now (); // get the current time
@@ -368,10 +368,10 @@ glosaServer::compute_timestampIts ()
 }
 
 void
-glosaServer::aggregateOutput ()
+bglosaServer::aggregateOutput ()
 {
   std::cout << Simulator::Now () << "," << m_cam_received << std::endl;
-  m_aggegateOutputEvent = Simulator::Schedule (Seconds (1), &glosaServer::aggregateOutput, this);
+  m_aggegateOutputEvent = Simulator::Schedule (Seconds (1), &bglosaServer::aggregateOutput, this);
 }
 
 } // namespace ns3

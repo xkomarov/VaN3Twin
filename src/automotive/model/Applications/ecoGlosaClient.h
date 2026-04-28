@@ -1,5 +1,5 @@
-#ifndef GLOSACLIENT_H
-#define GLOSACLIENT_H
+#ifndef ECOGLOSACLIENT_H
+#define ECOGLOSACLIENT_H
 
 #include "ns3/MetricSupervisor.h"
 #include "ns3/application.h"
@@ -13,7 +13,7 @@
 
 namespace ns3 {
 
-class glosaClient : public Application
+class ecoGlosaClient : public Application
 {
   public:
     /**
@@ -22,9 +22,9 @@ class glosaClient : public Application
      */
     static TypeId GetTypeId (void);
 
-    glosaClient ();
+    ecoGlosaClient ();
 
-    virtual ~glosaClient ();
+    virtual ~ecoGlosaClient ();
 
     void receiveCAM (asn1cpp::Seq<CAM> cam, Address from);
     void receiveSPATEM (asn1cpp::Seq<SPATEM> spatem, Address from);
@@ -65,13 +65,13 @@ class glosaClient : public Application
     void populateStaticTLData(void);
 
     /**
-     * @brief Periodic glosa speed profile recalculation.
+     * @brief Periodic ecoGlosa speed profile recalculation.
      *
      * Runs every 200 ms while SPATEM data is available. Queries the LDM for
      * nearby traffic lights, computes optimal speed advisory, and applies it
      * via TraCI with speedMode=6 (disabling SUMO's TL braking).
      */
-    void updateglosaControl(void);
+    void updateecoGlosaControl(void);
 
     std::string m_model; //!< Access technology model ("80211p" or "lte")
     Ptr<TraciClient> m_client; //!< TraCI client
@@ -85,7 +85,7 @@ class glosaClient : public Application
 
     EventId m_sendCamEvent; //!< Event to send the CAM
     EventId m_spatemTimeout;
-    EventId m_glosaUpdateEvent; //!< Periodic glosa speed recalculation event
+    EventId m_ecoGlosaUpdateEvent; //!< Periodic ecoGlosa speed recalculation event
     
 
     /* Counters */
@@ -93,8 +93,8 @@ class glosaClient : public Application
     int m_spatem_received;
     bool m_send_cam;
 
-    /* glosa state */
-    bool m_glosaActive = false;          //!< Whether glosa is currently overriding vehicle speed
+    /* ecoGlosa state */
+    bool m_ecoGlosaActive = false;          //!< Whether ecoGlosa is currently overriding vehicle speed
     uint64_t m_passedIntersectionID = 0; //!< ID of intersection already passed (dedup)
     bool m_spatemAlive = false;          //!< Whether at least one SPATEM has been received recently
 
@@ -103,4 +103,4 @@ class glosaClient : public Application
 
 } // namespace ns3
 
-#endif /* glosaCLIENT_H */
+#endif /* ecoGlosaCLIENT_H */

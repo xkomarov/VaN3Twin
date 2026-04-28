@@ -1,9 +1,9 @@
 #include "ns3/carla-module.h"
 //#include "ns3/automotive-module.h"
-#include "ns3/bglosaServer-helper.h"
-#include "ns3/bglosaServer.h"
-#include "ns3/bglosaClient.h"
-#include "ns3/bglosaClient-helper.h"
+#include "ns3/ecoGlosaServer-helper.h"
+#include "ns3/ecoGlosaServer.h"
+#include "ns3/ecoGlosaClient.h"
+#include "ns3/ecoGlosaClient-helper.h"
 #include "ns3/traci-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/wave-module.h"
@@ -36,7 +36,7 @@ struct VehicleMetrics
 };
 
 using namespace ns3;
-NS_LOG_COMPONENT_DEFINE ("v2i-bglosa-80211p");
+NS_LOG_COMPONENT_DEFINE ("v2i-eco-glosa-80211p");
 
 int
 main (int argc, char *argv[])
@@ -111,24 +111,12 @@ main (int argc, char *argv[])
   cmd.AddValue ("mob-trace", "Name of the mobility trace file", mob_trace);
   cmd.AddValue ("sumo-config", "Location and name of SUMO configuration file", sumo_config);
   cmd.AddValue ("csv-log", "Name of the CSV log file", csv_name);
-  cmd.AddValue ("summary", "Print a summary for each vehicle at the end of the simulation",
-                print_summary);
-  cmd.AddValue ("vehicle-visualizer", "Activate the web-based vehicle visualizer for ms-van3t",
-                vehicle_vis);
-  cmd.AddValue (
-      "send-cam",
-      "Turn on or off the transmission of CAMs, thus turning on or off the whole V2X application",
-      send_cam);
-  cmd.AddValue ("send-spatem",
-                "Turn on or off the transmission of SPATEM messages from the RSU server",
-                send_spatem);
-  cmd.AddValue ("csv-log-cumulative",
-                "Name of the CSV log file for the cumulative (average) PRR and latency data",
-                csv_name_cumulative);
-  cmd.AddValue ("netstate-dump-file",
-                "Name of the SUMO netstate-dump file containing the vehicle-related information "
-                "throughout the whole simulation",
-                sumo_netstate_file_name);
+  cmd.AddValue ("summary", "Print a summary for each vehicle at the end of the simulation", print_summary);
+  cmd.AddValue ("vehicle-visualizer", "Activate the web-based vehicle visualizer for ms-van3t", vehicle_vis);
+  cmd.AddValue ("send-cam", "Turn on or off the transmission of CAMs, thus turning on or off the whole V2X application", send_cam);
+  cmd.AddValue ("send-spatem", "Turn on or off the transmission of SPATEM messages from the RSU server", send_spatem);
+  cmd.AddValue ("csv-log-cumulative","Name of the CSV log file for the cumulative (average) PRR and latency data", csv_name_cumulative);
+  cmd.AddValue ("netstate-dump-file", "Name of the SUMO netstate-dump file containing the vehicle-related information throughout the whole simulation", sumo_netstate_file_name);
   cmd.AddValue ("baseline", "Baseline for PRR calculation", m_baseline_prr);
   cmd.AddValue ("met-sup", "Use the Metric supervisor or not", m_metric_sup);
 
@@ -139,13 +127,8 @@ main (int argc, char *argv[])
   cmd.AddValue ("sim-time", "Total duration of the simulation [s]", simTime);
 
   /* Vehicle metrics logging */
-  cmd.AddValue ("log-metrics",
-                "Enable per-vehicle metric logging (CO2, travel time, stopped time, avg speed)",
-                log_metrics);
-  cmd.AddValue (
-      "metrics-csv",
-      "CSV file name for vehicle metrics output (omit extension; omit entirely for console-only)",
-      metrics_csv_name);
+  cmd.AddValue ("log-metrics", "Enable per-vehicle metric logging (CO2, travel time, stopped time, avg speed)", log_metrics);
+  cmd.AddValue ("metrics-csv", "CSV file name for vehicle metrics output (omit extension; omit entirely for console-only)", metrics_csv_name);
 
   cmd.Parse (argc, argv);
 
@@ -176,10 +159,10 @@ main (int argc, char *argv[])
 
   if (verbose)
     {
-      LogComponentEnable ("v2i-bglosa-80211p", LOG_LEVEL_INFO);
+      LogComponentEnable ("v2i-eco-glosa-80211p", LOG_LEVEL_INFO);
       LogComponentEnable ("CABasicService", LOG_LEVEL_INFO);
       LogComponentEnable ("TLMBasicService", LOG_LEVEL_INFO);
-      LogComponentEnable ("bglosaServer", LOG_LEVEL_INFO);
+      LogComponentEnable ("ecoGlosaServer", LOG_LEVEL_INFO);
     }
 
   /* Use the realtime scheduler of ns3 */
@@ -254,8 +237,8 @@ main (int argc, char *argv[])
   NetDeviceContainer netRSUs = wifi80211p.Install (wifiPhy, wifi80211pMac, rsuNodes);
   //wifi80211p.EnableLogComponents ();
 
-  wifiPhy.EnablePcap ("v2i-bglosa-80211p", netDevices);
-  wifiPhy.EnablePcap ("v2i-bglosa-80211p-RSU", netRSUs);
+  wifiPhy.EnablePcap ("v2i-eco-glosa-80211p", netDevices);
+  wifiPhy.EnablePcap ("v2i-eco-glosa-80211p-RSU", netRSUs);
   /* Give packet socket powers to nodes (otherwise, if the app tries to create a PacketSocket, CreateSocket will end up with a segmentation fault */
   PacketSocketHelper packetSocket;
   packetSocket.Install (obuNodes);
@@ -312,14 +295,14 @@ main (int argc, char *argv[])
     }
 
   /*** 6. Create and Setup application for the server ***/
-  bglosaServerHelper bglosaServerHelper_;
-  bglosaServerHelper_.SetAttribute ("Model", StringValue ("80211p"));
-  bglosaServerHelper_.SetAttribute ("Client", (PointerValue) sumoClient);
-  bglosaServerHelper_.SetAttribute ("RealTime", BooleanValue (realtime));
-  bglosaServerHelper_.SetAttribute ("AggregateOutput", BooleanValue (aggregate_out));
-  bglosaServerHelper_.SetAttribute ("CSV", StringValue (csv_name));
-  bglosaServerHelper_.SetAttribute ("MetricSupervisor", PointerValue (metSup));
-  bglosaServerHelper_.SetAttribute ("SendSPATEM", BooleanValue (send_spatem));
+  ecoGlosaServerHelper ecoGlosaServerHelper_;
+  ecoGlosaServerHelper_.SetAttribute ("Model", StringValue ("80211p"));
+  ecoGlosaServerHelper_.SetAttribute ("Client", (PointerValue) sumoClient);
+  ecoGlosaServerHelper_.SetAttribute ("RealTime", BooleanValue (realtime));
+  ecoGlosaServerHelper_.SetAttribute ("AggregateOutput", BooleanValue (aggregate_out));
+  ecoGlosaServerHelper_.SetAttribute ("CSV", StringValue (csv_name));
+  ecoGlosaServerHelper_.SetAttribute ("MetricSupervisor", PointerValue (metSup));
+  ecoGlosaServerHelper_.SetAttribute ("SendSPATEM", BooleanValue (send_spatem));
 
   int i = 0;
   for (auto rsu : rsuData)
@@ -329,7 +312,7 @@ main (int argc, char *argv[])
       float y = std::get<2> (rsu);
       Ptr<Node> rsuNode = rsuNodes.Get (i);
       sumoClient->AddStation (id, x, y, 0.0, rsuNode);
-      ApplicationContainer AppServer = bglosaServerHelper_.Install (rsuNode);
+      ApplicationContainer AppServer = ecoGlosaServerHelper_.Install (rsuNode);
       AppServer.Start (Seconds (0.0));
       AppServer.Stop (simulationTime - Seconds (0.1));
       ++rsuCounter;
@@ -337,19 +320,19 @@ main (int argc, char *argv[])
     }
 
   /*** 7. Setup interface and application for dynamic nodes ***/
-  bglosaClientHelper bglosaClientHelper_;
+  ecoGlosaClientHelper ecoGlosaClientHelper_;
   Ipv4Address remoteHostAddr;
 
-  bglosaClientHelper_.SetAttribute ("Model", StringValue ("80211p"));
-  bglosaClientHelper_.SetAttribute ("ServerAddr", Ipv4AddressValue (remoteHostAddr));
-  bglosaClientHelper_.SetAttribute (
+  ecoGlosaClientHelper_.SetAttribute ("Model", StringValue ("80211p"));
+  ecoGlosaClientHelper_.SetAttribute ("ServerAddr", Ipv4AddressValue (remoteHostAddr));
+  ecoGlosaClientHelper_.SetAttribute (
       "Client",
       (PointerValue) sumoClient); // pass TraciClient object for accessing sumo in application
-  bglosaClientHelper_.SetAttribute ("PrintSummary", BooleanValue (print_summary));
-  bglosaClientHelper_.SetAttribute ("RealTime", BooleanValue (realtime));
-  bglosaClientHelper_.SetAttribute ("CSV", StringValue (csv_name));
-  bglosaClientHelper_.SetAttribute ("SendCAM", BooleanValue (send_cam));
-  bglosaClientHelper_.SetAttribute ("MetricSupervisor", PointerValue (metSup));
+  ecoGlosaClientHelper_.SetAttribute ("PrintSummary", BooleanValue (print_summary));
+  ecoGlosaClientHelper_.SetAttribute ("RealTime", BooleanValue (realtime));
+  ecoGlosaClientHelper_.SetAttribute ("CSV", StringValue (csv_name));
+  ecoGlosaClientHelper_.SetAttribute ("SendCAM", BooleanValue (send_cam));
+  ecoGlosaClientHelper_.SetAttribute ("MetricSupervisor", PointerValue (metSup));
 
   /* callback function for node creation */
   STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID,
@@ -362,8 +345,8 @@ main (int argc, char *argv[])
     ++nodeCounter; //increment counter for next node
 
     /* Install Application */
-    //bglosaClientHelper_.SetAttribute ("PRRSupervisor", PointerValue (&prrSup));
-    ApplicationContainer ClientApp = bglosaClientHelper_.Install (includedNode);
+    //ecoGlosaClientHelper_.SetAttribute ("PRRSupervisor", PointerValue (&prrSup));
+    ApplicationContainer ClientApp = ecoGlosaClientHelper_.Install (includedNode);
     ClientApp.Start (Seconds (0.0));
     ClientApp.Stop (simulationTime - Simulator::Now () - Seconds (0.1));
 
@@ -373,9 +356,9 @@ main (int argc, char *argv[])
   /* callback function for node shutdown */
   SHUTDOWN_FCN shutdownWifiNode = [] (Ptr<Node> exNode, std::string vehicleID) {
     /* Stop all applications */
-    Ptr<bglosaClient> bglosaClient_ = exNode->GetApplication (0)->GetObject<bglosaClient> ();
-    if (bglosaClient_)
-      bglosaClient_->StopApplicationNow ();
+    Ptr<ecoGlosaClient> ecoGlosaClient_ = exNode->GetApplication (0)->GetObject<ecoGlosaClient> ();
+    if (ecoGlosaClient_)
+      ecoGlosaClient_->StopApplicationNow ();
 
     /* Set position outside communication range */
     Ptr<ConstantPositionMobilityModel> mob = exNode->GetObject<ConstantPositionMobilityModel> ();

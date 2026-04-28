@@ -14,6 +14,10 @@ Set(source_files
     helper/tlmServerLTE-helper.cc
     helper/glosaClient-helper.cc
     helper/glosaServer-helper.cc
+    helper/bglosaClient-helper.cc
+    helper/bglosaServer-helper.cc
+    helper/ecoGlosaClient-helper.cc
+    helper/ecoGlosaServer-helper.cc
     helper/emergencyVehicleAlert-helper.cc
     helper/v2xEmulator-helper.cc
     helper/simpleCAMSender-helper.cc
@@ -40,6 +44,10 @@ Set(source_files
     model/Applications/tlmServerLTE.cc
     model/Applications/glosaClient.cc
     model/Applications/glosaServer.cc
+    model/Applications/bglosaClient.cc
+    model/Applications/bglosaServer.cc
+    model/Applications/ecoGlosaClient.cc
+    model/Applications/ecoGlosaServer.cc
     model/Applications/simpleCAMSender-gps-tc.cc
     model/Applications/simpleVAMSender-gps-tc.cc
     model/Applications/trafficManagerClient80211p.cc
@@ -1350,6 +1358,10 @@ set(header_files
     helper/tlmServerLTE-helper.h
     helper/glosaClient-helper.h
     helper/glosaServer-helper.h
+    helper/bglosaClient-helper.h
+    helper/bglosaServer-helper.h
+    helper/ecoGlosaClient-helper.h
+    helper/ecoGlosaServer-helper.h
     helper/emergencyVehicleAlert-helper.h
     helper/v2xEmulator-helper.h
     helper/simpleCAMSender-helper.h
@@ -1371,6 +1383,10 @@ set(header_files
     model/Applications/tlmServerLTE.h
     model/Applications/glosaClient.h
     model/Applications/glosaServer.h
+    model/Applications/bglosaClient.h
+    model/Applications/bglosaServer.h
+    model/Applications/ecoGlosaClient.h
+    model/Applications/ecoGlosaServer.h
     model/Applications/emergencyVehicleAlert.h
     model/Applications/simpleCAMSender-gps-tc.h
     model/Applications/simpleVAMSender-gps-tc.h

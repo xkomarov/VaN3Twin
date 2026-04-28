@@ -60,7 +60,7 @@ main (int argc, char *argv[])
   std::string datarate_config;
 
   /*** 0.a App Options ***/
-  std::string map_name = "tlm_map_3_light"; // Default map
+  std::string map_name = "first_tlm_map"; // Default map
   std::string sumo_folder = "src/automotive/examples/" + map_name + "/";
   std::string mob_trace = "cars.rou.xml";
   std::string rsu_file = "stations.xml";
@@ -99,7 +99,10 @@ main (int argc, char *argv[])
   xmlDocPtr rou_xml_file;
 
   /* Cmd Line option for vehicular application */
-  cmd.AddValue ("map-name", "Name of the map folder (e.g. tlm_map_1_rsu_62), simplifies setting sumo-folder and sumo-config", map_name);
+  cmd.AddValue ("map-name",
+                "Name of the map folder (e.g. tlm_map_1_rsu_62), simplifies setting sumo-folder "
+                "and sumo-config",
+                map_name);
   cmd.AddValue ("realtime", "Use the realtime scheduler or not", realtime);
   cmd.AddValue ("sumo-gui", "Use SUMO gui or not", sumo_gui);
   cmd.AddValue ("server-aggregate-output", "Print an aggregate output for server", aggregate_out);
@@ -147,10 +150,10 @@ main (int argc, char *argv[])
   cmd.Parse (argc, argv);
 
   if (map_name != "tlm_map_3_light")
-  {
-    sumo_folder = "src/automotive/examples/" + map_name + "/";
-    sumo_config = sumo_folder + "map.sumo.cfg";
-  }
+    {
+      sumo_folder = "src/automotive/examples/" + map_name + "/";
+      sumo_config = sumo_folder + "map.sumo.cfg";
+    }
 
   if (std::find (rate_admitted_values.begin (), rate_admitted_values.end (), datarate) ==
       rate_admitted_values.end ())
@@ -310,7 +313,7 @@ main (int argc, char *argv[])
 
   /*** 6. Create and Setup application for the server ***/
   glosaServerHelper glosaServerHelper_;
-  glosaServerHelper_.SetAttribute("Model", StringValue("80211p"));
+  glosaServerHelper_.SetAttribute ("Model", StringValue ("80211p"));
   glosaServerHelper_.SetAttribute ("Client", (PointerValue) sumoClient);
   glosaServerHelper_.SetAttribute ("RealTime", BooleanValue (realtime));
   glosaServerHelper_.SetAttribute ("AggregateOutput", BooleanValue (aggregate_out));
@@ -337,7 +340,7 @@ main (int argc, char *argv[])
   glosaClientHelper glosaClientHelper_;
   Ipv4Address remoteHostAddr;
 
-  glosaClientHelper_.SetAttribute("Model", StringValue("80211p"));
+  glosaClientHelper_.SetAttribute ("Model", StringValue ("80211p"));
   glosaClientHelper_.SetAttribute ("ServerAddr", Ipv4AddressValue (remoteHostAddr));
   glosaClientHelper_.SetAttribute (
       "Client",
@@ -370,8 +373,7 @@ main (int argc, char *argv[])
   /* callback function for node shutdown */
   SHUTDOWN_FCN shutdownWifiNode = [] (Ptr<Node> exNode, std::string vehicleID) {
     /* Stop all applications */
-    Ptr<glosaClient> glosaClient_ =
-        exNode->GetApplication (0)->GetObject<glosaClient> ();
+    Ptr<glosaClient> glosaClient_ = exNode->GetApplication (0)->GetObject<glosaClient> ();
     if (glosaClient_)
       glosaClient_->StopApplicationNow ();
 

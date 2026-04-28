@@ -1,4 +1,4 @@
-#include "glosaServer.h"
+#include "ecoGlosaServer.h"
 
 #include "ns3/CAM.h"
 #include "ns3/SPATEM.h"
@@ -14,72 +14,72 @@
 #include <map>
 
 namespace ns3 {
-NS_LOG_COMPONENT_DEFINE ("glosaServer");
+NS_LOG_COMPONENT_DEFINE ("ecoGlosaServer");
 
-NS_OBJECT_ENSURE_REGISTERED (glosaServer);
+NS_OBJECT_ENSURE_REGISTERED (ecoGlosaServer);
 
 TypeId
-glosaServer::GetTypeId (void)
+ecoGlosaServer::GetTypeId (void)
 {
   static TypeId tid =
-      TypeId ("ns3::glosaServer")
+      TypeId ("ns3::ecoGlosaServer")
           .SetParent<Application> ()
           .SetGroupName ("Applications")
-          .AddConstructor<glosaServer> ()
+          .AddConstructor<ecoGlosaServer> ()
           .AddAttribute ("Model", "Access Technology Model (80211p or lte)", StringValue ("lte"),
-                         MakeStringAccessor (&glosaServer::m_model), MakeStringChecker ())
+                         MakeStringAccessor (&ecoGlosaServer::m_model), MakeStringChecker ())
           .AddAttribute ("AggregateOutput",
                          "If it is true, the server will print every second an aggregate output "
                          "about cam and denm",
                          BooleanValue (false),
-                         MakeBooleanAccessor (&glosaServer::m_aggregate_output),
+                         MakeBooleanAccessor (&ecoGlosaServer::m_aggregate_output),
                          MakeBooleanChecker ())
           .AddAttribute ("RealTime", "To compute properly timestamps", BooleanValue (false),
-                         MakeBooleanAccessor (&glosaServer::m_real_time), MakeBooleanChecker ())
+                         MakeBooleanAccessor (&ecoGlosaServer::m_real_time), MakeBooleanChecker ())
           .AddAttribute ("CSV", "CSV log name", StringValue (),
-                         MakeStringAccessor (&glosaServer::m_csv_name), MakeStringChecker ())
+                         MakeStringAccessor (&ecoGlosaServer::m_csv_name), MakeStringChecker ())
           .AddAttribute ("Client", "TraCI client for SUMO", PointerValue (0),
-                         MakePointerAccessor (&glosaServer::m_client),
+                         MakePointerAccessor (&ecoGlosaServer::m_client),
                          MakePointerChecker<TraciClient> ())
           .AddAttribute (
               "MetricSupervisor",
               "Metric Supervisor to compute metric according to 3GPP TR36.885 V14.0.0 page 70",
-              PointerValue (0), MakePointerAccessor (&glosaServer::m_metric_supervisor),
+              PointerValue (0), MakePointerAccessor (&ecoGlosaServer::m_metric_supervisor),
               MakePointerChecker<MetricSupervisor> ())
           .AddAttribute ("SendCAM", "To enable/disable the transmission of CAM messages",
-                         BooleanValue (true), MakeBooleanAccessor (&glosaServer::m_send_cam),
+                         BooleanValue (true), MakeBooleanAccessor (&ecoGlosaServer::m_send_cam),
                          MakeBooleanChecker ())
           .AddAttribute ("SendSPATEM", "To enable/disable the transmission of SPATEM messages",
-                         BooleanValue (true), MakeBooleanAccessor (&glosaServer::m_send_spatem),
+                         BooleanValue (true), MakeBooleanAccessor (&ecoGlosaServer::m_send_spatem),
                          MakeBooleanChecker ())
           .AddAttribute ("SumoId", "SUMO ID of the POI/RSU this server represents",
-                         StringValue ("poi_0"), MakeStringAccessor (&glosaServer::m_sumo_id),
+                         StringValue ("poi_0"), MakeStringAccessor (&ecoGlosaServer::m_sumo_id),
                          MakeStringChecker ());
 
   return tid;
 }
 
-glosaServer::glosaServer ()
+ecoGlosaServer::ecoGlosaServer ()
 {
   NS_LOG_FUNCTION (this);
   m_client = nullptr;
   m_cam_received = 0;
 }
 
-glosaServer::~glosaServer ()
+ecoGlosaServer::~ecoGlosaServer ()
 {
   NS_LOG_FUNCTION (this);
 }
 
 void
-glosaServer::DoDispose (void)
+ecoGlosaServer::DoDispose (void)
 {
   NS_LOG_FUNCTION (this);
   Application::DoDispose ();
 }
 
 void
-glosaServer::StartApplication (void)
+ecoGlosaServer::StartApplication (void)
 {
   NS_LOG_FUNCTION (this);
 
@@ -165,7 +165,7 @@ glosaServer::StartApplication (void)
   m_caService.setSocketRx (m_socket);
   m_caService.setSocketTx (m_socket);
   m_caService.addCARxCallback (
-      std::bind (&glosaServer::receiveCAM, this, std::placeholders::_1, std::placeholders::_2));
+      std::bind (&ecoGlosaServer::receiveCAM, this, std::placeholders::_1, std::placeholders::_2));
 
   m_tlmBasicService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
   if (m_model == "lte")
@@ -279,11 +279,11 @@ glosaServer::StartApplication (void)
 
   /* If aggregate output is enabled, start it */
   if (m_aggregate_output)
-    m_aggegateOutputEvent = Simulator::Schedule (Seconds (1), &glosaServer::aggregateOutput, this);
+    m_aggegateOutputEvent = Simulator::Schedule (Seconds (1), &ecoGlosaServer::aggregateOutput, this);
 }
 
 void
-glosaServer::StopApplication ()
+ecoGlosaServer::StopApplication ()
 {
   NS_LOG_FUNCTION (this);
   Simulator::Cancel (m_aggegateOutputEvent);
@@ -296,14 +296,14 @@ glosaServer::StopApplication ()
 }
 
 void
-glosaServer::StopApplicationNow ()
+ecoGlosaServer::StopApplicationNow ()
 {
   NS_LOG_FUNCTION (this);
   StopApplication ();
 }
 
 void
-glosaServer::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
+ecoGlosaServer::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
 {
   m_cam_received++;
 
@@ -354,7 +354,7 @@ glosaServer::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
 }
 
 long
-glosaServer::compute_timestampIts ()
+ecoGlosaServer::compute_timestampIts ()
 {
   /* To get millisec since  2004-01-01T00:00:00:000Z */
   auto time = std::chrono::system_clock::now (); // get the current time
@@ -368,10 +368,10 @@ glosaServer::compute_timestampIts ()
 }
 
 void
-glosaServer::aggregateOutput ()
+ecoGlosaServer::aggregateOutput ()
 {
   std::cout << Simulator::Now () << "," << m_cam_received << std::endl;
-  m_aggegateOutputEvent = Simulator::Schedule (Seconds (1), &glosaServer::aggregateOutput, this);
+  m_aggegateOutputEvent = Simulator::Schedule (Seconds (1), &ecoGlosaServer::aggregateOutput, this);
 }
 
 } // namespace ns3

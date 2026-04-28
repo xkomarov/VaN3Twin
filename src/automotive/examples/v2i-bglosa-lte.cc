@@ -1,9 +1,9 @@
 #include "ns3/carla-module.h"
 //#include "ns3/automotive-module.h"
-#include "ns3/glosaServer-helper.h"
-#include "ns3/glosaServer.h"
-#include "ns3/glosaClient.h"
-#include "ns3/glosaClient-helper.h"
+#include "ns3/bglosaServer-helper.h"
+#include "ns3/bglosaServer.h"
+#include "ns3/bglosaClient.h"
+#include "ns3/bglosaClient-helper.h"
 #include "ns3/traci-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/lte-helper.h"
@@ -19,7 +19,7 @@
 // #include "ns3/nr-point-to-point-epc-helper.h"
 #include "ns3/nr-module.h"
 using namespace ns3;
-NS_LOG_COMPONENT_DEFINE("v2i-glosa-LTE");
+NS_LOG_COMPONENT_DEFINE("v2i-bglosa-LTE");
 
 int
 main (int argc, char *argv[])
@@ -82,7 +82,7 @@ main (int argc, char *argv[])
   xmlDocPtr rou_xml_file;
 
   /* Cmd Line option for vehicular application */
-  cmd.AddValue ("map-name", "Name of the map folder, simplifies setting sumo-folder and sumo-config", map_name);
+  cmd.AddValue ("map-name", "Name of the map folder (e.g. tlm_map_1_rsu_62), simplifies setting sumo-folder and sumo-config", map_name);
   cmd.AddValue ("realtime", "Use the realtime scheduler or not", realtime);
   cmd.AddValue ("sumo-gui", "Use SUMO gui or not", sumo_gui);
   cmd.AddValue ("server-aggregate-output", "Print an aggregate output for server", aggregate_out);
@@ -128,10 +128,10 @@ main (int argc, char *argv[])
 
   if (verbose)
     {
-      LogComponentEnable ("v2i-glosa-LTE", LOG_LEVEL_INFO);
+      LogComponentEnable ("v2i-bglosa-LTE", LOG_LEVEL_INFO);
       LogComponentEnable ("CABasicService", LOG_LEVEL_INFO);
       LogComponentEnable ("TLMBasicService", LOG_LEVEL_INFO);
-      LogComponentEnable ("glosaServer", LOG_LEVEL_INFO);
+      LogComponentEnable ("bglosaServer", LOG_LEVEL_INFO);
     }
 
   /* Use the realtime scheduler of ns3 */
@@ -289,15 +289,15 @@ main (int argc, char *argv[])
     }
 
   /*** 6. Create and Setup application for the server ***/
-  glosaServerHelper glosaServHelper;
-  glosaServHelper.SetAttribute ("Model", StringValue("lte"));
-  glosaServHelper.SetAttribute ("Client", (PointerValue) sumoClient);
-  glosaServHelper.SetAttribute ("RealTime", BooleanValue(realtime));
-  glosaServHelper.SetAttribute ("AggregateOutput", BooleanValue(aggregate_out));
-  glosaServHelper.SetAttribute ("CSV", StringValue(csv_name));
-  glosaServHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
-  glosaServHelper.SetAttribute ("SendSPATEM", BooleanValue (send_spatem));
-  glosaServHelper.SetAttribute ("NumRSUs", UintegerValue (numberOfRSUs));
+  bglosaServerHelper bglosaServHelper;
+  bglosaServHelper.SetAttribute ("Model", StringValue("lte"));
+  bglosaServHelper.SetAttribute ("Client", (PointerValue) sumoClient);
+  bglosaServHelper.SetAttribute ("RealTime", BooleanValue(realtime));
+  bglosaServHelper.SetAttribute ("AggregateOutput", BooleanValue(aggregate_out));
+  bglosaServHelper.SetAttribute ("CSV", StringValue(csv_name));
+  bglosaServHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
+  bglosaServHelper.SetAttribute ("SendSPATEM", BooleanValue (send_spatem));
+  bglosaServHelper.SetAttribute ("NumRSUs", UintegerValue (numberOfRSUs));
 
   int i = 0;
   for (auto rsu : rsuData)
@@ -312,21 +312,21 @@ main (int argc, char *argv[])
     }
 
   // We don't install the server app on the eNB (rsuNode) in LTE, we install it on the remoteHost.
-  // Install only a single centralized server to manage glosa data.
-  ApplicationContainer AppServer = glosaServHelper.Install (remoteHostContainer.Get (0));
+  // Install only a single centralized server to manage bglosa data.
+  ApplicationContainer AppServer = bglosaServHelper.Install (remoteHostContainer.Get (0));
   AppServer.Start (Seconds (0.0));
   AppServer.Stop (simulationTime - Seconds (0.1));
 
   /*** 7. Setup interface and application for dynamic nodes ***/
-  glosaClientHelper glosaCliHelper;
-  glosaCliHelper.SetAttribute ("Model", StringValue("lte"));
-  glosaCliHelper.SetAttribute ("ServerAddr", Ipv4AddressValue(remoteHostAddr));
-  glosaCliHelper.SetAttribute ("Client", (PointerValue) sumoClient); // pass TraciClient object for accessing sumo in application
-  glosaCliHelper.SetAttribute ("PrintSummary", BooleanValue(print_summary));
-  glosaCliHelper.SetAttribute ("RealTime", BooleanValue(realtime));
-  glosaCliHelper.SetAttribute ("CSV", StringValue(csv_name));
-  glosaCliHelper.SetAttribute ("SendCAM", BooleanValue (send_cam));
-  glosaCliHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
+  bglosaClientHelper bglosaCliHelper;
+  bglosaCliHelper.SetAttribute ("Model", StringValue("lte"));
+  bglosaCliHelper.SetAttribute ("ServerAddr", Ipv4AddressValue(remoteHostAddr));
+  bglosaCliHelper.SetAttribute ("Client", (PointerValue) sumoClient); // pass TraciClient object for accessing sumo in application
+  bglosaCliHelper.SetAttribute ("PrintSummary", BooleanValue(print_summary));
+  bglosaCliHelper.SetAttribute ("RealTime", BooleanValue(realtime));
+  bglosaCliHelper.SetAttribute ("CSV", StringValue(csv_name));
+  bglosaCliHelper.SetAttribute ("SendCAM", BooleanValue (send_cam));
+  bglosaCliHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
 
   /* callback function for node creation */
   STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID,TraciClient::StationTypeTraCI_t stationType) -> Ptr<Node>
@@ -339,8 +339,8 @@ main (int argc, char *argv[])
       ++nodeCounter; //increment counter for next node
 
       /* Install Application */
-      //glosaCliHelper.SetAttribute ("PRRSupervisor", PointerValue (&prrSup));
-      ApplicationContainer ClientApp = glosaCliHelper.Install (includedNode);
+      //bglosaCliHelper.SetAttribute ("PRRSupervisor", PointerValue (&prrSup));
+      ApplicationContainer ClientApp = bglosaCliHelper.Install (includedNode);
       ClientApp.Start (Seconds (0.0));
       ClientApp.Stop (simulationTime - Simulator::Now () - Seconds (0.1));
 
@@ -351,9 +351,9 @@ main (int argc, char *argv[])
   SHUTDOWN_FCN shutdownWifiNode = [] (Ptr<Node> exNode,std::string vehicleID)
     {
       /* Stop all applications */
-      Ptr<glosaClient> glosaClient_ = exNode->GetApplication(0)->GetObject<glosaClient>();
-      if(glosaClient_)
-        glosaClient_->StopApplicationNow ();
+      Ptr<bglosaClient> bglosaClient_ = exNode->GetApplication(0)->GetObject<bglosaClient>();
+      if(bglosaClient_)
+        bglosaClient_->StopApplicationNow ();
 
        /* Set position outside communication range */
       Ptr<ConstantPositionMobilityModel> mob = exNode->GetObject<ConstantPositionMobilityModel>();

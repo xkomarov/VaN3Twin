@@ -1,5 +1,5 @@
-#ifndef GLOSASERVER_H
-#define GLOSASERVER_H
+#ifndef BGLOSASERVER_H
+#define BGLOSASERVER_H
 
 
 #include "ns3/application.h"
@@ -12,7 +12,7 @@
 
 namespace ns3 {
 
-class glosaServer : public Application
+class bglosaServer : public Application
 {
   public:
     /**
@@ -21,9 +21,9 @@ class glosaServer : public Application
      */
     static TypeId GetTypeId (void);
 
-    glosaServer ();
+    bglosaServer ();
 
-    virtual ~glosaServer ();
+    virtual ~bglosaServer ();
 
     /**
      * \brief Callback to handle a CAM reception.
@@ -90,4 +90,4 @@ class glosaServer : public Application
 
 } // namespace ns3
 
-#endif /* glosaSERVER_H */
+#endif /* bglosaSERVER_H */

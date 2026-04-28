@@ -184,6 +184,10 @@ namespace ns3 {
       // key: signalGroup ID, value: minEndTime in tenths of seconds
       std::unordered_map<long, double> signalGroupTimings;
 
+      // Dictionary of next-phase duration (nextTime from SPATEM):
+      // key: signalGroup ID, value: nextTime in tenths of seconds
+      std::unordered_map<long, double> signalGroupNextTimings;
+
       uint64_t timestamp_us;       // Last update timestamp for SPATEM data
       bool isStaticLoaded;         // Flag to identify if topology was loaded from SUMO
   } trafficLightData_t;

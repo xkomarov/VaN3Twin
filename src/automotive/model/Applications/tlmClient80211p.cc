@@ -106,7 +106,7 @@ tlmClient80211p::StartApplication (void)
 
   m_socket->Connect (remote);
 
-  /* Create new BTP and GeoNet objects and set them in TLMBasicService and CABasicService */
+  /* Create new BTP and GeoNet objects and set them in TLMService and CABasicService */
   m_btp = CreateObject<btp> ();
   m_geoNet = CreateObject<GeoNet> ();
 
@@ -117,7 +117,7 @@ tlmClient80211p::StartApplication (void)
 
   m_btp->setGeoNet (m_geoNet);
   m_caService.setBTP (m_btp);
-  m_tlmBasicService.setBTP (m_btp);
+  m_tlmService.setBTP (m_btp);
 
   /* Set sockets, callback, station properties and TraCI VDP in CABasicService */
   m_caService.setSocketTx (m_socket);
@@ -127,11 +127,11 @@ tlmClient80211p::StartApplication (void)
   m_caService.setStationProperties (std::stol (m_id.substr (3)), StationType_passengerCar);
   m_caService.setRealTime (m_real_time);
 
-  m_tlmBasicService.setRealTime (m_real_time);
-  m_tlmBasicService.setSocketRx (m_socket);
-  m_tlmBasicService.setStationProperties (std::stol (m_id.substr (3)), StationType_passengerCar);
-  m_tlmBasicService.addTLMRxCallback (std::bind (&tlmClient80211p::receiveSPATEM, this,
-                                                 std::placeholders::_1, std::placeholders::_2));
+  m_tlmService.setRealTime (m_real_time);
+  m_tlmService.setSocketRx (m_socket);
+  m_tlmService.setStationProperties (std::stol (m_id.substr (3)), StationType_passengerCar);
+  m_tlmService.addTLMRxCallback (std::bind (&tlmClient80211p::receiveSPATEM, this,
+                                            std::placeholders::_1, std::placeholders::_2));
 
   VDP *traci_vdp = new VDPTraCI (m_client, m_id);
 
@@ -139,7 +139,7 @@ tlmClient80211p::StartApplication (void)
 
   m_caService.setVDP (traci_vdp);
 
-  m_tlmBasicService.setVDP (traci_vdp);
+  m_tlmService.setVDP (traci_vdp);
 
   /* Create LDM and mock-populate traffic light static topology (simulates MAPEM) */
   m_LDM = CreateObject<LDM> ();
@@ -189,7 +189,7 @@ tlmClient80211p::StopApplication ()
 
   uint64_t cam_sent;
   cam_sent = m_caService.terminateDissemination ();
-  m_tlmBasicService.terminateDissemination ();
+  m_tlmService.terminateDissemination ();
 
   if (!m_csv_name.empty ())
     m_csv_ofstream.close ();
@@ -197,8 +197,8 @@ tlmClient80211p::StopApplication ()
   if (m_print_summary && !m_already_print)
     {
       std::cout << "INFO-" << m_id << ",CAM-SENT:" << cam_sent
-                << ",SPATEM-RECEIVED:" << m_spatem_received
-                << ",RLVW-WARNINGS:" << m_rlvw_warnings << std::endl;
+                << ",SPATEM-RECEIVED:" << m_spatem_received << ",RLVW-WARNINGS:" << m_rlvw_warnings
+                << std::endl;
       m_already_print = true;
     }
 }
@@ -216,7 +216,6 @@ tlmClient80211p::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
   (void) cam;
   (void) from;
 }
-
 
 void
 tlmClient80211p::receiveSPATEM (asn1cpp::Seq<SPATEM> spatem, Address from)
@@ -260,14 +259,13 @@ tlmClient80211p::receiveSPATEM (asn1cpp::Seq<SPATEM> spatem, Address from)
   // Start or keep the periodic RLVW control loop running
   if (m_rlvwUpdateEvent.IsExpired ())
     {
-      m_rlvwUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                &tlmClient80211p::updateRlvwControl, this);
+      m_rlvwUpdateEvent =
+          Simulator::Schedule (MilliSeconds (200), &tlmClient80211p::updateRlvwControl, this);
     }
 
   // Reschedule SPATEM-loss timeout (if no SPATEM for 2 s → disengage)
   m_spatemTimeout = Simulator::Schedule (Seconds (2.0), &tlmClient80211p::spatemTimeout, this);
 }
-
 
 void
 tlmClient80211p::updateRlvwControl (void)
@@ -286,11 +284,11 @@ tlmClient80211p::updateRlvwControl (void)
   double currentSpeed = m_client->TraCIAPI::vehicle.getSpeed (m_id);
 
   // --- RLVW algorithm constants ---
-  const double comfortDecel   = 3.0;    // m/s² — comfortable deceleration
-  const double emergencyDecel = 6.0;    // m/s² — emergency braking deceleration
-  const double safetyMargin   = 1.3;    // safety factor applied to stopping distance
-  const double RLVW_MIN_DIST  = 5.0;    // m — too close (already in intersection)
-  const double RLVW_MAX_DIST  = 200.0;  // m — too far away to matter
+  const double comfortDecel = 3.0; // m/s² — comfortable deceleration
+  const double emergencyDecel = 6.0; // m/s² — emergency braking deceleration
+  const double safetyMargin = 1.3; // safety factor applied to stopping distance
+  const double RLVW_MIN_DIST = 5.0; // m — too close (already in intersection)
+  const double RLVW_MAX_DIST = 200.0; // m — too far away to matter
 
   // --- Find nearby traffic lights from LDM ---
   std::vector<trafficLightData_t> nearbyTLs;
@@ -306,8 +304,8 @@ tlmClient80211p::updateRlvwControl (void)
           m_rlvwActive = false;
         }
       m_passedIntersectionID = 0;
-      m_rlvwUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                &tlmClient80211p::updateRlvwControl, this);
+      m_rlvwUpdateEvent =
+          Simulator::Schedule (MilliSeconds (200), &tlmClient80211p::updateRlvwControl, this);
       return;
     }
 
@@ -338,16 +336,16 @@ tlmClient80211p::updateRlvwControl (void)
           m_rlvwActive = false;
         }
       m_passedIntersectionID = 0;
-      m_rlvwUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                &tlmClient80211p::updateRlvwControl, this);
+      m_rlvwUpdateEvent =
+          Simulator::Schedule (MilliSeconds (200), &tlmClient80211p::updateRlvwControl, this);
       return;
     }
 
   // --- Skip intersection we already passed ---
   if (matchedTL.intersectionID == m_passedIntersectionID)
     {
-      m_rlvwUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                &tlmClient80211p::updateRlvwControl, this);
+      m_rlvwUpdateEvent =
+          Simulator::Schedule (MilliSeconds (200), &tlmClient80211p::updateRlvwControl, this);
       return;
     }
 
@@ -355,8 +353,8 @@ tlmClient80211p::updateRlvwControl (void)
   auto stateIt = matchedTL.signalGroupStates.find (matchedSignalGroup);
   if (stateIt == matchedTL.signalGroupStates.end ())
     {
-      m_rlvwUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                &tlmClient80211p::updateRlvwControl, this);
+      m_rlvwUpdateEvent =
+          Simulator::Schedule (MilliSeconds (200), &tlmClient80211p::updateRlvwControl, this);
       return;
     }
   long currentLightState = stateIt->second;
@@ -378,18 +376,19 @@ tlmClient80211p::updateRlvwControl (void)
           m_passedIntersectionID = matchedTL.intersectionID;
           spatemTimeout ();
           m_spatemAlive = true; // keep listening for future intersections
-          m_rlvwUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                    &tlmClient80211p::updateRlvwControl, this);
+          m_rlvwUpdateEvent =
+              Simulator::Schedule (MilliSeconds (200), &tlmClient80211p::updateRlvwControl, this);
           return;
         }
     }
   else
     {
       // Fallback: haversine to intersection center
-      dist = 12742000.0 * std::asin (std::sqrt (
-          std::pow (std::sin ((egoLL.y - matchedTL.lat) * M_PI / 360.0), 2) +
-          std::cos (egoLL.y * M_PI / 180.0) * std::cos (matchedTL.lat * M_PI / 180.0) *
-          std::pow (std::sin ((egoLL.x - matchedTL.lon) * M_PI / 360.0), 2)));
+      dist = 12742000.0 *
+             std::asin (std::sqrt (
+                 std::pow (std::sin ((egoLL.y - matchedTL.lat) * M_PI / 360.0), 2) +
+                 std::cos (egoLL.y * M_PI / 180.0) * std::cos (matchedTL.lat * M_PI / 180.0) *
+                     std::pow (std::sin ((egoLL.x - matchedTL.lon) * M_PI / 360.0), 2)));
     }
 
   // --- RLVW activation range check ---
@@ -401,8 +400,8 @@ tlmClient80211p::updateRlvwControl (void)
           m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
           m_rlvwActive = false;
         }
-      m_rlvwUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                                &tlmClient80211p::updateRlvwControl, this);
+      m_rlvwUpdateEvent =
+          Simulator::Schedule (MilliSeconds (200), &tlmClient80211p::updateRlvwControl, this);
       return;
     }
 
@@ -434,7 +433,10 @@ tlmClient80211p::updateRlvwControl (void)
 
           // Visual indication: PURPLE for RLVW active
           libsumo::TraCIColor purple;
-          purple.r = 255; purple.g = 0; purple.b = 255; purple.a = 255;
+          purple.r = 255;
+          purple.g = 0;
+          purple.b = 255;
+          purple.a = 255;
           m_client->TraCIAPI::vehicle.setColor (m_id, purple);
         }
       else
@@ -449,7 +451,10 @@ tlmClient80211p::updateRlvwControl (void)
 
               // Reset color to default
               libsumo::TraCIColor yellow;
-              yellow.r = 255; yellow.g = 255; yellow.b = 0; yellow.a = 255;
+              yellow.r = 255;
+              yellow.g = 255;
+              yellow.b = 0;
+              yellow.a = 255;
               m_client->TraCIAPI::vehicle.setColor (m_id, yellow);
             }
         }
@@ -475,8 +480,8 @@ tlmClient80211p::updateRlvwControl (void)
     }
 
   // Reschedule next RLVW tick
-  m_rlvwUpdateEvent = Simulator::Schedule (MilliSeconds (200),
-                                            &tlmClient80211p::updateRlvwControl, this);
+  m_rlvwUpdateEvent =
+      Simulator::Schedule (MilliSeconds (200), &tlmClient80211p::updateRlvwControl, this);
 }
 
 void
@@ -544,7 +549,10 @@ tlmClient80211p::spatemTimeout ()
     }
 
   libsumo::TraCIColor orange;
-  orange.r = 255; orange.g = 99; orange.b = 71; orange.a = 255;
+  orange.r = 255;
+  orange.g = 99;
+  orange.b = 71;
+  orange.a = 255;
   m_client->TraCIAPI::vehicle.setColor (m_id, orange);
 }
 

@@ -11,7 +11,6 @@
 #include "ns3/socket.h"
 #include "ns3/btpdatarequest.h"
 #include "ns3/network-module.h"
-#include <map>
 
 namespace ns3 {
 NS_LOG_COMPONENT_DEFINE ("glosaServer");
@@ -131,7 +130,7 @@ glosaServer::StartApplication (void)
                       "'80211p' or 'lte'");
     }
 
-  /* Create new BTP and GeoNet objects and set them in CABasicService / TLMBasicService */
+  /* Create new BTP and GeoNet objects and set them in CABasicService / TLMService */
   m_btp = CreateObject<btp> ();
   m_geoNet = CreateObject<GeoNet> ();
 
@@ -142,7 +141,7 @@ glosaServer::StartApplication (void)
 
   m_btp->setGeoNet (m_geoNet);
   m_caService.setBTP (m_btp);
-  m_tlmBasicService.setBTP (m_btp);
+  m_tlmService.setBTP (m_btp);
 
   uint64_t id = 0;
   if (!m_id.empty () && m_id.find ("_") != std::string::npos)
@@ -167,12 +166,12 @@ glosaServer::StartApplication (void)
   m_caService.addCARxCallback (
       std::bind (&glosaServer::receiveCAM, this, std::placeholders::_1, std::placeholders::_2));
 
-  m_tlmBasicService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
+  m_tlmService.setStationProperties (m_stationId_baseline + id, StationType_roadSideUnit);
   if (m_model == "lte")
     {
-      m_tlmBasicService.setSocketRx (m_socket);
+      m_tlmService.setSocketRx (m_socket);
     }
-  m_tlmBasicService.setSocketTx (m_socket);
+  m_tlmService.setSocketTx (m_socket);
 
   libsumo::TraCIPosition rsuPosXY;
 
@@ -182,13 +181,12 @@ glosaServer::StartApplication (void)
       m_client->TraCIAPI::simulation.convertXYtoLonLat (rsuPosXY.x, rsuPosXY.y);
 
   m_caService.setFixedPositionRSU (rsuPosLonLat.y, rsuPosLonLat.x);
-  m_tlmBasicService.setFixedPositionRSU (rsuPosLonLat.y, rsuPosLonLat.x);
+  m_tlmService.setFixedPositionRSU (rsuPosLonLat.y, rsuPosLonLat.x);
 
   VDP *traci_vdp;
   if (m_model == "80211p")
     {
-      // Find all TLS within detection radius of this RSU
-      const double tlsDetectionRadius = 10.0; // [m] — RSU "owns" TLS within this range
+      const double tlsDetectionRadius = 10.0;
       auto tlsIDs = m_client->TraCIAPI::trafficlights.getIDList ();
       std::vector<std::string> nearbyTls;
 
@@ -202,20 +200,20 @@ glosaServer::StartApplication (void)
           if (dist <= tlsDetectionRadius)
             {
               nearbyTls.push_back (tlsId);
-              NS_LOG_INFO ("[" << m_id << "] TLS '" << tlsId
-                               << "' within range (dist=" << dist << "m)");
+              NS_LOG_INFO ("[" << m_id << "] TLS '" << tlsId << "' within range (dist=" << dist
+                               << "m)");
             }
           else
             {
-              NS_LOG_DEBUG ("[" << m_id << "] TLS '" << tlsId
-                                << "' out of range (dist=" << dist << "m), skipped");
+              NS_LOG_DEBUG ("[" << m_id << "] TLS '" << tlsId << "' out of range (dist=" << dist
+                                << "m), skipped");
             }
         }
 
       if (nearbyTls.empty ())
         {
-          NS_LOG_WARN ("[" << m_id << "] No traffic lights found within "
-                           << tlsDetectionRadius << "m of RSU!");
+          NS_LOG_WARN ("[" << m_id << "] No traffic lights found within " << tlsDetectionRadius
+                           << "m of RSU!");
         }
       else
         {
@@ -223,8 +221,7 @@ glosaServer::StartApplication (void)
                            << " nearby traffic light(s)");
         }
 
-      // GeoArea = detection radius + 400m buffer for approaching vehicles
-      uint16_t area_radius = (uint16_t)(tlsDetectionRadius + 390);
+      uint16_t area_radius = (uint16_t) (tlsDetectionRadius + 390);
       GeoArea_t geoArea;
       geoArea.posLong = rsuPosLonLat.x * DOT_ONE_MICRO;
       geoArea.posLat = rsuPosLonLat.y * DOT_ONE_MICRO;
@@ -233,14 +230,13 @@ glosaServer::StartApplication (void)
       geoArea.angle = 0;
       geoArea.shape = CIRCULAR;
 
-      m_tlmBasicService.setGeoArea (geoArea);
+      m_tlmService.setGeoArea (geoArea);
 
       traci_vdp = new VDPTraCI (m_client, m_id, true, "");
-      static_cast<VDPTraCI *>(traci_vdp)->setTargetTlsList (nearbyTls);
+      static_cast<VDPTraCI *> (traci_vdp)->setTargetTlsList (nearbyTls);
     }
   else
     {
-      // LTE behavior: empty string pulls all Traffic Lights
       traci_vdp = new VDPTraCI (m_client, m_id, true, "");
 
       uint16_t area_radius = 5000;
@@ -251,16 +247,16 @@ glosaServer::StartApplication (void)
       geoArea.distB = 0;
       geoArea.angle = 0;
       geoArea.shape = CIRCULAR;
-      m_tlmBasicService.setGeoArea (geoArea);
+      m_tlmService.setGeoArea (geoArea);
     }
 
   m_btp->setVDP (traci_vdp);
   m_caService.setVDP (traci_vdp);
-  m_tlmBasicService.setVDP (traci_vdp);
+  m_tlmService.setVDP (traci_vdp);
 
   if (m_send_spatem && m_model == "80211p")
     {
-      m_tlmBasicService.startSpatemDissemination ();
+      m_tlmService.startSpatemDissemination ();
     }
 
   if (m_send_cam)
@@ -344,7 +340,7 @@ glosaServer::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
   if (m_send_spatem && m_model != "80211p")
     {
       m_socket->Connect (from);
-      TLMBasicService_error_t trigger_retval = m_tlmBasicService.appTLM_trigger ();
+      TLMService_error_t trigger_retval = m_tlmService.appTLM_trigger ();
 
       if (trigger_retval != SPATEM_NO_ERROR)
         {

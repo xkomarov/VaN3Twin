@@ -75,7 +75,7 @@ Set(source_files
     model/Facilities/BSMap.cc
     model/Facilities/BSContainer.cc
     model/Facilities/cpBasicService.cc
-    model/Facilities/tlmBasicService.cc
+    model/Facilities/tlmService.cc
     model/Facilities/LDM.cc
     model/Facilities/phPoints.cc
     model/utilities/sumo-sensor.cc
@@ -1403,7 +1403,7 @@ set(header_files
     model/Facilities/caBasicService.h
     model/utilities/sumo_xml_parser.h
     model/Facilities/cpBasicService.h
-    model/Facilities/tlmBasicService.h
+    model/Facilities/tlmService.h
     model/Facilities/LDM.h
     model/Facilities/phPoints.h
     model/Facilities/ldm-utils.h

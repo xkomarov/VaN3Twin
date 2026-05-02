@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-04-19 00:48:32 by Eclipse SUMO netedit Version 1.18.0
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <!-- VTypes -->
+    <vType id="Car0" minGap="2.50" maxSpeed="13.89" speedFactor="normc(1.00,0.00)" accel="2.6" decel="4.5" emergencyDecel="7.5"/>
+    <!-- Routes -->
+    <route id="21" edges="n_to_c c_to_s1"/>
+    <route id="33" edges="s1_to_c c_to_w"/>
+    <route id="40" edges="s2_to_c c_to_e"/>
+    <route id="43" edges="s2_to_c c_to_w"/>
+    <route id="31" edges="s1_to_c c_to_n"/>
+    <route id="12" edges="e_to_c c_to_s2"/>
+    <route id="10" edges="e_to_c c_to_n"/>
+    <route id="23" edges="n_to_c c_to_w"/>
+    <route id="52" edges="w_to_c c_to_s1"/>
+    <route id="51" edges="w_to_c c_to_n"/>
+    <!-- Vehicles, persons and containers (sorted by depart) -->
+    <vehicle id="veh0" type="Car0" depart="0.69" route="21"/>
+    <vehicle id="veh1" type="Car0" depart="2.21" route="33"/>
+    <vehicle id="veh2" type="Car0" depart="3.61" route="40"/>
+    <vehicle id="veh3" type="Car0" depart="4.74" route="43"/>
+    <vehicle id="veh4" type="Car0" depart="6.11" route="31"/>
+    <vehicle id="veh5" type="Car0" depart="8.16" route="52"/>
+    <vehicle id="veh6" type="Car0" depart="9.17" route="10"/>
+    <vehicle id="veh7" type="Car0" depart="11.24" route="23"/>
+    <vehicle id="veh8" type="Car0" depart="12.15" route="12"/>
+    <vehicle id="veh9" type="Car0" depart="13.77" route="51"/>
+    <!-- <vehicle id="veh10" type="Car0" depart="15.21" route="40"/> -->
+    <!-- <vehicle id="veh11" type="Car0" depart="17.02" route="9"/>
+    <vehicle id="veh12" type="Car0" depart="18.56" route="21"/>
+    <vehicle id="veh13" type="Car0" depart="19.89" route="21"/>
+    <vehicle id="veh14" type="Car0" depart="21.3" route="14"/>
+    <vehicle id="veh15" type="Car0" depart="23.26" route="26"/>
+    <vehicle id="veh16" type="Car0" depart="24.31" route="26"/>
+    <vehicle id="veh17" type="Car0" depart="25.99" route="26"/>
+    <vehicle id="veh18" type="Car0" depart="27.13" route="13"/>
+    <vehicle id="veh19" type="Car0" depart="28.9" route="1"/>
+    <vehicle id="veh20" type="Car0" depart="30.69" route="13"/>
+    <vehicle id="veh21" type="Car0" depart="32.2" route="9"/>
+    <vehicle id="veh22" type="Car0" depart="33.46" route="26"/>
+    <vehicle id="veh23" type="Car0" depart="34.88" route="2"/>
+    <vehicle id="veh24" type="Car0" depart="36.75" route="21"/>
+    <vehicle id="veh25" type="Car0" depart="37.77" route="2"/>
+    <vehicle id="veh26" type="Car0" depart="39.41" route="6"/>
+    <vehicle id="veh27" type="Car0" depart="41.08" route="26"/>
+    <vehicle id="veh28" type="Car0" depart="42.45" route="14"/>
+    <vehicle id="veh29" type="Car0" depart="43.83" route="2"/>
+    <vehicle id="veh30" type="Car0" depart="45.16" route="21"/>
+    <vehicle id="veh31" type="Car0" depart="46.61" route="13"/>
+    <vehicle id="veh32" type="Car0" depart="48.37" route="2"/>
+    <vehicle id="veh33" type="Car0" depart="50.15" route="9"/>
+    <vehicle id="veh34" type="Car0" depart="51.71" route="2"/>
+    <vehicle id="veh35" type="Car0" depart="52.74" route="26"/>
+    <vehicle id="veh36" type="Car0" depart="54.25" route="2"/>
+    <vehicle id="veh37" type="Car0" depart="55.66" route="6"/>
+    <vehicle id="veh38" type="Car0" depart="57.6" route="21"/>
+    <vehicle id="veh39" type="Car0" depart="58.9" route="13"/>
+    <vehicle id="veh40" type="Car0" depart="60.37" route="2"/>
+    <vehicle id="veh41" type="Car0" depart="62.14" route="21"/>
+    <vehicle id="veh42" type="Car0" depart="63.62" route="1"/>
+    <vehicle id="veh43" type="Car0" depart="64.6" route="14"/>
+    <vehicle id="veh44" type="Car0" depart="66.75" route="13"/>
+    <vehicle id="veh45" type="Car0" depart="68.27" route="9"/>
+    <vehicle id="veh46" type="Car0" depart="69.7" route="9"/>
+    <vehicle id="veh47" type="Car0" depart="71.12" route="6"/>
+    <vehicle id="veh48" type="Car0" depart="72.21" route="13"/>
+    <vehicle id="veh49" type="Car0" depart="74.25" route="13"/> -->
+</routes>

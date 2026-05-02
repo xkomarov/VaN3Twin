@@ -60,8 +60,8 @@ main (int argc, char *argv[])
   std::string datarate_config;
 
   /*** 0.a App Options ***/
-  std::string map_name = "first_tlm_map"; // Default map
-  std::string sumo_folder = "src/automotive/examples/" + map_name + "/";
+  std::string map = "tlm_base_map"; // Default map
+  std::string sumo_folder = "src/automotive/examples/" + map + "/";
   std::string mob_trace = "cars.rou.xml";
   std::string rsu_file = "stations.xml";
   std::string sumo_config = sumo_folder + "map.sumo.cfg";
@@ -99,10 +99,7 @@ main (int argc, char *argv[])
   xmlDocPtr rou_xml_file;
 
   /* Cmd Line option for vehicular application */
-  cmd.AddValue ("map-name",
-                "Name of the map folder (e.g. tlm_map_1_rsu_62), simplifies setting sumo-folder "
-                "and sumo-config",
-                map_name);
+  cmd.AddValue ("map", "Name of the map folder", map);
   cmd.AddValue ("realtime", "Use the realtime scheduler or not", realtime);
   cmd.AddValue ("sumo-gui", "Use SUMO gui or not", sumo_gui);
   cmd.AddValue ("server-aggregate-output", "Print an aggregate output for server", aggregate_out);
@@ -149,9 +146,9 @@ main (int argc, char *argv[])
 
   cmd.Parse (argc, argv);
 
-  if (map_name != "tlm_map_3_light")
+  if (map != "tlm_base_map")
     {
-      sumo_folder = "src/automotive/examples/" + map_name + "/";
+      sumo_folder = "src/automotive/examples/" + map + "_rsu/";
       sumo_config = sumo_folder + "map.sumo.cfg";
     }
 
@@ -178,7 +175,7 @@ main (int argc, char *argv[])
     {
       LogComponentEnable ("v2i-bglosa-80211p", LOG_LEVEL_INFO);
       LogComponentEnable ("CABasicService", LOG_LEVEL_INFO);
-      LogComponentEnable ("TLMBasicService", LOG_LEVEL_INFO);
+      LogComponentEnable ("TLMService", LOG_LEVEL_INFO);
       LogComponentEnable ("bglosaServer", LOG_LEVEL_INFO);
     }
 

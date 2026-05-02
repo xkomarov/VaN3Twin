@@ -7,26 +7,28 @@
     <!-- VTypes -->
     <vType id="Car0" minGap="2.50" maxSpeed="13.89" speedFactor="normc(1.00,0.00)" accel="2.6" decel="4.5" emergencyDecel="7.5"/>
     <!-- Routes -->
-    <route id="1" edges="n_to_c c_to_s1"/>
-    <route id="13" edges="s1_to_c c_to_w"/>
-    <route id="14" edges="s2_to_c c_to_e"/>
-    <route id="2" edges="s1_to_c c_to_n"/>
-    <route id="21" edges="e_to_c c_to_s2"/>
-    <route id="26" edges="n_to_c c_to_w"/>
-    <route id="6" edges="w_to_c c_to_s1"/>
-    <route id="9" edges="w_to_c c_to_n"/>
+    <route id="21" edges="n_to_c c_to_s1"/>
+    <route id="33" edges="s1_to_c c_to_w"/>
+    <route id="40" edges="s2_to_c c_to_e"/>
+    <route id="43" edges="s2_to_c c_to_w"/>
+    <route id="31" edges="s1_to_c c_to_n"/>
+    <route id="12" edges="e_to_c c_to_s2"/>
+    <route id="10" edges="e_to_c c_to_n"/>
+    <route id="23" edges="n_to_c c_to_w"/>
+    <route id="52" edges="w_to_c c_to_s1"/>
+    <route id="51" edges="w_to_c c_to_n"/>
     <!-- Vehicles, persons and containers (sorted by depart) -->
-    <vehicle id="veh0" type="Car0" depart="0.69" route="1"/>
-    <vehicle id="veh1" type="Car0" depart="2.21" route="6"/>
-    <vehicle id="veh2" type="Car0" depart="3.61" route="13"/>
-    <vehicle id="veh3" type="Car0" depart="4.74" route="2"/>
-    <vehicle id="veh4" type="Car0" depart="6.11" route="26"/>
-    <vehicle id="veh5" type="Car0" depart="8.16" route="21"/>
-    <vehicle id="veh6" type="Car0" depart="9.17" route="14"/>
-    <vehicle id="veh7" type="Car0" depart="11.24" route="9"/>
-    <vehicle id="veh8" type="Car0" depart="12.15" route="13"/>
-    <vehicle id="veh9" type="Car0" depart="13.77" route="21"/>
-    <vehicle id="veh10" type="Car0" depart="15.21" route="14"/>
+    <vehicle id="veh0" type="Car0" depart="0.69" route="21"/>
+    <vehicle id="veh1" type="Car0" depart="2.21" route="33"/>
+    <vehicle id="veh2" type="Car0" depart="3.61" route="40"/>
+    <vehicle id="veh3" type="Car0" depart="4.74" route="43"/>
+    <vehicle id="veh4" type="Car0" depart="6.11" route="31"/>
+    <vehicle id="veh5" type="Car0" depart="8.16" route="52"/>
+    <vehicle id="veh6" type="Car0" depart="9.17" route="10"/>
+    <vehicle id="veh7" type="Car0" depart="11.24" route="23"/>
+    <vehicle id="veh8" type="Car0" depart="12.15" route="12"/>
+    <vehicle id="veh9" type="Car0" depart="13.77" route="51"/>
+    <!-- <vehicle id="veh10" type="Car0" depart="15.21" route="40"/> -->
     <!-- <vehicle id="veh11" type="Car0" depart="17.02" route="9"/>
     <vehicle id="veh12" type="Car0" depart="18.56" route="21"/>
     <vehicle id="veh13" type="Car0" depart="19.89" route="21"/>

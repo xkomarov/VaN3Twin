@@ -60,8 +60,8 @@ main (int argc, char *argv[])
   std::string datarate_config;
 
   /*** 0.a App Options ***/
-  std::string map_name = "first_tlm_map"; // Default map
-  std::string sumo_folder = "src/automotive/examples/" + map_name + "/";
+  std::string map = "tlm_base_map"; // Default map
+  std::string sumo_folder = "src/automotive/examples/" + map + "/";
   std::string mob_trace = "cars.rou.xml";
   std::string rsu_file = "stations.xml";
   std::string sumo_config = sumo_folder + "map.sumo.cfg";
@@ -99,10 +99,7 @@ main (int argc, char *argv[])
   xmlDocPtr rou_xml_file;
 
   /* Cmd Line option for vehicular application */
-  cmd.AddValue ("map-name",
-                "Name of the map folder (e.g. tlm_map_1_rsu_62), simplifies setting sumo-folder "
-                "and sumo-config",
-                map_name);
+  cmd.AddValue ("map", "Name of the map folder", map);
   cmd.AddValue ("realtime", "Use the realtime scheduler or not", realtime);
   cmd.AddValue ("sumo-gui", "Use SUMO gui or not", sumo_gui);
   cmd.AddValue ("server-aggregate-output", "Print an aggregate output for server", aggregate_out);
@@ -111,12 +108,24 @@ main (int argc, char *argv[])
   cmd.AddValue ("mob-trace", "Name of the mobility trace file", mob_trace);
   cmd.AddValue ("sumo-config", "Location and name of SUMO configuration file", sumo_config);
   cmd.AddValue ("csv-log", "Name of the CSV log file", csv_name);
-  cmd.AddValue ("summary", "Print a summary for each vehicle at the end of the simulation", print_summary);
-  cmd.AddValue ("vehicle-visualizer", "Activate the web-based vehicle visualizer for ms-van3t", vehicle_vis);
-  cmd.AddValue ("send-cam", "Turn on or off the transmission of CAMs, thus turning on or off the whole V2X application", send_cam);
-  cmd.AddValue ("send-spatem", "Turn on or off the transmission of SPATEM messages from the RSU server", send_spatem);
-  cmd.AddValue ("csv-log-cumulative","Name of the CSV log file for the cumulative (average) PRR and latency data", csv_name_cumulative);
-  cmd.AddValue ("netstate-dump-file", "Name of the SUMO netstate-dump file containing the vehicle-related information throughout the whole simulation", sumo_netstate_file_name);
+  cmd.AddValue ("summary", "Print a summary for each vehicle at the end of the simulation",
+                print_summary);
+  cmd.AddValue ("vehicle-visualizer", "Activate the web-based vehicle visualizer for ms-van3t",
+                vehicle_vis);
+  cmd.AddValue (
+      "send-cam",
+      "Turn on or off the transmission of CAMs, thus turning on or off the whole V2X application",
+      send_cam);
+  cmd.AddValue ("send-spatem",
+                "Turn on or off the transmission of SPATEM messages from the RSU server",
+                send_spatem);
+  cmd.AddValue ("csv-log-cumulative",
+                "Name of the CSV log file for the cumulative (average) PRR and latency data",
+                csv_name_cumulative);
+  cmd.AddValue ("netstate-dump-file",
+                "Name of the SUMO netstate-dump file containing the vehicle-related information "
+                "throughout the whole simulation",
+                sumo_netstate_file_name);
   cmd.AddValue ("baseline", "Baseline for PRR calculation", m_baseline_prr);
   cmd.AddValue ("met-sup", "Use the Metric supervisor or not", m_metric_sup);
 
@@ -127,14 +136,19 @@ main (int argc, char *argv[])
   cmd.AddValue ("sim-time", "Total duration of the simulation [s]", simTime);
 
   /* Vehicle metrics logging */
-  cmd.AddValue ("log-metrics", "Enable per-vehicle metric logging (CO2, travel time, stopped time, avg speed)", log_metrics);
-  cmd.AddValue ("metrics-csv", "CSV file name for vehicle metrics output (omit extension; omit entirely for console-only)", metrics_csv_name);
+  cmd.AddValue ("log-metrics",
+                "Enable per-vehicle metric logging (CO2, travel time, stopped time, avg speed)",
+                log_metrics);
+  cmd.AddValue (
+      "metrics-csv",
+      "CSV file name for vehicle metrics output (omit extension; omit entirely for console-only)",
+      metrics_csv_name);
 
   cmd.Parse (argc, argv);
 
-  if (map_name != "tlm_map_3_light")
+  if (map != "tlm_base_map")
     {
-      sumo_folder = "src/automotive/examples/" + map_name + "/";
+      sumo_folder = "src/automotive/examples/" + map + "_rsu/";
       sumo_config = sumo_folder + "map.sumo.cfg";
     }
 
@@ -161,7 +175,7 @@ main (int argc, char *argv[])
     {
       LogComponentEnable ("v2i-eco-glosa-80211p", LOG_LEVEL_INFO);
       LogComponentEnable ("CABasicService", LOG_LEVEL_INFO);
-      LogComponentEnable ("TLMBasicService", LOG_LEVEL_INFO);
+      LogComponentEnable ("TLMService", LOG_LEVEL_INFO);
       LogComponentEnable ("ecoGlosaServer", LOG_LEVEL_INFO);
     }
 

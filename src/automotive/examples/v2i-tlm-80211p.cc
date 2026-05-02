@@ -99,7 +99,10 @@ main (int argc, char *argv[])
   xmlDocPtr rou_xml_file;
 
   /* Cmd Line option for vehicular application */
-  cmd.AddValue ("map-name", "Name of the map folder (e.g. tlm_map_1_rsu_62), simplifies setting sumo-folder and sumo-config", map_name);
+  cmd.AddValue ("map-name",
+                "Name of the map folder (e.g. tlm_map_1_rsu_62), simplifies setting sumo-folder "
+                "and sumo-config",
+                map_name);
   cmd.AddValue ("realtime", "Use the realtime scheduler or not", realtime);
   cmd.AddValue ("sumo-gui", "Use SUMO gui or not", sumo_gui);
   cmd.AddValue ("server-aggregate-output", "Print an aggregate output for server", aggregate_out);
@@ -147,10 +150,10 @@ main (int argc, char *argv[])
   cmd.Parse (argc, argv);
 
   if (map_name != "tlm_map_3_light")
-  {
-    sumo_folder = "src/automotive/examples/" + map_name + "/";
-    sumo_config = sumo_folder + "map.sumo.cfg";
-  }
+    {
+      sumo_folder = "src/automotive/examples/" + map_name + "/";
+      sumo_config = sumo_folder + "map.sumo.cfg";
+    }
 
   if (std::find (rate_admitted_values.begin (), rate_admitted_values.end (), datarate) ==
       rate_admitted_values.end ())
@@ -175,7 +178,7 @@ main (int argc, char *argv[])
     {
       LogComponentEnable ("v2i-tlm-80211p", LOG_LEVEL_INFO);
       LogComponentEnable ("CABasicService", LOG_LEVEL_INFO);
-      LogComponentEnable ("TLMBasicService", LOG_LEVEL_INFO);
+      LogComponentEnable ("TLMService", LOG_LEVEL_INFO);
       LogComponentEnable ("tlmServer80211p", LOG_LEVEL_INFO);
     }
 

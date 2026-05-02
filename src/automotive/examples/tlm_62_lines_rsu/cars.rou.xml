@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <vType id="Car0" minGap="2.50" maxSpeed="13.89" speedFactor="normc(1.00,0.00)" accel="2.6" decel="4.5" emergencyDecel="7.5" />
+    <route id="0" edges="w_to_c1 c1_to_c2 c2_to_e" />
+    <route id="1" edges="n1_to_c1 c1_to_s1" />
+    <route id="10" edges="s1_to_c1 c1_to_c2 c2_to_s2" />
+    <route id="11" edges="s1_to_c1 c1_to_c2 c2_to_e" />
+    <route id="12" edges="s1_to_c1 c1_to_c2 c2_to_n2" />
+    <route id="13" edges="s1_to_c1 c1_to_w" />
+    <route id="14" edges="s2_to_c2 c2_to_e" />
+    <route id="15" edges="s2_to_c2 c2_to_c1 c1_to_n1" />
+    <route id="16" edges="s2_to_c2 c2_to_c1 c1_to_w" />
+    <route id="17" edges="s2_to_c2 c2_to_c1 c1_to_s1" />
+    <route id="18" edges="e_to_c2 c2_to_n2" />
+    <route id="19" edges="e_to_c2 c2_to_c1 c1_to_n1" />
+    <route id="2" edges="s1_to_c1 c1_to_n1" />
+    <route id="20" edges="e_to_c2 c2_to_c1 c1_to_s1" />
+    <route id="21" edges="e_to_c2 c2_to_s2" />
+    <route id="22" edges="n2_to_c2 c2_to_c1 c1_to_n1" />
+    <route id="23" edges="n2_to_c2 c2_to_c1 c1_to_w" />
+    <route id="24" edges="n2_to_c2 c2_to_c1 c1_to_s1" />
+    <route id="25" edges="n2_to_c2 c2_to_e" />
+    <route id="26" edges="n1_to_c1 c1_to_w" />
+    <route id="27" edges="n1_to_c1 c1_to_c2 c2_to_s2" />
+    <route id="28" edges="n1_to_c1 c1_to_c2 c2_to_e" />
+    <route id="29" edges="n1_to_c1 c1_to_c2 c2_to_n2" />
+    <route id="3" edges="n2_to_c2 c2_to_s2" />
+    <route id="4" edges="e_to_c2 c2_to_c1 c1_to_w" />
+    <route id="5" edges="s2_to_c2 c2_to_n2" />
+    <route id="6" edges="w_to_c1 c1_to_s1" />
+    <route id="7" edges="w_to_c1 c1_to_c2 c2_to_s2" />
+    <route id="8" edges="w_to_c1 c1_to_c2 c2_to_n2" />
+    <route id="9" edges="w_to_c1 c1_to_n1" />
+    <route id="30" edges="ne_to_c2 c2_to_e" />
+    <route id="31" edges="s1_to_c2 c2_to_s2" />
+    <vehicle id="veh1" type="Car0" depart="0.30" route="29" />
+    <vehicle id="veh2" type="Car0" depart="0.90" route="21" />
+    <vehicle id="veh3" type="Car0" depart="1.25" route="13" />
+    <vehicle id="veh4" type="Car0" depart="1.57" route="24" />
+    <vehicle id="veh5" type="Car0" depart="1.91" route="1" />
+    <vehicle id="veh11" type="Car0" depart="2.00" route="30" />
+    <vehicle id="veh6" type="Car0" depart="2.94" route="23" />
+    <vehicle id="veh7" type="Car0" depart="3.18" route="12" />
+    <vehicle id="veh12" type="Car0" depart="4.00" route="31" />
+    <vehicle id="veh8" type="Car0" depart="4.49" route="11" />
+    <vehicle id="veh9" type="Car0" depart="6.10" route="6" />
+    <vehicle id="veh10" type="Car0" depart="7.15" route="17" />
+</routes>

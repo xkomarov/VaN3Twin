@@ -30,7 +30,7 @@ struct VehicleMetrics
 };
 
 using namespace ns3;
-NS_LOG_COMPONENT_DEFINE("v2i-tlm-LTE");
+NS_LOG_COMPONENT_DEFINE ("v2i-tlm-LTE");
 
 int
 main (int argc, char *argv[])
@@ -50,7 +50,7 @@ main (int argc, char *argv[])
    */
 
   // Admitted data rates for 802.11p
-  std::vector<float> rate_admitted_values{3,4.5,6,9,12,18,24,27};
+  std::vector<float> rate_admitted_values{3, 4.5, 6, 9, 12, 18, 24, 27};
   std::string datarate_config;
 
   /*** 0.a App Options ***/
@@ -95,31 +95,44 @@ main (int argc, char *argv[])
   xmlDocPtr rou_xml_file;
 
   /* Cmd Line option for vehicular application */
-  cmd.AddValue ("map-name", "Name of the map folder (e.g. tlm_map_1_rsu_62), simplifies setting sumo-folder and sumo-config", map_name);
+  cmd.AddValue ("map-name",
+                "Name of the map folder (e.g. tlm_map_1_rsu_62), simplifies setting sumo-folder "
+                "and sumo-config",
+                map_name);
   cmd.AddValue ("realtime", "Use the realtime scheduler or not", realtime);
   cmd.AddValue ("sumo-gui", "Use SUMO gui or not", sumo_gui);
   cmd.AddValue ("server-aggregate-output", "Print an aggregate output for server", aggregate_out);
   cmd.AddValue ("sumo-updates", "SUMO granularity", sumo_updates);
-  cmd.AddValue ("sumo-folder","Position of sumo config files",sumo_folder);
+  cmd.AddValue ("sumo-folder", "Position of sumo config files", sumo_folder);
   cmd.AddValue ("mob-trace", "Name of the mobility trace file", mob_trace);
   cmd.AddValue ("sumo-config", "Location and name of SUMO configuration file", sumo_config);
   cmd.AddValue ("csv-log", "Name of the CSV log file", csv_name);
-  cmd.AddValue ("summary", "Print a summary for each vehicle at the end of the simulation", print_summary);
-  cmd.AddValue ("vehicle-visualizer", "Activate the web-based vehicle visualizer for ms-van3t", vehicle_vis);
-  cmd.AddValue ("send-cam", "Turn on or off the transmission of CAMs, thus turning on or off the whole V2X application",send_cam);
-  cmd.AddValue ("send-spatem", "Turn on or off the transmission of SPATEM messages from the server",send_spatem);
-  cmd.AddValue ("csv-log-cumulative", "Name of the CSV log file for the cumulative (average) PRR and latency data", csv_name_cumulative);
-  cmd.AddValue ("netstate-dump-file", "Name of the SUMO netstate-dump file containing the vehicle-related information throughout the whole simulation", sumo_netstate_file_name);
+  cmd.AddValue ("summary", "Print a summary for each vehicle at the end of the simulation",
+                print_summary);
+  cmd.AddValue ("vehicle-visualizer", "Activate the web-based vehicle visualizer for ms-van3t",
+                vehicle_vis);
+  cmd.AddValue (
+      "send-cam",
+      "Turn on or off the transmission of CAMs, thus turning on or off the whole V2X application",
+      send_cam);
+  cmd.AddValue ("send-spatem", "Turn on or off the transmission of SPATEM messages from the server",
+                send_spatem);
+  cmd.AddValue ("csv-log-cumulative",
+                "Name of the CSV log file for the cumulative (average) PRR and latency data",
+                csv_name_cumulative);
+  cmd.AddValue ("netstate-dump-file",
+                "Name of the SUMO netstate-dump file containing the vehicle-related information "
+                "throughout the whole simulation",
+                sumo_netstate_file_name);
   cmd.AddValue ("baseline", "Baseline for PRR calculation", m_baseline_prr);
-  cmd.AddValue ("met-sup","Use the Metric supervisor or not",m_metric_sup);
+  cmd.AddValue ("met-sup", "Use the Metric supervisor or not", m_metric_sup);
   cmd.AddValue ("log-metrics",
                 "Enable per-vehicle metric logging (CO2, travel time, stopped time, avg speed)",
                 log_metrics);
 
-
   /* Cmd Line option for Lena */
-  cmd.AddValue("interPacketInterval", "Inter packet interval [ms]", interPacketInterval);
-  cmd.AddValue("useCa", "Whether to use carrier aggregation", useCa);
+  cmd.AddValue ("interPacketInterval", "Inter packet interval [ms]", interPacketInterval);
+  cmd.AddValue ("useCa", "Whether to use carrier aggregation", useCa);
 
   cmd.AddValue ("sim-time", "Total duration of the simulation [s]", simTime);
 
@@ -134,67 +147,72 @@ main (int argc, char *argv[])
 
   /* Carrier aggregation for LTE */
   if (useCa)
-   {
-     Config::SetDefault ("ns3::LteHelper::UseCa", BooleanValue (useCa));
-     Config::SetDefault ("ns3::LteHelper::NumberOfComponentCarriers", UintegerValue (2));
-     Config::SetDefault ("ns3::LteHelper::EnbComponentCarrierManager", StringValue ("ns3::RrComponentCarrierManager"));
-   }
+    {
+      Config::SetDefault ("ns3::LteHelper::UseCa", BooleanValue (useCa));
+      Config::SetDefault ("ns3::LteHelper::NumberOfComponentCarriers", UintegerValue (2));
+      Config::SetDefault ("ns3::LteHelper::EnbComponentCarrierManager",
+                          StringValue ("ns3::RrComponentCarrierManager"));
+    }
 
   // Fixing the 23-UE limit per eNB in LENA
-  Config::SetDefault("ns3::LteEnbRrc::SrsPeriodicity", UintegerValue(320));
+  Config::SetDefault ("ns3::LteEnbRrc::SrsPeriodicity", UintegerValue (320));
 
   if (verbose)
     {
       LogComponentEnable ("v2i-tlm-LTE", LOG_LEVEL_INFO);
       LogComponentEnable ("CABasicService", LOG_LEVEL_INFO);
-      LogComponentEnable ("TLMBasicService", LOG_LEVEL_INFO);
+      LogComponentEnable ("TLMService", LOG_LEVEL_INFO);
       LogComponentEnable ("tlmServerLTE", LOG_LEVEL_INFO);
     }
 
   /* Use the realtime scheduler of ns3 */
-  if(realtime)
-      GlobalValue::Bind ("SimulatorImplementationType", StringValue ("ns3::RealtimeSimulatorImpl"));
+  if (realtime)
+    GlobalValue::Bind ("SimulatorImplementationType", StringValue ("ns3::RealtimeSimulatorImpl"));
 
   /*** 0.b Read from the mob_trace the number of vehicles that will be created.
    *       The number of vehicles is directly parsed from the rou.xml file, looking at all
    *       the valid XML elements of type <vehicle>
   ***/
-  NS_LOG_INFO("Reading the .rou file...");
+  NS_LOG_INFO ("Reading the .rou file...");
   std::string path = sumo_folder + mob_trace;
 
   /* Load the .rou.xml document */
-  xmlInitParser();
-  rou_xml_file = xmlParseFile(path.c_str ());
+  xmlInitParser ();
+  rou_xml_file = xmlParseFile (path.c_str ());
   if (rou_xml_file == NULL)
     {
-      NS_FATAL_ERROR("Error: unable to parse the specified XML file: "<<path);
+      NS_FATAL_ERROR ("Error: unable to parse the specified XML file: " << path);
     }
-  numberOfNodes = XML_rou_count_vehicles(rou_xml_file);
+  numberOfNodes = XML_rou_count_vehicles (rou_xml_file);
 
   std::string rsu_path = sumo_folder + rsu_file;
-  std::ifstream rsu_file_stream (rsu_path.c_str());
-  std::vector<std::tuple<std::string, float, float>> rsuData = XML_poli_count_stations(rsu_file_stream);
-  numberOfRSUs = rsuData.size();
+  std::ifstream rsu_file_stream (rsu_path.c_str ());
+  std::vector<std::tuple<std::string, float, float>> rsuData =
+      XML_poli_count_stations (rsu_file_stream);
+  numberOfRSUs = rsuData.size ();
 
-  xmlFreeDoc(rou_xml_file);
-  xmlCleanupParser();
+  xmlFreeDoc (rou_xml_file);
+  xmlCleanupParser ();
 
-  if(numberOfNodes==-1)
+  if (numberOfNodes == -1)
     {
-      NS_FATAL_ERROR("Fatal error: cannot gather the number of vehicles from the specified XML file: "<<path<<". Please check if it is a correct SUMO file.");
+      NS_FATAL_ERROR (
+          "Fatal error: cannot gather the number of vehicles from the specified XML file: "
+          << path << ". Please check if it is a correct SUMO file.");
     }
-  NS_LOG_INFO("The .rou file has been read: " << numberOfNodes << " vehicles will be present in the simulation.");
+  NS_LOG_INFO ("The .rou file has been read: " << numberOfNodes
+                                               << " vehicles will be present in the simulation.");
 
   /* Set the simulation time (in seconds) */
-  NS_LOG_INFO("Simulation will last " << simTime << " seconds");
-  ns3::Time simulationTime (ns3::Seconds(simTime));
+  NS_LOG_INFO ("Simulation will last " << simTime << " seconds");
+  ns3::Time simulationTime (ns3::Seconds (simTime));
 
   /*** 1. Create containers for UEs and eNodeBs ***/
   NodeContainer obuNodes; // UEs
-  obuNodes.Create(numberOfNodes);
+  obuNodes.Create (numberOfNodes);
 
   NodeContainer rsuNodes; // eNodeBs
-  rsuNodes.Create(numberOfRSUs);
+  rsuNodes.Create (numberOfRSUs);
 
   /*** 2. Setup Mobility ***/
   MobilityHelper mobility;
@@ -212,7 +230,7 @@ main (int argc, char *argv[])
   lteHelper->SetEpcHelper (epcHelper);
 
   ConfigStore inputConfig;
-  inputConfig.ConfigureDefaults();
+  inputConfig.ConfigureDefaults ();
 
   Ptr<Node> pgw = epcHelper->GetPgwNode ();
 
@@ -237,9 +255,9 @@ main (int argc, char *argv[])
 
   //p2ph.EnablePcap("v2i-tlm-lte-remote", internetDevices);
 
-
   Ipv4StaticRoutingHelper ipv4RoutingHelper;
-  Ptr<Ipv4StaticRouting> remoteHostStaticRouting = ipv4RoutingHelper.GetStaticRouting (remoteHost->GetObject<Ipv4> ());
+  Ptr<Ipv4StaticRouting> remoteHostStaticRouting =
+      ipv4RoutingHelper.GetStaticRouting (remoteHost->GetObject<Ipv4> ());
   remoteHostStaticRouting->AddNetworkRouteTo (Ipv4Address ("7.0.0.0"), Ipv4Mask ("255.0.0.0"), 1);
 
   /*** 5. Install LTE Devices to the nodes + assign IP to UE ***/
@@ -256,7 +274,8 @@ main (int argc, char *argv[])
     {
       Ptr<Node> ueNode = obuNodes.Get (u);
       /* Set the default gateway for the UE */
-      Ptr<Ipv4StaticRouting> ueStaticRouting = ipv4RoutingHelper.GetStaticRouting (ueNode->GetObject<Ipv4> ());
+      Ptr<Ipv4StaticRouting> ueStaticRouting =
+          ipv4RoutingHelper.GetStaticRouting (ueNode->GetObject<Ipv4> ());
       ueStaticRouting->SetDefaultRoute (epcHelper->GetUeDefaultGatewayAddress (), 1);
     }
 
@@ -272,7 +291,7 @@ main (int argc, char *argv[])
   /*** 5. Setup Traci and start SUMO ***/
   Ptr<TraciClient> sumoClient = CreateObject<TraciClient> ();
   sumoClient->SetAttribute ("SumoConfigPath", StringValue (sumo_config));
-  sumoClient->SetAttribute ("SumoBinaryPath", StringValue (""));    // use system installation of sumo
+  sumoClient->SetAttribute ("SumoBinaryPath", StringValue ("")); // use system installation of sumo
   sumoClient->SetAttribute ("SynchInterval", TimeValue (Seconds (sumo_updates)));
   sumoClient->SetAttribute ("StartTime", TimeValue (Seconds (0.0)));
   sumoClient->SetAttribute ("SumoGUI", (BooleanValue) sumo_gui);
@@ -284,12 +303,13 @@ main (int argc, char *argv[])
 
   std::string sumo_additional_options = "--verbose true";
 
-  if(sumo_netstate_file_name!="")
-  {
-    sumo_additional_options += " --netstate-dump " + sumo_netstate_file_name;
-  }
+  if (sumo_netstate_file_name != "")
+    {
+      sumo_additional_options += " --netstate-dump " + sumo_netstate_file_name;
+    }
 
-  sumo_additional_options += " --collision.action warn --collision.check-junctions --error-log=sumo-errors-or-collisions.xml";
+  sumo_additional_options += " --collision.action warn --collision.check-junctions "
+                             "--error-log=sumo-errors-or-collisions.xml";
 
   sumoClient->SetAttribute ("SumoWaitForSocket", TimeValue (Seconds (5.0)));
   sumoClient->SetAttribute ("SumoAdditionalCmdOptions", StringValue (sumo_additional_options));
@@ -298,42 +318,40 @@ main (int argc, char *argv[])
   vehicleVisualizer vehicleVisObj;
   Ptr<vehicleVisualizer> vehicleVis = &vehicleVisObj;
   if (vehicle_vis)
-  {
-      vehicleVis->startServer();
+    {
+      vehicleVis->startServer ();
       vehicleVis->connectToServer ();
       sumoClient->SetAttribute ("VehicleVisualizer", PointerValue (vehicleVis));
-  }
+    }
 
   Ptr<MetricSupervisor> metSup = NULL;
-  MetricSupervisor metSupObj(m_baseline_prr);
-  if(m_metric_sup)
+  MetricSupervisor metSupObj (m_baseline_prr);
+  if (m_metric_sup)
     {
       metSup = &metSupObj;
-      metSup->setTraCIClient(sumoClient);
+      metSup->setTraCIClient (sumoClient);
     }
 
   /*** 6. Create and Setup application for the server ***/
   tlmServerLTEHelper tlmServerLTEHelper;
   tlmServerLTEHelper.SetAttribute ("Client", (PointerValue) sumoClient);
-  tlmServerLTEHelper.SetAttribute ("RealTime", BooleanValue(realtime));
-  tlmServerLTEHelper.SetAttribute ("AggregateOutput", BooleanValue(aggregate_out));
-  tlmServerLTEHelper.SetAttribute ("CSV", StringValue(csv_name));
+  tlmServerLTEHelper.SetAttribute ("RealTime", BooleanValue (realtime));
+  tlmServerLTEHelper.SetAttribute ("AggregateOutput", BooleanValue (aggregate_out));
+  tlmServerLTEHelper.SetAttribute ("CSV", StringValue (csv_name));
   tlmServerLTEHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
   tlmServerLTEHelper.SetAttribute ("SendSPATEM", BooleanValue (send_spatem));
 
   int i = 0;
   for (auto rsu : rsuData)
     {
-      std::string id = std::get<0>(rsu);
-      float x = std::get<1>(rsu);
-      float y = std::get<2>(rsu);
+      std::string id = std::get<0> (rsu);
+      float x = std::get<1> (rsu);
+      float y = std::get<2> (rsu);
       Ptr<Node> rsuNode = rsuNodes.Get (i);
-      sumoClient->AddStation(id, x, y, 0.0, rsuNode);
+      sumoClient->AddStation (id, x, y, 0.0, rsuNode);
       ++rsuCounter;
       ++i;
     }
-
-
 
   // We don't install the server app on the eNB (rsuNode) in LTE, we install it on the remoteHost.
   // Install only a single centralized server to manage TLM data.
@@ -343,47 +361,49 @@ main (int argc, char *argv[])
 
   /*** 7. Setup interface and application for dynamic nodes ***/
   tlmClientLTEHelper tlmClientLTEHelper;
-  tlmClientLTEHelper.SetAttribute ("ServerAddr", Ipv4AddressValue(remoteHostAddr));
-  tlmClientLTEHelper.SetAttribute ("Client", (PointerValue) sumoClient); // pass TraciClient object for accessing sumo in application
-  tlmClientLTEHelper.SetAttribute ("PrintSummary", BooleanValue(print_summary));
-  tlmClientLTEHelper.SetAttribute ("RealTime", BooleanValue(realtime));
-  tlmClientLTEHelper.SetAttribute ("CSV", StringValue(csv_name));
+  tlmClientLTEHelper.SetAttribute ("ServerAddr", Ipv4AddressValue (remoteHostAddr));
+  tlmClientLTEHelper.SetAttribute (
+      "Client",
+      (PointerValue) sumoClient); // pass TraciClient object for accessing sumo in application
+  tlmClientLTEHelper.SetAttribute ("PrintSummary", BooleanValue (print_summary));
+  tlmClientLTEHelper.SetAttribute ("RealTime", BooleanValue (realtime));
+  tlmClientLTEHelper.SetAttribute ("CSV", StringValue (csv_name));
   tlmClientLTEHelper.SetAttribute ("SendCAM", BooleanValue (send_cam));
   tlmClientLTEHelper.SetAttribute ("MetricSupervisor", PointerValue (metSup));
 
   /* callback function for node creation */
-  STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID,TraciClient::StationTypeTraCI_t stationType) -> Ptr<Node>
-    {
-      if (nodeCounter >= obuNodes.GetN())
-        NS_FATAL_ERROR("Node Pool empty!: " << nodeCounter << " nodes created.");
+  STARTUP_FCN setupNewWifiNode = [&] (std::string vehicleID,
+                                      TraciClient::StationTypeTraCI_t stationType) -> Ptr<Node> {
+    if (nodeCounter >= obuNodes.GetN ())
+      NS_FATAL_ERROR ("Node Pool empty!: " << nodeCounter << " nodes created.");
 
-      /* Don't create and install the protocol stack of the node at simulation time -> take from "node pool" */
-      Ptr<Node> includedNode = obuNodes.Get(nodeCounter);
-      ++nodeCounter; //increment counter for next node
+    /* Don't create and install the protocol stack of the node at simulation time -> take from "node pool" */
+    Ptr<Node> includedNode = obuNodes.Get (nodeCounter);
+    ++nodeCounter; //increment counter for next node
 
-      /* Install Application */
-      //tlmClientLTEHelper.SetAttribute ("PRRSupervisor", PointerValue (&prrSup));
-      ApplicationContainer ClientApp = tlmClientLTEHelper.Install (includedNode);
-      ClientApp.Start (Seconds (0.0));
-      ClientApp.Stop (simulationTime - Simulator::Now () - Seconds (0.1));
+    /* Install Application */
+    //tlmClientLTEHelper.SetAttribute ("PRRSupervisor", PointerValue (&prrSup));
+    ApplicationContainer ClientApp = tlmClientLTEHelper.Install (includedNode);
+    ClientApp.Start (Seconds (0.0));
+    ClientApp.Stop (simulationTime - Simulator::Now () - Seconds (0.1));
 
-      return includedNode;
-    };
+    return includedNode;
+  };
 
   /* callback function for node shutdown */
-  SHUTDOWN_FCN shutdownWifiNode = [] (Ptr<Node> exNode,std::string vehicleID)
-    {
-      /* Stop all applications */
-      Ptr<tlmClientLTE> tlmClientLTE_ = exNode->GetApplication(0)->GetObject<tlmClientLTE>();
-      if(tlmClientLTE_)
-        tlmClientLTE_->StopApplicationNow ();
+  SHUTDOWN_FCN shutdownWifiNode = [] (Ptr<Node> exNode, std::string vehicleID) {
+    /* Stop all applications */
+    Ptr<tlmClientLTE> tlmClientLTE_ = exNode->GetApplication (0)->GetObject<tlmClientLTE> ();
+    if (tlmClientLTE_)
+      tlmClientLTE_->StopApplicationNow ();
 
-       /* Set position outside communication range */
-      Ptr<ConstantPositionMobilityModel> mob = exNode->GetObject<ConstantPositionMobilityModel>();
-      mob->SetPosition(Vector(-1000.0+(rand()%25),320.0+(rand()%25),250.0));// rand() for visualization purposes
+    /* Set position outside communication range */
+    Ptr<ConstantPositionMobilityModel> mob = exNode->GetObject<ConstantPositionMobilityModel> ();
+    mob->SetPosition (Vector (-1000.0 + (rand () % 25), 320.0 + (rand () % 25),
+                              250.0)); // rand() for visualization purposes
 
-      /* NOTE: further actions could be required for a safe shut down! */
-    };
+    /* NOTE: further actions could be required for a safe shut down! */
+  };
 
   /* Start traci client with given function pointers */
   sumoClient->SumoSetup (setupNewWifiNode, shutdownWifiNode);

@@ -4,10 +4,7 @@
 #include "ns3/SPATEM.h"
 #include "ns3/Seq.hpp"
 #include "ns3/Getter.hpp"
-#include "ns3/Setter.hpp"
 #include "ns3/Encoding.hpp"
-#include "ns3/SetOf.hpp"
-#include "ns3/SequenceOf.hpp"
 #include "ns3/socket.h"
 #include "ns3/btpdatarequest.h"
 #include "ns3/network-module.h"
@@ -29,7 +26,7 @@ glosaServer::GetTypeId (void)
                          MakeStringAccessor (&glosaServer::m_model), MakeStringChecker ())
           .AddAttribute ("AggregateOutput",
                          "If it is true, the server will print every second an aggregate output "
-                         "about cam and denm",
+                         "about cam",
                          BooleanValue (false),
                          MakeBooleanAccessor (&glosaServer::m_aggregate_output),
                          MakeBooleanChecker ())
@@ -90,16 +87,15 @@ glosaServer::StartApplication (void)
 
   if (m_model == "80211p")
     {
-      /* TX socket for DENMs and RX socket for CAMs */
       TypeId tid = TypeId::LookupByName ("ns3::PacketSocketFactory");
       m_socket = Socket::CreateSocket (GetNode (), tid);
 
       /* Bind the socket to local address */
-      PacketSocketAddress local_denm;
-      local_denm.SetSingleDevice (GetNode ()->GetDevice (0)->GetIfIndex ());
-      local_denm.SetPhysicalAddress (GetNode ()->GetDevice (0)->GetAddress ());
-      local_denm.SetProtocol (0x8947);
-      if (m_socket->Bind (local_denm) == -1)
+      PacketSocketAddress local_spatem;
+      local_spatem.SetSingleDevice (GetNode ()->GetDevice (0)->GetIfIndex ());
+      local_spatem.SetPhysicalAddress (GetNode ()->GetDevice (0)->GetAddress ());
+      local_spatem.SetProtocol (0x8947);
+      if (m_socket->Bind (local_spatem) == -1)
         {
           NS_FATAL_ERROR ("Failed to bind server socket");
         }
@@ -307,34 +303,11 @@ glosaServer::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
     {
       // messageId,camId,timestamp,latitude,longitude,heading,speed,acceleration
       m_csv_ofstream_cam << cam->header.messageId << "," << cam->header.stationId << ",";
-      m_csv_ofstream_cam << cam->cam.generationDeltaTime << ","
-                         << asn1cpp::getField (
-                                cam->cam.camParameters.basicContainer.referencePosition.latitude,
-                                double) /
-                                DOT_ONE_MICRO
-                         << ",";
-      m_csv_ofstream_cam << asn1cpp::getField (
-                                cam->cam.camParameters.basicContainer.referencePosition.longitude,
-                                double) /
-                                DOT_ONE_MICRO
-                         << ",";
-      m_csv_ofstream_cam
-          << asn1cpp::getField (cam->cam.camParameters.highFrequencyContainer.choice
-                                    .basicVehicleContainerHighFrequency.heading.headingValue,
-                                double) /
-                 DECI
-          << ","
-          << asn1cpp::getField (cam->cam.camParameters.highFrequencyContainer.choice
-                                    .basicVehicleContainerHighFrequency.speed.speedValue,
-                                double) /
-                 CENTI
-          << ",";
-      m_csv_ofstream_cam << asn1cpp::getField (cam->cam.camParameters.highFrequencyContainer.choice
-                                                   .basicVehicleContainerHighFrequency
-                                                   .longitudinalAcceleration.value,
-                                               double) /
-                                DECI
-                         << std::endl;
+      m_csv_ofstream_cam << cam->cam.generationDeltaTime << "," << asn1cpp::getField(cam->cam.camParameters.basicContainer.referencePosition.latitude, double) / DOT_ONE_MICRO << ",";
+      m_csv_ofstream_cam << asn1cpp::getField(cam->cam.camParameters.basicContainer.referencePosition.longitude, double) / DOT_ONE_MICRO << ",";
+      m_csv_ofstream_cam << asn1cpp::getField(cam->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.heading.headingValue,double) / DECI << ",";
+      m_csv_ofstream_cam << asn1cpp::getField(cam->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.speed.speedValue, double) /CENTI << ",";
+      m_csv_ofstream_cam << asn1cpp::getField (cam->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.longitudinalAcceleration.value,double) /DECI << std::endl;
     }
 
   if (m_send_spatem && m_model != "80211p")
@@ -347,20 +320,6 @@ glosaServer::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
           NS_LOG_ERROR ("Cannot trigger SPATEM. Error code: " << trigger_retval);
         }
     }
-}
-
-long
-glosaServer::compute_timestampIts ()
-{
-  /* To get millisec since  2004-01-01T00:00:00:000Z */
-  auto time = std::chrono::system_clock::now (); // get the current time
-  auto since_epoch = time.time_since_epoch (); // get the duration since epoch
-  auto millis = std::chrono::duration_cast<std::chrono::milliseconds> (
-      since_epoch); // convert it in millisecond since epoch
-
-  long elapsed_since_2004 =
-      millis.count () - TIME_SHIFT; // in TIME_SHIFT we saved the millisec from epoch to 2004-01-01
-  return elapsed_since_2004;
 }
 
 void

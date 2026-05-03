@@ -51,10 +51,6 @@ private:
   virtual void StopApplication (void);
 
   /**
-     * @brief This function compute the milliseconds elapsed from 2004-01-01
-    */
-  long compute_timestampIts ();
-  /**
      * @brief Used to print a report on number of msg received each second
     */
   void aggregateOutput (void);

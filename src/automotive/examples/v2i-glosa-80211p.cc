@@ -1,7 +1,4 @@
-#include "ns3/carla-module.h"
-//#include "ns3/automotive-module.h"
 #include "ns3/glosaServer-helper.h"
-#include "ns3/glosaServer.h"
 #include "ns3/glosaClient.h"
 #include "ns3/glosaClient-helper.h"
 #include "ns3/traci-module.h"
@@ -41,26 +38,14 @@ NS_LOG_COMPONENT_DEFINE ("v2i-glosa-80211p");
 int
 main (int argc, char *argv[])
 {
-  /*
-   * In this example the generated vehicles will broadcast their CAMs, that will be also received by a RSU placed in the middle
-   * of the simulated scenario. Both vehicles and RSU transmit V2X messages through a 802.11p interface.
-   * The RSU broadcasts DENM messages with a frequency of 1 Hz, using the ETSI ITS-G5 stack, and the GeoNet
-   * dissemination area is set as a circular area around the RSU (90 meters of diameter).
-   * The dissemination of DENMs starts only after the RSU receives a CAM. If for 5 seconds
-   * the RSU does not receive any CAM, the DENM dissemination stops.
-   * Each DENM includes an optional container (à la carte), where there is a field named RoadWorks->SpeedLimit, in which
-   * the maximum speed allowed in the dissemination area is specified (25km/h).
-   * Whenever a vehicle receives a DENM at application layer (meaning that the information traverses GeoNet without being
-   * filtered), it reads the information inside the à la carte container and corrects its speed accordingly.
-   * If a vehicle doesn't receive any DENM for more than 1.5 seconds, it resumes its old speed.
-   */
+
 
   // Admitted data rates for 802.11p
   std::vector<float> rate_admitted_values{3, 4.5, 6, 9, 12, 18, 24, 27};
   std::string datarate_config;
 
   /*** 0.a App Options ***/
-  std::string map = "tlm_base_map"; // Default map
+  std::string map = "tlm_map_1"; // Default map
   std::string sumo_folder = "src/automotive/examples/" + map + "/";
   std::string mob_trace = "cars.rou.xml";
   std::string rsu_file = "stations.xml";
@@ -110,17 +95,11 @@ main (int argc, char *argv[])
   cmd.AddValue ("csv-log", "Name of the CSV log file", csv_name);
   cmd.AddValue ("summary", "Print a summary for each vehicle at the end of the simulation",
                 print_summary);
-  cmd.AddValue ("vehicle-visualizer", "Activate the web-based vehicle visualizer for ms-van3t",
-                vehicle_vis);
-  cmd.AddValue (
-      "send-cam",
-      "Turn on or off the transmission of CAMs, thus turning on or off the whole V2X application",
+  cmd.AddValue ("vehicle-visualizer", "Activate the web-based vehicle visualizer for ms-van3t", vehicle_vis);
+  cmd.AddValue ("send-cam", "Turn on or off the transmission of CAMs, thus turning on or off the whole V2X application",
       send_cam);
-  cmd.AddValue ("send-spatem",
-                "Turn on or off the transmission of SPATEM messages from the RSU server",
-                send_spatem);
-  cmd.AddValue ("csv-log-cumulative",
-                "Name of the CSV log file for the cumulative (average) PRR and latency data",
+  cmd.AddValue ("send-spatem", "Turn on or off the transmission of SPATEM messages from the RSU server", send_spatem);
+  cmd.AddValue ("csv-log-cumulative", "Name of the CSV log file for the cumulative (average) PRR and latency data",
                 csv_name_cumulative);
   cmd.AddValue ("netstate-dump-file",
                 "Name of the SUMO netstate-dump file containing the vehicle-related information "
@@ -146,7 +125,7 @@ main (int argc, char *argv[])
 
   cmd.Parse (argc, argv);
 
-  if (map != "tlm_base_map")
+  if (map != "tlm_map_1")
     {
       sumo_folder = "src/automotive/examples/" + map + "_rsu/";
       sumo_config = sumo_folder + "map.sumo.cfg";

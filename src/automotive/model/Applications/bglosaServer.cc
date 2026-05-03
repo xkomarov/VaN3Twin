@@ -4,10 +4,7 @@
 #include "ns3/SPATEM.h"
 #include "ns3/Seq.hpp"
 #include "ns3/Getter.hpp"
-#include "ns3/Setter.hpp"
 #include "ns3/Encoding.hpp"
-#include "ns3/SetOf.hpp"
-#include "ns3/SequenceOf.hpp"
 #include "ns3/socket.h"
 #include "ns3/btpdatarequest.h"
 #include "ns3/network-module.h"
@@ -29,7 +26,7 @@ bglosaServer::GetTypeId (void)
                          MakeStringAccessor (&bglosaServer::m_model), MakeStringChecker ())
           .AddAttribute ("AggregateOutput",
                          "If it is true, the server will print every second an aggregate output "
-                         "about cam and denm",
+                         "about cam",
                          BooleanValue (false),
                          MakeBooleanAccessor (&bglosaServer::m_aggregate_output),
                          MakeBooleanChecker ())
@@ -90,16 +87,15 @@ bglosaServer::StartApplication (void)
 
   if (m_model == "80211p")
     {
-      /* TX socket for DENMs and RX socket for CAMs */
       TypeId tid = TypeId::LookupByName ("ns3::PacketSocketFactory");
       m_socket = Socket::CreateSocket (GetNode (), tid);
 
       /* Bind the socket to local address */
-      PacketSocketAddress local_denm;
-      local_denm.SetSingleDevice (GetNode ()->GetDevice (0)->GetIfIndex ());
-      local_denm.SetPhysicalAddress (GetNode ()->GetDevice (0)->GetAddress ());
-      local_denm.SetProtocol (0x8947);
-      if (m_socket->Bind (local_denm) == -1)
+      PacketSocketAddress local_spatem;
+      local_spatem.SetSingleDevice (GetNode ()->GetDevice (0)->GetIfIndex ());
+      local_spatem.SetPhysicalAddress (GetNode ()->GetDevice (0)->GetAddress ());
+      local_spatem.SetProtocol (0x8947);
+      if (m_socket->Bind (local_spatem) == -1)
         {
           NS_FATAL_ERROR ("Failed to bind server socket");
         }
@@ -350,20 +346,6 @@ bglosaServer::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
           NS_LOG_ERROR ("Cannot trigger SPATEM. Error code: " << trigger_retval);
         }
     }
-}
-
-long
-bglosaServer::compute_timestampIts ()
-{
-  /* To get millisec since  2004-01-01T00:00:00:000Z */
-  auto time = std::chrono::system_clock::now (); // get the current time
-  auto since_epoch = time.time_since_epoch (); // get the duration since epoch
-  auto millis = std::chrono::duration_cast<std::chrono::milliseconds> (
-      since_epoch); // convert it in millisecond since epoch
-
-  long elapsed_since_2004 =
-      millis.count () - TIME_SHIFT; // in TIME_SHIFT we saved the millisec from epoch to 2004-01-01
-  return elapsed_since_2004;
 }
 
 void

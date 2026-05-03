@@ -2,11 +2,9 @@
 #define BGLOSASERVER_H
 
 #include "ns3/application.h"
-#include "ns3/asn_utils.h"
 #include "ns3/tlmService.h"
 #include "ns3/caBasicService.h"
 #include "ns3/btp.h"
-#include "ns3/btpHeader.h"
 #include "ns3/traci-client.h"
 
 namespace ns3 {
@@ -52,10 +50,6 @@ private:
   virtual void StartApplication (void);
   virtual void StopApplication (void);
 
-  /**
-     * @brief This function compute the milliseconds elapsed from 2004-01-01
-    */
-  long compute_timestampIts ();
   /**
      * @brief Used to print a report on number of msg received each second
     */

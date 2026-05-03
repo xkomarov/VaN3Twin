@@ -1,7 +1,4 @@
-#include "ns3/carla-module.h"
-//#include "ns3/automotive-module.h"
 #include "ns3/glosaServer-helper.h"
-#include "ns3/glosaServer.h"
 #include "ns3/glosaClient.h"
 #include "ns3/glosaClient-helper.h"
 #include "ns3/traci-module.h"
@@ -15,8 +12,6 @@
 #include "ns3/vehicle-visualizer-module.h"
 #include "ns3/MetricSupervisor.h"
 #include <unistd.h>
-// #include "ns3/nr-helper.h"
-// #include "ns3/nr-point-to-point-epc-helper.h"
 #include "ns3/nr-module.h"
 using namespace ns3;
 NS_LOG_COMPONENT_DEFINE ("v2i-glosa-LTE");
@@ -24,26 +19,13 @@ NS_LOG_COMPONENT_DEFINE ("v2i-glosa-LTE");
 int
 main (int argc, char *argv[])
 {
-  /*
-   * In this example the generated vehicles will broadcast their CAMs, that will be also received by a RSU placed in the middle
-   * of the simulated scenario. Both vehicles and RSU transmit V2X messages through a 802.11p interface.
-   * The RSU broadcasts DENM messages with a frequency of 1 Hz, using the ETSI ITS-G5 stack, and the GeoNet
-   * dissemination area is set as a circular area around the RSU (90 meters of diameter).
-   * The dissemination of DENMs starts only after the RSU receives a CAM. If for 5 seconds
-   * the RSU does not receive any CAM, the DENM dissemination stops.
-   * Each DENM includes an optional container (à la carte), where there is a field named RoadWorks->SpeedLimit, in which
-   * the maximum speed allowed in the dissemination area is specified (25km/h).
-   * Whenever a vehicle receives a DENM at application layer (meaning that the information traverses GeoNet without being
-   * filtered), it reads the information inside the à la carte container and corrects its speed accordingly.
-   * If a vehicle doesn't receive any DENM for more than 1.5 seconds, it resumes its old speed.
-   */
 
   // Admitted data rates for 802.11p
   std::vector<float> rate_admitted_values{3, 4.5, 6, 9, 12, 18, 24, 27};
   std::string datarate_config;
 
   /*** 0.a App Options ***/
-  std::string map = "tlm_base_map"; // Default map
+  std::string map = "tlm_map_1"; // Default map
   std::string sumo_folder = "src/automotive/examples/" + map + "/";
   std::string mob_trace = "cars.rou.xml";
   std::string rsu_file = "stations.xml";
@@ -119,7 +101,7 @@ main (int argc, char *argv[])
 
   cmd.Parse (argc, argv);
 
-  if (map != "tlm_base_map")
+  if (map != "tlm_map_1")
     {
       sumo_folder = "src/automotive/examples/" + map + "/";
       sumo_config = sumo_folder + "map.sumo.cfg";

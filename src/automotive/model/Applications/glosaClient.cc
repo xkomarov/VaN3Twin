@@ -5,7 +5,6 @@
 #include "ns3/socket.h"
 #include "ns3/network-module.h"
 #include <cmath>
-#include <limits>
 
 namespace ns3 {
 NS_LOG_COMPONENT_DEFINE ("glosaClient");
@@ -185,7 +184,7 @@ glosaClient::StopApplication ()
 {
   NS_LOG_FUNCTION (this);
   Simulator::Cancel (m_sendCamEvent);
-  Simulator::Cancel (m_spatemTimeout);
+  Simulator::Cancel (m_spatemOut);
   Simulator::Cancel (m_glosaUpdateEvent);
 
   // Ensure glosa is disengaged before shutdown
@@ -233,7 +232,7 @@ glosaClient::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
 void
 glosaClient::receiveSPATEM (asn1cpp::Seq<SPATEM> spatem, Address from)
 {
-  Simulator::Cancel (m_spatemTimeout);
+  Simulator::Cancel (m_spatemOut);
   m_spatem_received++;
 
   // === Step 1: Update LDM with received SPATEM data (states + timing) ===
@@ -258,12 +257,6 @@ glosaClient::receiveSPATEM (asn1cpp::Seq<SPATEM> spatem, Address from)
                     {
                       tlData.signalGroupTimings[movement->signalGroup] =
                           movement->state_time_speed.list.array[0]->timing->minEndTime;
-                      // Store next phase duration for Green Window GLOSA
-                      if (movement->state_time_speed.list.array[0]->timing->nextTime != nullptr)
-                        {
-                          tlData.signalGroupNextTimings[movement->signalGroup] =
-                              *movement->state_time_speed.list.array[0]->timing->nextTime;
-                        }
                     }
                   // Re-insert to update the timing data
                   m_LDM->insertStaticTL (tlData);
@@ -283,7 +276,7 @@ glosaClient::receiveSPATEM (asn1cpp::Seq<SPATEM> spatem, Address from)
     }
 
   // Reschedule SPATEM-loss timeout (if no SPATEM for 2 s -> disengage)
-  m_spatemTimeout = Simulator::Schedule (Seconds (2.0), &glosaClient::spatemTimeout, this);
+  m_spatemOut = Simulator::Schedule (Seconds (2.0), &glosaClient::spatemOut, this);
 }
 
 void
@@ -304,7 +297,7 @@ glosaClient::applyGlosaAction (double speed, int r, int g, int b)
 void
 glosaClient::updateglosaControl (void)
 {
-  // If SPATEM data is stale, do nothing (spatemTimeout will clean up)
+  // If SPATEM data is stale, do nothing (spatemOut will clean up)
   if (!m_spatemAlive)
     {
       return;
@@ -392,34 +385,24 @@ glosaClient::updateglosaControl (void)
     }
   long currentLightState = stateIt->second;
 
-  // --- Compute distance to stop line ---
+  // --- Get distance to stop line from SUMO ---
   double dist = 0.0;
   auto slIt = matchedTL.laneStopLines.find (currentLane);
   if (slIt != matchedTL.laneStopLines.end ())
     {
-      double dx = egoXY.x - slIt->second.x;
-      double dy = egoXY.y - slIt->second.y;
-      dist = std::sqrt (dx * dx + dy * dy);
-
-      // Check: has the vehicle already passed the stop line?
       double lanePos = m_client->TraCIAPI::vehicle.getLanePosition (m_id);
-      if (lanePos >= slIt->second.laneLen - 2.0)
+      dist = slIt->second.laneLen - lanePos;
+
+      // Проверка: проехала ли машина стоп-линию? (Осталось менее 2 метров)
+      if (dist <= 2.0)
         {
           m_passedIntersectionID = matchedTL.intersectionID;
-          spatemTimeout ();
+          spatemOut ();
           m_spatemAlive = true;
           m_glosaUpdateEvent =
               Simulator::Schedule (MilliSeconds (200), &glosaClient::updateglosaControl, this);
           return;
         }
-    }
-  else
-    {
-      dist = 12742000.0 *
-             std::asin (std::sqrt (
-                 std::pow (std::sin ((egoLL.y - matchedTL.lat) * M_PI / 360.0), 2) +
-                 std::cos (egoLL.y * M_PI / 180.0) * std::cos (matchedTL.lat * M_PI / 180.0) *
-                     std::pow (std::sin ((egoLL.x - matchedTL.lon) * M_PI / 360.0), 2)));
     }
 
   // --- GLOSA activation range check ---
@@ -456,100 +439,76 @@ glosaClient::updateglosaControl (void)
         {
           t_green_start = timingIt->second / 10.0;
         }
-      auto nextTimingIt = matchedTL.signalGroupNextTimings.find (matchedSignalGroup);
-      if (nextTimingIt != matchedTL.signalGroupNextTimings.end () && nextTimingIt->second > 0)
-        {
-          t_green_end = t_green_start + (nextTimingIt->second / 10.0);
-        }
-      else
-        {
-          t_green_end =
-              t_green_start + 15.0; // fallback green duration since nextTime is unavailable (0)
-        }
+      t_green_end = t_green_start + 15.0;
     }
 
-  if (currentLightState == 3) // stop-And-Remain (RED)
+    if (currentLightState == 3 || currentLightState == 6 || currentLightState == 5) // RED or GREEN
     {
-      if (t_green_start > 0.5)
+      double bufferTime = 2.0;
+
+      double v_req_min = dist / std::max (0.1, t_green_end - bufferTime);
+      double v_req_max;
+
+      if (currentLightState == 6 || currentLightState == 5) // GREEN
         {
-          double bufferTime = 2.0;
+          v_req_max = maxSpeed;
+        }
+      else // RED
+        {
+          v_req_max = dist / std::max (0.1, t_green_start + bufferTime);
+        }
 
-          double v_req_start = dist / (t_green_start + bufferTime);
-          double v_req_end = dist / (t_green_end - bufferTime);
+      if (v_req_max > maxSpeed)
+        {
+          v_req_max = maxSpeed;
+        }
 
-          // Ограничиваем скорости лимитами дороги
-          double v_target_max = std::min (v_req_start, maxSpeed);
-          double v_target_min = std::max (v_req_end, minSpeed);
+      bool canMakeIt = true;
+      double targetSpeed = currentSpeed;
 
-          if (v_target_max >= v_target_min) // Если достижимое окно существует
+      if (v_req_min > maxSpeed || v_req_max < minSpeed)
+        {
+          canMakeIt = false;
+        }
+
+      if (canMakeIt)
+        {
+          if (currentSpeed >= v_req_min && currentSpeed <= v_req_max)
             {
-              double targetSpeed;
-
-              // СУТЬ GREEN WINDOW: Проверяем, попадает ли текущая скорость в окно
-              if (currentSpeed >= v_target_min && currentSpeed <= v_target_max)
-                {
-                  // Мы уже в окне! Поддерживаем текущую скорость (нет ускорений/торможений = экономия)
-                  targetSpeed = currentSpeed;
-                }
-              else if (currentSpeed < v_target_min)
-                {
-                  // Едем слишком медленно, ускоряемся до минимально необходимой
-                  targetSpeed = v_target_min;
-                }
-              else
-                {
-                  // Едем слишком быстро, замедляемся до максимально допустимой окна
-                  targetSpeed = v_target_max;
-                }
-
-              double decelNeeded =
-                  (currentSpeed > targetSpeed) ? (currentSpeed - targetSpeed) / 1.0 : 0.0;
-
-              if (decelNeeded <= comfortDecel * 2.0)
-                {
-                  applyGlosaAction (targetSpeed, 0, 255, 200);
-                }
-              else
-                {
-                  // Если нужно слишком резкое торможение — плавно останавливаемся у стоп-линии
-                  double stopSpeed = std::sqrt (2.0 * comfortDecel * dist);
-                  if (stopSpeed > currentSpeed)
-                    stopSpeed = currentSpeed;
-                  if (stopSpeed < 0.0)
-                    stopSpeed = 0.0;
-
-                  applyGlosaAction (stopSpeed, 255, 0, 0);
-                }
+              targetSpeed = currentSpeed;
             }
-          else if (v_req_start < minSpeed)
+          else if (currentSpeed < v_req_min)
             {
-              // Зеленый наступит еще не скоро, придется останавливаться
-              double stopSpeed = std::sqrt (2.0 * comfortDecel * dist);
-              if (stopSpeed > currentSpeed)
-                stopSpeed = currentSpeed;
-              if (stopSpeed < 0.0)
-                stopSpeed = 0.0;
+              targetSpeed = v_req_min;
+            }
+          else if (currentSpeed > v_req_max)
+            {
+              targetSpeed = v_req_max;
+            }
 
-              applyGlosaAction (stopSpeed, 255, 0, 0);
+          if (std::abs (targetSpeed - currentSpeed) < 1.0)
+            {
+              applyGlosaAction (targetSpeed, 0, 255, 0); // Green
+            }
+          else if (targetSpeed > currentSpeed)
+            {
+              applyGlosaAction (targetSpeed, 50, 205, 50); // Lighter green
             }
           else
             {
-              // Едем с максимальной скоростью, если окно недостижимо, но шанс успеть есть
-              applyGlosaAction (maxSpeed, 50, 205, 50);
+              applyGlosaAction (targetSpeed, 173, 255, 47); // Yellow-green
             }
         }
       else
         {
-          if (!m_glosaActive)
-            {
-              m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 7);
-              m_glosaActive = true;
-            }
+          // Eco-stop profile
+          double stopSpeed = std::sqrt (2.0 * comfortDecel * dist);
+          if (stopSpeed > currentSpeed)
+            stopSpeed = currentSpeed;
+          if (stopSpeed < 0.0)
+            stopSpeed = 0.0;
+          applyGlosaAction (stopSpeed, 255, 0, 0); // Red
         }
-    }
-  else if (currentLightState == 6 || currentLightState == 5) // GREEN
-    {
-      applyGlosaAction (maxSpeed, 0, 100, 255);
     }
   else if (currentLightState == 7) // YELLOW
     {
@@ -559,7 +518,7 @@ glosaClient::updateglosaControl (void)
       if (timingIt != matchedTL.signalGroupTimings.end ())
         timeToSwitch = timingIt->second / 10.0;
 
-      if (eta < timeToSwitch && dist < 30.0)
+      if (eta < timeToSwitch)
         {
           applyGlosaAction (currentSpeed, 255, 191, 0);
         }
@@ -636,7 +595,7 @@ glosaClient::populateStaticTLData (void)
 }
 
 void
-glosaClient::spatemTimeout ()
+glosaClient::spatemOut ()
 {
   m_spatemAlive = false;
 
@@ -654,20 +613,6 @@ glosaClient::spatemTimeout ()
   orange.b = 71;
   orange.a = 255;
   m_client->TraCIAPI::vehicle.setColor (m_id, orange);
-}
-
-long
-glosaClient::compute_timestampIts ()
-{
-  /* To get millisec since  2004-01-01T00:00:00:000Z */
-  auto time = std::chrono::system_clock::now (); // get the current time
-  auto since_epoch = time.time_since_epoch (); // get the duration since epoch
-  auto millis = std::chrono::duration_cast<std::chrono::milliseconds> (
-      since_epoch); // convert it in millisecond since epoch
-
-  long elapsed_since_2004 =
-      millis.count () - TIME_SHIFT; // in TIME_SHIFT we saved the millisec from epoch to 2004-01-01
-  return elapsed_since_2004;
 }
 
 } // namespace ns3

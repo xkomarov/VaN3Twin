@@ -47,12 +47,7 @@ private:
   virtual void StopApplication (void);
 
   void TriggerCam (void);
-  /**
-     * @brief This function compute the milliseconds elapsed from 2004-01-01
-    */
-  long compute_timestampIts ();
-  //void denmTimeout(void);
-  void spatemTimeout (void);
+  void spatemOut (void);
 
   /**
      * @brief Mock-populate TL topology into LDM (simulates MAPEM).
@@ -87,7 +82,7 @@ private:
   Ipv4Address m_server_addr; //!< Remote addr
 
   EventId m_sendCamEvent; //!< Event to send the CAM
-  EventId m_spatemTimeout;
+  EventId m_spatemOut;
   EventId m_glosaUpdateEvent; //!< Periodic glosa speed recalculation event
 
   /* Counters */

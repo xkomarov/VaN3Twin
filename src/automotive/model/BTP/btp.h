@@ -5,6 +5,7 @@
 #include "ns3/object.h"
 #include "ns3/core-module.h"
 #include "ns3/vdpTraci.h"
+#include "ns3/idpTraci.h"
 #include "ns3/asn_utils.h"
 #include "ns3/btpHeader.h"
 #include "ns3/tsb-header.h"
@@ -78,6 +79,12 @@ namespace ns3
      * @param vdp Pointer to VDP object.
      */
     void setVDP(VDP* vdp){m_geonet->setVDP(vdp);}
+    /**
+     * @brief Set the IDP object for GeoNet object.
+     *
+     * @param idp Pointer to IDP object.
+     */
+    void setIDP(IDP* idp){m_geonet->setIDP(idp);}
     void setVRUdp(VRUdp* vrudp){m_geonet->setVRUdp(vrudp);}
     void setSocketTx(Ptr<Socket> socket_tx) {m_geonet->setSocketTx(socket_tx);}
     void setSocketRx(Ptr<Socket> socket_rx);

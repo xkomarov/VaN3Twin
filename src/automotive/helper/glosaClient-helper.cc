@@ -1,6 +1,6 @@
 #include "glosaClient-helper.h"
 #include "ns3/glosaClient.h"
-#include "ns3/uinteger.h"
+// #include "ns3/uinteger.h"
 #include "ns3/names.h"
 
 namespace ns3 {

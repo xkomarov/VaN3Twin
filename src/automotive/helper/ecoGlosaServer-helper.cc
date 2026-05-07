@@ -1,6 +1,6 @@
 #include "ecoGlosaServer-helper.h"
 #include "ns3/ecoGlosaServer.h"
-#include "ns3/uinteger.h"
+// #include "ns3/uinteger.h"
 #include "ns3/names.h"
 
 namespace ns3 {

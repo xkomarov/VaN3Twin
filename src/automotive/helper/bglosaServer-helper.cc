@@ -1,6 +1,6 @@
 #include "bglosaServer-helper.h"
 #include "ns3/bglosaServer.h"
-#include "ns3/uinteger.h"
+// #include "ns3/uinteger.h"
 #include "ns3/names.h"
 
 namespace ns3 {

@@ -1,5 +1,5 @@
 #include "ns3/carla-module.h"
-//#include "ns3/automotive-module.h"
+#include "ns3/automotive-module.h"
 #include "ns3/tlmServer80211p-helper.h"
 #include "ns3/tlmServer80211p.h"
 #include "ns3/tlmClient80211p.h"

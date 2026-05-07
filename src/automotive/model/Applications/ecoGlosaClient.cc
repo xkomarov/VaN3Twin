@@ -152,7 +152,9 @@ ecoGlosaClient::StartApplication (void)
 
   m_btp->setVDP (traci_vdp);
   m_caService.setVDP (traci_vdp);
-  m_tlmService.setVDP (traci_vdp);
+  // m_tlmService.setVDP (traci_vdp);
+
+
 
   /* Create LDM and mock-populate traffic light static topology (simulates MAPEM) */
   m_LDM = CreateObject<LDM> ();

@@ -151,7 +151,8 @@ bglosaClient::StartApplication (void)
 
   m_btp->setVDP (traci_vdp);
   m_caService.setVDP (traci_vdp);
-  m_tlmService.setVDP (traci_vdp);
+  // m_tlmService.setVDP (traci_vdp);
+
 
   /* Create LDM and mock-populate traffic light static topology (simulates MAPEM) */
   m_LDM = CreateObject<LDM> ();
@@ -311,7 +312,6 @@ bglosaClient::updatebglosaControl (void)
 
   // --- Algorithm constants ---
   const double minSpeed = 3.0; // m/s (~11 km/h) — below this GLOSA is impractical
-  const double comfortDecel = 2.5; // m/s² — comfortable deceleration
   const double bglosa_MIN_DIST = 10.0; // m — too close to the stop line
   const double bglosa_MAX_DIST = 400.0; // m — too far, timing unreliable
 
@@ -453,14 +453,15 @@ bglosaClient::updatebglosaControl (void)
             }
           else if (arrivalSpeed < minSpeed)
             {
-              // Green is too far away — must stop at the stop line
-              double stopSpeed = std::sqrt (2.0 * comfortDecel * dist);
-              if (stopSpeed > currentSpeed)
-                stopSpeed = currentSpeed;
-              if (stopSpeed < 0.0)
-                stopSpeed = 0.0;
-
-              applyGlosaAction (stopSpeed, 255, 0, 0);
+              if (m_bglosaActive)
+                {
+                  m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+                  m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+                  m_bglosaActive = false;
+                }
+              libsumo::TraCIColor orange;
+              orange.r = 255; orange.g = 99; orange.b = 71; orange.a = 255;
+              m_client->TraCIAPI::vehicle.setColor (m_id, orange);
             }
           else
             {
@@ -495,14 +496,16 @@ bglosaClient::updatebglosaControl (void)
         }
       else
         {
-          // Prepare to stop — smooth decel
-          double stopSpeed = std::sqrt (2.0 * comfortDecel * dist);
-          if (stopSpeed > currentSpeed)
-            stopSpeed = currentSpeed;
-          if (stopSpeed < 0.0)
-            stopSpeed = 0.0;
-
-          applyGlosaAction (stopSpeed, 255, 0, 0);
+          // Prepare to stop — fallback to SUMO
+          if (m_bglosaActive)
+            {
+              m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+              m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+              m_bglosaActive = false;
+            }
+          libsumo::TraCIColor orange;
+          orange.r = 255; orange.g = 99; orange.b = 71; orange.a = 255;
+          m_client->TraCIAPI::vehicle.setColor (m_id, orange);
         }
     }
   else

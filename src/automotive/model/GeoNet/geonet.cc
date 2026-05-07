@@ -130,6 +130,11 @@ namespace ns3 {
     EPVupdate ();// Update EPV at startup
   }
 
+  void GeoNet::setIDP(IDP* idp)
+  {
+    m_idp = idp;
+  }
+
   void
   GeoNet::setVRUdp (VRUdp* vrudp)
   {
@@ -645,7 +650,11 @@ namespace ns3 {
 
     if(m_vdp!=nullptr) {
       egoPos = m_vdp->getXY(m_egoPV.POS_EPV.lon,m_egoPV.POS_EPV.lat); //Compute cartesian position of the vehicle
-    } else {
+    } else if(m_idp!=nullptr){
+      IDP::IDP_position_cartesian_t p = m_idp->getXY(m_egoPV.POS_EPV.lon,m_egoPV.POS_EPV.lat);
+      egoPos.x = p.x; egoPos.y = p.y; egoPos.z = p.z;
+    }
+    else {
       VRUdp::VRUDP_position_cartesian_t egoPosPed;
       egoPosPed = m_vrudp->getXY(m_egoPV.POS_EPV.lon,m_egoPV.POS_EPV.lat);
 
@@ -658,7 +667,11 @@ namespace ns3 {
 
     if(m_vdp!=nullptr) {
       geoPos = m_vdp->getXY(geoLon, geoLat); // Compute cartesian position of the geoArea center
-    } else {
+    } else if(m_idp!=nullptr){
+      IDP::IDP_position_cartesian_t p = m_idp->getXY(geoLon, geoLat);
+      geoPos.x = p.x; geoPos.y = p.y; geoPos.z = p.z;
+    }
+    else {
       VRUdp::VRUDP_position_cartesian_t geoPosPed;
       geoPosPed = m_vrudp->getXY(geoLon, geoLat);
 

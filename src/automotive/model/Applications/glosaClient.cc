@@ -152,7 +152,7 @@ glosaClient::StartApplication (void)
 
   m_btp->setVDP (traci_vdp);
   m_caService.setVDP (traci_vdp);
-  m_tlmService.setVDP (traci_vdp);
+  // m_tlmService.setVDP (traci_vdp);
 
   /* Create LDM and mock-populate traffic light static topology (simulates MAPEM) */
   m_LDM = CreateObject<LDM> ();
@@ -173,8 +173,13 @@ glosaClient::StartApplication (void)
   /* Schedule CAM dissemination */
   if (m_send_cam == true)
     {
-      std::srand (Simulator::Now ().GetNanoSeconds ());
-      double desync = ((double) std::rand () / RAND_MAX);
+      // std::srand (Simulator::Now ().GetNanoSeconds ());
+      // double desync = ((double) std::rand () / RAND_MAX);
+      // m_caService.startCamDissemination (desync);
+      Ptr<UniformRandomVariable> desync_rvar = CreateObject<UniformRandomVariable> ();
+      desync_rvar->SetAttribute ("Min", DoubleValue (0.0));
+      desync_rvar->SetAttribute ("Max", DoubleValue (1.0));
+      double desync = desync_rvar->GetValue (); 
       m_caService.startCamDissemination (desync);
     }
 }
@@ -313,7 +318,6 @@ glosaClient::updateglosaControl (void)
 
   // --- Algorithm constants ---
   const double minSpeed = 3.0; // m/s (~11 km/h) — below this GLOSA is impractical
-  const double comfortDecel = 2.5; // m/s² — comfortable deceleration
   const double glosa_MIN_DIST = 10.0; // m — too close to the stop line
   const double glosa_MAX_DIST = 400.0; // m — too far, timing unreliable
 
@@ -501,16 +505,19 @@ glosaClient::updateglosaControl (void)
         }
       else
         {
-          // Eco-stop profile
-          double stopSpeed = std::sqrt (2.0 * comfortDecel * dist);
-          if (stopSpeed > currentSpeed)
-            stopSpeed = currentSpeed;
-          if (stopSpeed < 0.0)
-            stopSpeed = 0.0;
-          applyGlosaAction (stopSpeed, 255, 0, 0); // Red
+          // Fallback to SUMO
+          if (m_glosaActive)
+            {
+              m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+              m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+              m_glosaActive = false;
+            }
+          libsumo::TraCIColor orange;
+          orange.r = 255; orange.g = 99; orange.b = 71; orange.a = 255;
+          m_client->TraCIAPI::vehicle.setColor (m_id, orange);
         }
     }
-  else if (currentLightState == 7) // YELLOW
+    else if (currentLightState == 7) // YELLOW
     {
       double eta = dist / std::max (currentSpeed, 1.0);
       auto timingIt = matchedTL.signalGroupTimings.find (matchedSignalGroup);
@@ -524,15 +531,18 @@ glosaClient::updateglosaControl (void)
         }
       else
         {
-          double stopSpeed = std::sqrt (2.0 * comfortDecel * dist);
-          if (stopSpeed > currentSpeed)
-            stopSpeed = currentSpeed;
-          if (stopSpeed < 0.0)
-            stopSpeed = 0.0;
-          applyGlosaAction (stopSpeed, 255, 0, 0);
+          if (m_glosaActive)
+            {
+              m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 31);
+              m_client->TraCIAPI::vehicle.setSpeed (m_id, -1.0);
+              m_glosaActive = false;
+            }
+          libsumo::TraCIColor orange;
+          orange.r = 255; orange.g = 99; orange.b = 71; orange.a = 255;
+          m_client->TraCIAPI::vehicle.setColor (m_id, orange);
         }
     }
-  else
+    else // RED
     {
       m_client->TraCIAPI::vehicle.setSpeedMode (m_id, 7);
       m_client->TraCIAPI::vehicle.setSpeed (m_id, currentSpeed);

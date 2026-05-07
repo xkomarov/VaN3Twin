@@ -3,7 +3,8 @@
 
 #include "ns3/socket.h"
 #include "ns3/core-module.h"
-#include "ns3/vdp.h"
+// #include "ns3/vdp.h"
+#include "ns3/idp.h"
 #include "ns3/asn_utils.h"
 #include "ns3/btp.h"
 #include "ns3/Seq.hpp"
@@ -11,19 +12,19 @@
 #include "ns3/btpdatarequest.h"
 #include <functional>
 #include "ns3/Encoding.hpp"
-#include <mutex>
-#include <queue>
-#include "ns3/asn_application.h"
-#include "ns3/Setter.hpp"
-#include "ns3/SetOf.hpp"
-#include "ns3/SequenceOf.hpp"
-#include "ns3/BitString.hpp"
-#include "ns3/View.hpp"
-#include "ns3/Utils.hpp"
-#include "ns3/btpHeader.h"
-#include "ITSSOriginatingTableEntry.h"
-#include "ITSSReceivingTableEntry.h"
-#include "ns3/Getter.hpp"
+// #include <mutex>
+// #include <queue>
+// #include "ns3/asn_application.h"
+// #include "ns3/Setter.hpp"
+// #include "ns3/SetOf.hpp"
+// #include "ns3/SequenceOf.hpp"
+// #include "ns3/BitString.hpp"
+// #include "ns3/View.hpp"
+// #include "ns3/Utils.hpp"
+// #include "ns3/btpHeader.h"
+// #include "ITSSOriginatingTableEntry.h"
+// #include "ITSSReceivingTableEntry.h"
+// #include "ns3/Getter.hpp"
 
 extern "C" {
 #include "ns3/SPATEM.h"
@@ -92,15 +93,26 @@ public:
   }
 
   /**
-     * @brief Set the VDP object
-     * This function sets the VDP object to be used by the CA Basic Service.
-     * @param vdp   The VDP object to be used by the CA Basic Service
+     * @brief Set the IDP object
+     * This function sets the IDP object to be used by the TLM Basic Service.
+     * @param idp   The IDP object to be used by the TLM Basic Service
      */
   void
-  setVDP (VDP *vdp)
+  setIDP (IDP *idp)
   {
-    m_vdp = vdp;
+    m_idp = idp;
   }
+
+  /**
+     * @brief Set the VDP object
+     * This function sets the VDP object to be used by the TLM Basic Service.
+     * @param vdp   The VDP object to be used by the TLM Basic Service
+     */
+//     void
+//   setVDP (VDP *vdp)
+//   {
+//     m_vdp = vdp;
+//   }
 
   /**
      * @brief Process a received SPATEM message.
@@ -193,7 +205,8 @@ private:
   uint16_t m_seq_number;
 
   Ptr<btp> m_btp;
-  VDP *m_vdp; //! VDP object
+//   VDP *m_vdp; //! VDP object
+  IDP *m_idp; //! IDP object
   GeoArea_t m_geoArea;
   Ptr<Socket> m_socket_tx; // Socket TX
 
@@ -219,4 +232,4 @@ private:
 };
 } // namespace ns3
 
-#endif // CABASICSERVICE_H
+#endif // TLMSERVICE_H

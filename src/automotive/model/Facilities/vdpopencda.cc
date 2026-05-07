@@ -180,20 +180,20 @@ namespace ns3 {
 
   }
 
-  std::vector<VDP::SPATEM_mandatory_data_t>
-  VDPOpenCDA::getSPATEMMandatoryData()
-  {
-    std::vector<VDP::SPATEM_mandatory_data_t> result;
-    VDP::SPATEM_mandatory_data_t emptyData;
-    emptyData.intersectionId = 0;
-    emptyData.status.buf = nullptr;
-    emptyData.status.size = 0;
-    emptyData.status.bits_unused = 0;
-    emptyData.revision = 0;
+  // std::vector<VDP::SPATEM_mandatory_data_t>
+  // VDPOpenCDA::getSPATEMMandatoryData()
+  // {
+  //   std::vector<VDP::SPATEM_mandatory_data_t> result;
+  //   VDP::SPATEM_mandatory_data_t emptyData;
+  //   emptyData.intersectionId = 0;
+  //   emptyData.status.buf = nullptr;
+  //   emptyData.status.size = 0;
+  //   emptyData.status.bits_unused = 0;
+  //   emptyData.revision = 0;
     
-    result.push_back(emptyData);
-    return result;
-  }
+  //   result.push_back(emptyData);
+  //   return result;
+  // }
 
   VDP::VDP_position_latlon_t
   VDPOpenCDA::getPosition ()

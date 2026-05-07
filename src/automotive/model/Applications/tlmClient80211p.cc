@@ -134,12 +134,9 @@ tlmClient80211p::StartApplication (void)
                                             std::placeholders::_1, std::placeholders::_2));
 
   VDP *traci_vdp = new VDPTraCI (m_client, m_id);
-
   m_btp->setVDP (traci_vdp);
-
   m_caService.setVDP (traci_vdp);
-
-  m_tlmService.setVDP (traci_vdp);
+  // m_tlmService.setVDP (traci_vdp);
 
   /* Create LDM and mock-populate traffic light static topology (simulates MAPEM) */
   m_LDM = CreateObject<LDM> ();

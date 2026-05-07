@@ -1,12 +1,13 @@
 #include "tlmService.h"
 #include "ns3/Seq.hpp"
-#include "ns3/Getter.hpp"
+// #include "ns3/Getter.hpp"
 #include "ns3/Setter.hpp"
 #include "ns3/Encoding.hpp"
 #include "ns3/SetOf.hpp"
-#include "ns3/SequenceOf.hpp"
-#include "ns3/BitString.hpp"
-#include "ns3/vdp.h"
+// #include "ns3/SequenceOf.hpp"
+// #include "ns3/BitString.hpp"
+// #include "ns3/vdp.h"
+#include "ns3/idp.h"
 #include "asn_utils.h"
 #include <cmath>
 #include "ns3/snr-tag.h"
@@ -155,8 +156,8 @@ TLMService::doGenerateAndEncodeSPATEM ()
   asn1cpp::setField (spatem->header.protocolVersion, 2);
   asn1cpp::setField (spatem->header.stationId, m_station_id);
 
-  std::vector<VDP::SPATEM_mandatory_data_t> spatem_mandatory_data_list =
-      m_vdp->getSPATEMMandatoryData ();
+  std::vector<IDP::SPATEM_mandatory_data_t> spatem_mandatory_data_list = m_idp->getSPATEMMandatoryData ();
+  // std::vector<VDP::SPATEM_mandatory_data_t> spatem_mandatory_data_list = m_vdp->getSPATEMMandatoryData ();
 
   if (!spatem_mandatory_data_list.empty ())
     {

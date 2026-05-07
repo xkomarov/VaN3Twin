@@ -187,13 +187,17 @@ tlmServer80211p::StartApplication (void)
   m_tlmService.setGeoArea (geoArea);
 
   // Создаём VDP с автоматически определённым ID светофора
-  VDP *traci_vdp = new VDPTraCI (m_client, m_id, true, target_tls_id);
+  // VDP *traci_vdp = new VDPTraCI (m_client, m_id, true, target_tls_id);
+  VDP *traci_vdp = new VDPTraCI (m_client, m_id, true);
+  IDP *traci_idp = new IDPTraCI (m_client, m_id, target_tls_id);
 
   m_btp->setVDP (traci_vdp);
+  m_btp->setIDP (traci_idp);
 
   m_caService.setVDP (traci_vdp);
 
-  m_tlmService.setVDP (traci_vdp);
+  // m_tlmService.setVDP (traci_vdp);
+  m_tlmService.setIDP (traci_idp);
 
   if (m_send_spatem)
     {

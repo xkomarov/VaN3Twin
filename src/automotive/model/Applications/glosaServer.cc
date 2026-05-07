@@ -8,6 +8,7 @@
 #include "ns3/socket.h"
 #include "ns3/btpdatarequest.h"
 #include "ns3/network-module.h"
+#include "ns3/idpTraci.h"
 
 namespace ns3 {
 NS_LOG_COMPONENT_DEFINE ("glosaServer");
@@ -180,6 +181,7 @@ glosaServer::StartApplication (void)
   m_tlmService.setFixedPositionRSU (rsuPosLonLat.y, rsuPosLonLat.x);
 
   VDP *traci_vdp;
+  IDP *traci_idp;
   if (m_model == "80211p")
     {
       const double tlsDetectionRadius = 10.0;
@@ -228,12 +230,16 @@ glosaServer::StartApplication (void)
 
       m_tlmService.setGeoArea (geoArea);
 
-      traci_vdp = new VDPTraCI (m_client, m_id, true, "");
-      static_cast<VDPTraCI *> (traci_vdp)->setTargetTlsList (nearbyTls);
+      traci_vdp = new VDPTraCI (m_client, m_id, true);
+      traci_idp = new IDPTraCI (m_client, m_id);
+      // static_cast<VDPTraCI *> (traci_vdp)->setTargetTlsList (nearbyTls);
+      static_cast<IDPTraCI *> (traci_idp)->setTargetTlsList (nearbyTls);
     }
   else
     {
-      traci_vdp = new VDPTraCI (m_client, m_id, true, "");
+      // traci_vdp = new VDPTraCI (m_client, m_id, true, "");
+      traci_vdp = new VDPTraCI (m_client, m_id, true);
+      traci_idp = new IDPTraCI (m_client, m_id);
 
       uint16_t area_radius = 5000;
       GeoArea_t geoArea;
@@ -247,8 +253,10 @@ glosaServer::StartApplication (void)
     }
 
   m_btp->setVDP (traci_vdp);
+  m_btp->setIDP (traci_idp);
   m_caService.setVDP (traci_vdp);
-  m_tlmService.setVDP (traci_vdp);
+  // m_tlmService.setVDP (traci_vdp);
+  m_tlmService.setIDP (traci_idp);
 
   if (m_send_spatem && m_model == "80211p")
     {
@@ -257,8 +265,13 @@ glosaServer::StartApplication (void)
 
   if (m_send_cam)
     {
-      std::srand (Simulator::Now ().GetNanoSeconds ());
-      double desync = ((double) std::rand () / RAND_MAX);
+      // std::srand (Simulator::Now ().GetNanoSeconds ());
+      // double desync = ((double) std::rand () / RAND_MAX);
+      // m_caService.startCamDissemination (desync);
+      Ptr<UniformRandomVariable> desync_rvar = CreateObject<UniformRandomVariable> ();
+      desync_rvar->SetAttribute ("Min", DoubleValue (0.0));
+      desync_rvar->SetAttribute ("Max", DoubleValue (1.0));
+      double desync = desync_rvar->GetValue ();
       m_caService.startCamDissemination (desync);
     }
 
@@ -303,11 +316,35 @@ glosaServer::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
     {
       // messageId,camId,timestamp,latitude,longitude,heading,speed,acceleration
       m_csv_ofstream_cam << cam->header.messageId << "," << cam->header.stationId << ",";
-      m_csv_ofstream_cam << cam->cam.generationDeltaTime << "," << asn1cpp::getField(cam->cam.camParameters.basicContainer.referencePosition.latitude, double) / DOT_ONE_MICRO << ",";
-      m_csv_ofstream_cam << asn1cpp::getField(cam->cam.camParameters.basicContainer.referencePosition.longitude, double) / DOT_ONE_MICRO << ",";
-      m_csv_ofstream_cam << asn1cpp::getField(cam->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.heading.headingValue,double) / DECI << ",";
-      m_csv_ofstream_cam << asn1cpp::getField(cam->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.speed.speedValue, double) /CENTI << ",";
-      m_csv_ofstream_cam << asn1cpp::getField (cam->cam.camParameters.highFrequencyContainer.choice.basicVehicleContainerHighFrequency.longitudinalAcceleration.value,double) /DECI << std::endl;
+      m_csv_ofstream_cam << cam->cam.generationDeltaTime << ","
+                         << asn1cpp::getField (
+                                cam->cam.camParameters.basicContainer.referencePosition.latitude,
+                                double) /
+                                DOT_ONE_MICRO
+                         << ",";
+      m_csv_ofstream_cam << asn1cpp::getField (
+                                cam->cam.camParameters.basicContainer.referencePosition.longitude,
+                                double) /
+                                DOT_ONE_MICRO
+                         << ",";
+      m_csv_ofstream_cam << asn1cpp::getField (
+                                cam->cam.camParameters.highFrequencyContainer.choice
+                                    .basicVehicleContainerHighFrequency.heading.headingValue,
+                                double) /
+                                DECI
+                         << ",";
+      m_csv_ofstream_cam << asn1cpp::getField (
+                                cam->cam.camParameters.highFrequencyContainer.choice
+                                    .basicVehicleContainerHighFrequency.speed.speedValue,
+                                double) /
+                                CENTI
+                         << ",";
+      m_csv_ofstream_cam << asn1cpp::getField (cam->cam.camParameters.highFrequencyContainer.choice
+                                                   .basicVehicleContainerHighFrequency
+                                                   .longitudinalAcceleration.value,
+                                               double) /
+                                DECI
+                         << std::endl;
     }
 
   if (m_send_spatem && m_model != "80211p")

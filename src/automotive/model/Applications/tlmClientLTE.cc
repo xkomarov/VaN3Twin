@@ -3,6 +3,7 @@
 #include "ns3/SPATEM.h"
 #include "ns3/CAM.h"
 #include "ns3/vdpTraci.h"
+#include "ns3/idpTraci.h"
 #include "ns3/socket.h"
 #include "ns3/network-module.h"
 #include <cmath>
@@ -120,12 +121,10 @@ tlmClientLTE::StartApplication (void)
       std::bind (&tlmClientLTE::receiveSPATEM, this, std::placeholders::_1, std::placeholders::_2));
 
   VDP *traci_vdp = new VDPTraCI (m_client, m_id);
-
+  
   m_btp->setVDP (traci_vdp);
 
   m_caService.setVDP (traci_vdp);
-
-  m_tlmService.setVDP (traci_vdp);
 
   /* Create LDM and mock-populate traffic light static topology (simulates MAPEM) */
   m_LDM = CreateObject<LDM> ();
@@ -207,9 +206,7 @@ tlmClientLTE::receiveCAM (asn1cpp::Seq<CAM> cam, Address from)
   //   ASN_STRUCT_FREE(asn_DEF_CAM,cam);
 }
 
-// ===========================================================================
-//  receiveSPATEM — parse SPATEM into LDM and kick-start GLOSA control loop
-// ===========================================================================
+
 void
 tlmClientLTE::receiveSPATEM (asn1cpp::Seq<SPATEM> spatem, Address from)
 {
@@ -260,9 +257,6 @@ tlmClientLTE::receiveSPATEM (asn1cpp::Seq<SPATEM> spatem, Address from)
   m_spatemTimeout = Simulator::Schedule (Seconds (2.0), &tlmClientLTE::spatemTimeout, this);
 }
 
-// ===========================================================================
-//  updateGlosaControl — periodic GLOSA speed recalculation (every 200 ms)
-// ===========================================================================
 void
 tlmClientLTE::updateGlosaControl (void)
 {

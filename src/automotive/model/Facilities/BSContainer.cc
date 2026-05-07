@@ -208,8 +208,7 @@ BSContainer::setupContainer (bool CABasicService_enabled, bool DENBasicService_e
 
   if (m_stationtype != StationType_pedestrian)
     {
-      m_vdp_ptr =
-          new VDPTraCI (m_mobility_client, m_sumo_vehid_prefix + std::to_string (m_station_id));
+      m_vdp_ptr = new VDPTraCI (m_mobility_client, m_sumo_vehid_prefix + std::to_string (m_station_id));
       m_btp->setVDP (m_vdp_ptr);
 
       if (CABasicService_enabled == true)
@@ -222,7 +221,8 @@ BSContainer::setupContainer (bool CABasicService_enabled, bool DENBasicService_e
         }
       if (TLMService_enabled == true)
         {
-          m_tlmbs.setVDP (m_vdp_ptr);
+          // m_tlmbs.setVDP (m_vdp_ptr);
+          m_tlmbs.setIDP (m_idp_ptr);
         }
     }
 

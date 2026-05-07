@@ -214,6 +214,7 @@ private:
   bool m_VAM_metrics;
 
   VDP *m_vdp_ptr;
+  IDP *m_idp_ptr;
   VRUdp *m_vrudp_ptr;
 
   bool m_is_configured = false;

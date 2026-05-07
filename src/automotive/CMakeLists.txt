@@ -64,6 +64,7 @@ Set(source_files
     model/Facilities/ITSSReceivingTableEntry.cc
     model/Facilities/asn_utils.cc
     model/Facilities/vdpTraci.cc
+    model/Facilities/idpTraci.cc
     model/Facilities/vdpGPSTraceClient.cc
     model/Facilities/vrudpGPSTraceClient.cc
     model/Facilities/caBasicService.cc
@@ -1397,9 +1398,11 @@ set(header_files
     model/Facilities/ITSSOriginatingTableEntry.h
     model/Facilities/ITSSReceivingTableEntry.h
     model/Facilities/vdpTraci.h
+    model/Facilities/idpTraci.h
     model/Facilities/vdpGPSTraceClient.h
     model/Facilities/vrudpGPSTraceClient.h
     model/Facilities/vdp.h
+    model/Facilities/idp.h
     model/Facilities/caBasicService.h
     model/utilities/sumo_xml_parser.h
     model/Facilities/cpBasicService.h

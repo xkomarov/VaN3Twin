@@ -134,7 +134,9 @@ tlmServerLTE::StartApplication (void)
   m_tlmService.setFixedPositionRSU (rsuPosLonLat.y, rsuPosLonLat.x);
 
   // VDP for the global server: Empty string pulls all Traffic Lights
-  VDP *traci_vdp = new VDPTraCI (m_client, m_sumo_id, true, "");
+  // VDP *traci_vdp = new VDPTraCI (m_client, m_sumo_id, true, "");
+  VDP *traci_vdp = new VDPTraCI (m_client, m_sumo_id, true);
+  IDP *traci_idp = new IDPTraCI (m_client, m_sumo_id);
 
   uint16_t area_radius = 5000; // Global map radius for the consolidated SPATEM geocast
 
@@ -153,10 +155,11 @@ tlmServerLTE::StartApplication (void)
   m_tlmService.setGeoArea (geoArea);
 
   m_btp->setVDP (traci_vdp);
+  m_btp->setIDP (traci_idp);
 
   m_caService.setVDP (traci_vdp);
 
-  m_tlmService.setVDP (traci_vdp);
+  m_tlmService.setIDP (traci_idp);
 
   // Removed periodic dissemination in LTE. Will be triggered strictly in receiveCAM.
   // m_tlmService.startSpatemDissemination();

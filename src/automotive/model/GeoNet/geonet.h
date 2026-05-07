@@ -8,6 +8,7 @@
 #include <set>
 #include <mutex>
 #include "ns3/vdpTraci.h"
+#include "ns3/idpTraci.h"
 #include "ns3/asn_utils.h"
 #include "ns3/address.h"
 #include "ns3/packet.h"
@@ -114,6 +115,7 @@ namespace ns3
        * @param vdp
        */
       void setVDP(VDP* vdp);
+      void setIDP(IDP* idp);
       void setVRUdp(VRUdp* vrudp);
       /**
        * @brief Set the socket to transmit packets.
@@ -203,6 +205,7 @@ namespace ns3
 
 
       VDP* m_vdp; //! Pointer to the VDP object
+      IDP* m_idp = nullptr; 
       VRUdp* m_vrudp; //! Pointer to the VRUdp object
       StationID_t m_station_id; //! Station ID
       StationType_t m_stationtype; //! Station Type

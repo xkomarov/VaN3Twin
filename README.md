@@ -1,3 +1,6 @@
+#Kirill Komarov
+№Bakalarska praca
+
 # VaN3Twin
 
 <div align="center">

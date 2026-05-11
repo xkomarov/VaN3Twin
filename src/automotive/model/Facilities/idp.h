@@ -1,14 +1,34 @@
+/* ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ */
 #ifndef IDP_H
 #define IDP_H
 
 #include "asn_utils.h"
 #include <cstdint>
 #include <float.h>
-// #include "ns3/Seq.hpp"
-// #include "ns3/Getter.hpp"
-// #include "ns3/Setter.hpp"
-// #include "ns3/SetOf.hpp"
-// #include "ns3/SequenceOf.hpp"
+
+
+
+
+
 
 extern "C" {
   #include "ns3/BIT_STRING.h"
@@ -49,33 +69,17 @@ namespace ns3
         void setConfidence(C confidence) {m_confidence=confidence;}
   };
 
-  /**
-   * \ingroup automotive
-   *
-   * \brief This class provides the interface for the Vehicle Data Provider (IDP).
-   *
-   * This class encapsulates various data structures representing different aspects of vehicle data and its processing.
-   */
+  
   class IDP
   {
     public:
 
-    /**
-     * @struct IDP_position_cartesian
-     * @brief Represents a position in Cartesian coordinates.
-     *
-     * Describes a vehicle's position in a 3D Cartesian coordinate system.
-     */
+    
       typedef struct IDP_position_cartesian {
         double x,y,z;
       } IDP_position_cartesian_t;
 
-    /**
-     * @struct IDP_position_latlon
-     * @brief Represents a geographic position.
-     *
-     * Describes a vehicle's position in terms of latitude, longitude, and altitude.
-     */
+    
       typedef struct IDP_position_latlon {
         double lat,lon,alt;
       } IDP_position_latlon_t;
@@ -83,11 +87,11 @@ namespace ns3
 
       typedef struct IDP_ProtectedCommunicationsZonesRSU{
         long protectedZoneType;
-        IDPDataItem<int> expiryTime	/* OPTIONAL */;
+        IDPDataItem<int> expiryTime	;
         long protectedZoneLatitude;
         long protectedZoneLongitude;
-        IDPDataItem<long> protectedZoneRadius	/* OPTIONAL */;
-        IDPDataItem<long> protectedZoneID	/* OPTIONAL */;
+        IDPDataItem<long> protectedZoneRadius	;
+        IDPDataItem<long> protectedZoneID	;
       } IDP_ProtectedCommunicationsZonesRSU_t;
 
 
@@ -119,14 +123,14 @@ namespace ns3
           IDPDataItem<uint8_t> confidence;
           IDPDataItem<uint16_t> nextTime;
           IDPDataItem<std::vector<IDP_AdvisorySpeed_t>> speeds;
-          //IDPDataItem<uint16_t> regionalExtension; 
+          
       } SPATEM_SignalGroupState_t;
 
       typedef struct SPATEM_mandatory_data {
           uint16_t intersectionId;            
           BIT_STRING_t status;
           uint8_t revision; 
-          //IDPDataItem<uint16_t> regionId;           
+          
           IDPDataItem<uint32_t> moy;              
           IDPDataItem<uint16_t> timeStamp;
           IDPDataItem<std::string> name;
@@ -142,15 +146,15 @@ namespace ns3
 
 
 
-      // These methods shall return a position either cartesian or geodetic (needed mainly by the GeoNetworking module)
-      // getPositionLatLon() shall return the current position of the object as (Latitude,Longitude,Altitude)
-      // getPositionXY() shall return the current position as cartesian projected coordinates (x,y,z)
-      // If the Altitude (or z) is not available, it must be set to DBL_MAX
-      // getXY() shall be a utility function converting from Lat,Lon to x,y on a projected coordinate system (e.g. using Transverse Mercator)
+      
+      
+      
+      
+      
       virtual IDP_position_latlon_t getPosition() = 0;
       virtual IDP_position_cartesian_t getPositionXY() = 0;
       virtual IDP_position_cartesian_t getXY(double lon, double lat) = 0;
       virtual double getCartesianDist (double lon1, double lat1, double lon2, double lat2) = 0;
   };
 }
-#endif // IDP_H
+#endif 

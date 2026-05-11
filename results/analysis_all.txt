@@ -1,0 +1,227 @@
+
+######################################################################
+#  ANALYSIS FOR MAP1
+######################################################################
+
+======================================================================
+SECTION 1: V2X Communication Reliability (map1)
+======================================================================
+  baseline    : PRR = 0.3112 (31.12%),  Latency = 0.1819 ms
+  bGlosa      : PRR = 0.3322 (33.22%),  Latency = 0.2394 ms
+  greenWindow : PRR = 0.3731 (37.31%),  Latency = 0.2426 ms
+  ecoDriving  : PRR = 0.3322 (33.22%),  Latency = 0.2439 ms
+
+======================================================================
+SECTION 2: TLM Correctness Metrics (map1)
+======================================================================
+
+  === BGLOSA ===
+  Total advisory steps: 1304
+  Phase Match Rate:     100.00%  (mismatches: 0)
+  TEE: Mean=8.170s, Median=8.000s, Std=5.322s, P95=17.985s
+
+  === GREENWINDOW ===
+  Total advisory steps: 1468
+  Phase Match Rate:     100.00%  (mismatches: 0)
+  TEE: Mean=7.755s, Median=7.800s, Std=4.548s, P95=15.100s
+
+  === ECODRIVING ===
+  Total advisory steps: 1543
+  Phase Match Rate:     99.94%  (mismatches: 1)
+  TEE: Mean=7.732s, Median=7.600s, Std=4.951s, P95=16.390s
+
+======================================================================
+SECTION 3: Vehicle Performance Metrics (map1)
+======================================================================
+
+  === BASELINE (N=10) ===
+  CO₂ [g]:        mean=312.76 ± 17.55,  median=312.36
+  Stopped [s]:    mean=16.72 ± 7.34,  median=17.05
+  Avg speed [m/s]: mean=8.73 ± 1.09
+
+  === BGLOSA (N=10) ===
+  CO₂ [g]:        mean=301.35 ± 22.96,  median=301.51
+  Stopped [s]:    mean=11.57 ± 10.88,  median=4.00
+  Avg speed [m/s]: mean=8.72 ± 1.09
+
+  === GREENWINDOW (N=10) ===
+  CO₂ [g]:        mean=277.62 ± 26.90,  median=271.85
+  Stopped [s]:    mean=13.72 ± 15.28,  median=4.75
+  Avg speed [m/s]: mean=7.33 ± 2.38
+
+  === ECODRIVING (N=10) ===
+  CO₂ [g]:        mean=276.92 ± 20.50,  median=278.77
+  Stopped [s]:    mean=11.84 ± 12.28,  median=4.40
+  Avg speed [m/s]: mean=7.78 ± 1.44
+
+======================================================================
+SECTION 4: Percentage Change vs Baseline (map1)
+======================================================================
+  BGLOSA         CO₂: -3.65%,  Stopped: -30.80%
+  GREENWINDOW    CO₂: -11.23%,  Stopped: -17.94%
+  ECODRIVING     CO₂: -11.46%,  Stopped: -29.19%
+
+======================================================================
+SECTION 5: Mann-Whitney U Tests (map1)
+======================================================================
+  EcoDriving vs Baseline  CO₂ p=0.002827 ✓,  Stops p=0.212122 ✗
+  EcoDriving vs BGLOSA  CO₂ p=0.021134 ✓,  Stops p=0.762108 ✗
+  EcoDriving vs GreenWindow  CO₂ p=0.969850 ✗,  Stops p=0.791260 ✗
+  BGLOSA vs Baseline    CO₂ p=0.140465 ✗,  Stops p=0.185380 ✗
+  GreenWindow vs Baseline  CO₂ p=0.009108 ✓,  Stops p=0.344704 ✗
+
+######################################################################
+#  ANALYSIS FOR MAP2
+######################################################################
+
+======================================================================
+SECTION 1: V2X Communication Reliability (map2)
+======================================================================
+  baseline    : PRR = 0.3583 (35.83%),  Latency = 0.1818 ms
+  bGlosa      : PRR = 0.3809 (38.09%),  Latency = 0.3057 ms
+  greenWindow : PRR = 0.3752 (37.52%),  Latency = 0.3120 ms
+  ecoDriving  : PRR = 0.3670 (36.70%),  Latency = 0.3159 ms
+
+======================================================================
+SECTION 2: TLM Correctness Metrics (map2)
+======================================================================
+
+  === BGLOSA ===
+  Total advisory steps: 1142
+  Phase Match Rate:     99.91%  (mismatches: 1)
+  TEE: Mean=7.083s, Median=6.100s, Std=5.294s, P95=17.500s
+
+  === GREENWINDOW ===
+  Total advisory steps: 1175
+  Phase Match Rate:     99.83%  (mismatches: 2)
+  TEE: Mean=7.782s, Median=6.800s, Std=5.785s, P95=18.300s
+
+  === ECODRIVING ===
+  Total advisory steps: 1306
+  Phase Match Rate:     99.85%  (mismatches: 2)
+  TEE: Mean=8.191s, Median=7.650s, Std=5.740s, P95=18.300s
+
+======================================================================
+SECTION 3: Vehicle Performance Metrics (map2)
+======================================================================
+
+  === BASELINE (N=8) ===
+  CO₂ [g]:        mean=306.81 ± 20.46,  median=308.62
+  Stopped [s]:    mean=32.39 ± 15.28,  median=36.20
+  Avg speed [m/s]: mean=6.49 ± 2.27
+
+  === BGLOSA (N=8) ===
+  CO₂ [g]:        mean=282.70 ± 25.90,  median=276.91
+  Stopped [s]:    mean=22.01 ± 15.49,  median=22.90
+  Avg speed [m/s]: mean=6.49 ± 2.28
+
+  === GREENWINDOW (N=8) ===
+  CO₂ [g]:        mean=277.34 ± 15.56,  median=276.41
+  Stopped [s]:    mean=25.80 ± 14.01,  median=23.25
+  Avg speed [m/s]: mean=5.68 ± 1.44
+
+  === ECODRIVING (N=8) ===
+  CO₂ [g]:        mean=271.73 ± 18.56,  median=271.81
+  Stopped [s]:    mean=22.42 ± 15.03,  median=18.90
+  Avg speed [m/s]: mean=5.68 ± 1.44
+
+======================================================================
+SECTION 4: Percentage Change vs Baseline (map2)
+======================================================================
+  BGLOSA         CO₂: -7.86%,  Stopped: -32.03%
+  GREENWINDOW    CO₂: -9.61%,  Stopped: -20.34%
+  ECODRIVING     CO₂: -11.43%,  Stopped: -30.76%
+
+======================================================================
+SECTION 5: Mann-Whitney U Tests (map2)
+======================================================================
+  EcoDriving vs Baseline  CO₂ p=0.001865 ✓,  Stops p=0.234499 ✗
+  EcoDriving vs BGLOSA  CO₂ p=0.441803 ✗,  Stops p=0.959130 ✗
+  EcoDriving vs GreenWindow  CO₂ p=0.505361 ✗,  Stops p=0.461920 ✗
+  BGLOSA vs Baseline    CO₂ p=0.020668 ✓,  Stops p=0.160528 ✗
+  GreenWindow vs Baseline  CO₂ p=0.004662 ✓,  Stops p=0.382284 ✗
+
+######################################################################
+#  ANALYSIS FOR MAP3
+######################################################################
+
+======================================================================
+SECTION 1: V2X Communication Reliability (map3)
+======================================================================
+  baseline    : PRR = 0.3993 (39.93%),  Latency = 0.1819 ms
+  bGlosa      : PRR = 0.3398 (33.98%),  Latency = 0.2460 ms
+  greenWindow : PRR = 0.3383 (33.83%),  Latency = 0.2469 ms
+  ecoDriving  : PRR = 0.3437 (34.37%),  Latency = 0.2438 ms
+
+======================================================================
+SECTION 2: TLM Correctness Metrics (map3)
+======================================================================
+
+  === BGLOSA ===
+  Total advisory steps: 1523
+  Phase Match Rate:     99.87%  (mismatches: 2)
+  TEE: Mean=7.769s, Median=6.700s, Std=5.936s, P95=18.718s
+
+  === GREENWINDOW ===
+  Total advisory steps: 1580
+  Phase Match Rate:     99.87%  (mismatches: 2)
+  TEE: Mean=8.313s, Median=7.190s, Std=6.219s, P95=18.800s
+
+  === ECODRIVING ===
+  Total advisory steps: 1557
+  Phase Match Rate:     99.87%  (mismatches: 2)
+  TEE: Mean=8.249s, Median=7.300s, Std=6.010s, P95=18.500s
+
+======================================================================
+SECTION 3: Vehicle Performance Metrics (map3)
+======================================================================
+
+  === BASELINE (N=12) ===
+  CO₂ [g]:        mean=286.32 ± 20.50,  median=289.38
+  Stopped [s]:    mean=24.24 ± 18.40,  median=19.70
+  Avg speed [m/s]: mean=6.85 ± 2.37
+
+  === BGLOSA (N=12) ===
+  CO₂ [g]:        mean=278.63 ± 21.68,  median=276.74
+  Stopped [s]:    mean=19.28 ± 13.43,  median=19.35
+  Avg speed [m/s]: mean=7.17 ± 1.98
+
+  === GREENWINDOW (N=12) ===
+  CO₂ [g]:        mean=275.05 ± 25.19,  median=267.83
+  Stopped [s]:    mean=15.71 ± 14.03,  median=13.95
+  Avg speed [m/s]: mean=7.55 ± 2.22
+
+  === ECODRIVING (N=12) ===
+  CO₂ [g]:        mean=269.99 ± 32.26,  median=273.57
+  Stopped [s]:    mean=16.12 ± 13.62,  median=18.55
+  Avg speed [m/s]: mean=7.08 ± 1.69
+
+======================================================================
+SECTION 4: Percentage Change vs Baseline (map3)
+======================================================================
+  BGLOSA         CO₂: -2.69%,  Stopped: -20.45%
+  GREENWINDOW    CO₂: -3.94%,  Stopped: -35.20%
+  ECODRIVING     CO₂: -5.71%,  Stopped: -33.48%
+
+======================================================================
+SECTION 5: Mann-Whitney U Tests (map3)
+======================================================================
+  EcoDriving vs Baseline  CO₂ p=0.214494 ✗,  Stops p=0.340569 ✗
+  EcoDriving vs BGLOSA  CO₂ p=0.470486 ✗,  Stops p=0.470293 ✗
+  EcoDriving vs GreenWindow  CO₂ p=0.750832 ✗,  Stops p=0.976940 ✗
+  BGLOSA vs Baseline    CO₂ p=0.435731 ✗,  Stops p=0.603253 ✗
+  GreenWindow vs Baseline  CO₂ p=0.214494 ✗,  Stops p=0.312006 ✗
+
+======================================================================
+CROSS-SCENARIO SUMMARY: Eco-Driving vs Baseline
+======================================================================
+  Map         N      Δ CO₂    Δ Stops     p(CO₂)   p(Stops)
+  ----------------------------------------------------
+  map1       10    -11.46%    -29.19%   0.002827   0.212122
+  map2        8    -11.43%    -30.76%   0.001865   0.234499
+  map3       12     -5.71%    -33.48%   0.214494   0.340569
+
+======================================================================
+ANALYSIS COMPLETE
+Results saved to: /home/kirill/VaN3Twin/ns-3-dev/results/analysis_all.txt
+======================================================================

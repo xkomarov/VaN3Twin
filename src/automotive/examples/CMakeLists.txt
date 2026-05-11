@@ -1,3 +1,23 @@
+# ============================================================================
+# Research Project: Data communication in the environment of
+# intelligent cars
+# Author: Kirill Komarov
+# Date: 2026
+# 
+# Description:
+# This file contains source code developed (or modified) as part of the 
+# research for the paper: "Data communication in the environment of
+# intelligent cars".
+# 
+# DISCLAIMER & ACKNOWLEDGEMENT:
+# Please note that this file contains or may contain code fragments, 
+# algorithms, or architectural solutions that were previously implemented 
+# in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+# 
+# The borrowed code has been adapted and is used strictly for academic 
+# and research purposes. All rights to the original code segments belong 
+# to their respective original authors.
+# ============================================================================
 build_lib_example(
     NAME v2i-areaSpeedAdvisor-lte 
     SOURCE_FILES v2i-areaSpeedAdvisor-lte.cc
@@ -7,20 +27,11 @@ build_lib_example(
     ${liblte}
     ${libtraci}
 )
-    
-build_lib_example(
-    NAME v2i-tlm-lte 
-    SOURCE_FILES v2i-tlm-lte.cc
-    LIBRARIES_TO_LINK
-    ${libcarla}
-    ${libautomotive}
-    ${liblte}
-    ${libtraci}
-)
+
 
  build_lib_example(
-    NAME v2i-glosa-lte
-    SOURCE_FILES v2i-glosa-lte.cc
+    NAME v2i-greenWindow-lte
+    SOURCE_FILES v2i-greenWindow-lte.cc
     LIBRARIES_TO_LINK
     ${libcarla}
     ${libautomotive}
@@ -29,8 +40,8 @@ build_lib_example(
  )
 
  build_lib_example(
-    NAME v2i-glosa-80211p
-    SOURCE_FILES v2i-glosa-80211p.cc
+    NAME v2i-greenWindow-80211p
+    SOURCE_FILES v2i-greenWindow-80211p.cc
     LIBRARIES_TO_LINK
     ${libcarla}
     ${libautomotive}
@@ -40,8 +51,8 @@ build_lib_example(
 
 
  build_lib_example(
-    NAME v2i-bglosa-lte
-    SOURCE_FILES v2i-bglosa-lte.cc
+    NAME v2i-bGlosa-lte
+    SOURCE_FILES v2i-bGlosa-lte.cc
     LIBRARIES_TO_LINK
     ${libcarla}
     ${libautomotive}
@@ -50,8 +61,8 @@ build_lib_example(
  )
 
  build_lib_example(
-    NAME v2i-bglosa-80211p
-    SOURCE_FILES v2i-bglosa-80211p.cc
+    NAME v2i-bGlosa-80211p
+    SOURCE_FILES v2i-bGlosa-80211p.cc
     LIBRARIES_TO_LINK
     ${libcarla}
     ${libautomotive}
@@ -60,8 +71,8 @@ build_lib_example(
  )
 
  build_lib_example(
-    NAME v2i-eco-glosa-lte
-    SOURCE_FILES v2i-eco-glosa-lte.cc
+    NAME v2i-ecoDriving-lte
+    SOURCE_FILES v2i-ecoDriving-lte.cc
     LIBRARIES_TO_LINK
     ${libcarla}
     ${libautomotive}
@@ -70,8 +81,8 @@ build_lib_example(
  )
 
  build_lib_example(
-    NAME v2i-eco-glosa-80211p
-    SOURCE_FILES v2i-eco-glosa-80211p.cc
+    NAME v2i-ecoDriving-80211p
+    SOURCE_FILES v2i-ecoDriving-80211p.cc
     LIBRARIES_TO_LINK
     ${libcarla}
     ${libautomotive}
@@ -89,15 +100,6 @@ build_lib_example(
     ${libtraci}
 )
 
-build_lib_example(
-    NAME v2i-tlm-80211p
-    SOURCE_FILES v2i-tlm-80211p.cc
-    LIBRARIES_TO_LINK
-    ${libcarla}
-    ${libautomotive}
-    ${libwave}
-    ${libtraci}
-)
 
 build_lib_example(
     NAME v2i-emergencyVehicleWarning-80211p

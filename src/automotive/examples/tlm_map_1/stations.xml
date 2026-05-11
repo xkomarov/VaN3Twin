@@ -1,12 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ -->
 
-<!-- generated on 2024-04-04 16:25:11 by Eclipse SUMO netedit Version 1.19.0
--->
 
 <additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
     <!-- V2X:STATION --><poi id="poi_0" color="orange" layer="202.00" x="-50.00" y="0.00"/>
     <!-- V2X:STATION --><poi id="poi_1" color="orange" layer="202.00" x="50.00" y="0.00"/>
-    <!-- V2X:STATION <poi id="poi_2" color="orange" layer="202.00" x="0.0" y="90.00"/>-->
-    <!-- V2X:STATION <poi id="poi_3" color="orange" layer="202.00" x="-136.43" y="10.4"/>-->
-    <!-- V2X:STATION <poi id="poi_4" color="orange" layer="202.00" x="118.45" y="-66.5"/>-->
+
 </additional>

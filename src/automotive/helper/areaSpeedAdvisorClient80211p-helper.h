@@ -1,3 +1,23 @@
+/* ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ */
 #ifndef AREASPEEDADVISORCLIENT80211P_HELPER_H
 #define AREASPEEDADVISORCLIENT80211P_HELPER_H
 #include "ns3/OpenCDAClient.h"
@@ -14,67 +34,30 @@
 
 namespace ns3 {
 
-/**
- * \ingroup TrafficInfo
- * \brief Create an application which sends a UDP packet and waits for an echo of this packet
- */
+
 class areaSpeedAdvisorClient80211pHelper
 {
 public:
-  /**
-   * Create TrafficInfoClientHelper which will make life easier for people trying
-   * to set up simulations with echos.
-   *
-   * \param ip The IP address of the remote Traffic Info server
-   * \param port The port number of the remote Traffic Info server
-   */
+  
   areaSpeedAdvisorClient80211pHelper ();
 
   void SetAttribute (std::string name, const AttributeValue &value);
 
-  /**
-   * Create a TrafficInfoServerApplication on the specified Node.
-   *
-   * \param node The node on which to create the Application.  The node is
-   *             specified by a Ptr<Node>.
-   *
-   * \returns An ApplicationContainer holding the Application created,
-   */
+  
   ApplicationContainer Install (Ptr<Node> node) const;
 
-  /**
-   * Create a Traffic Info client application on the specified node.  The Node
-   * is provided as a string name of a Node that has been previously 
-   * associated using the Object Name Service.
-   *
-   * \param nodeName The name of the node on which to create the TrafficInfoClientApplication
-   *
-   * \returns An ApplicationContainer that holds a Ptr<Application> to the 
-   *          application created
-   */
+  
   ApplicationContainer Install (std::string nodeName) const;
 
-  /**
-   * \param c the nodes
-   *
-   * Create one Traffic Info client application on each of the input nodes
-   *
-   * \returns the applications created, one application per input node.
-   */
+  
   ApplicationContainer Install (NodeContainer c) const;
 
 private:
-  /**
-   * Install an ns3::TrafficInfoClient on the node configured with all the
-   * attributes set with SetAttribute.
-   *
-   * \param node The node on which an TrafficInfoClient will be installed.
-   * \returns Ptr to the application installed.
-   */
+  
   Ptr<Application> InstallPriv (Ptr<Node> node) const;
-  ObjectFactory m_factory; //!< Object factory.
+  ObjectFactory m_factory; 
 };
 
-} // namespace ns3
+} 
 
-#endif /* AREASPEEDADVISORCLIENT80211P */
+#endif 

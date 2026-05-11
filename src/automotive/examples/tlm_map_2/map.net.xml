@@ -1,6 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ -->
 
-<!-- generated on 2026-05-04 05:39:39 by Eclipse SUMO netedit Version 1.18.0
+<!-- generated on 2026-05-10 06:22:52 by Eclipse SUMO netedit Version 1.18.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/neteditConfiguration.xsd">
 
     <input>
@@ -471,19 +491,19 @@
 
     <tlLogic id="c1" type="static" programID="0" offset="0">
         <phase duration="20" state="GGGrrrrrGGrrrrr"/>
-        <phase duration="2"  state="yyyrrrrryyrrrrr"/>
-        <phase duration="4"  state="rrrGrrrrrrGrrrr"/>
-        <phase duration="2"  state="rrryrrrrrryrrrr"/>
+        <phase duration="3"  state="yyyrrrrryyrrrrr"/>
+        <phase duration="20" state="rrrGrrrrrrGrrrr"/>
+        <phase duration="3"  state="rrryrrrrrryrrrr"/>
         <phase duration="20" state="rrrrGGGgrrrGGGg"/>
-        <phase duration="2"  state="rrrryyyyrrryyyy"/>
+        <phase duration="3"  state="rrrryyyyrrryyyy"/>
     </tlLogic>
     <tlLogic id="c2" type="static" programID="0" offset="0">
-        <phase duration="24" state="rrrrrGGGGggrrrrrrrrrrGGGggrrrrr"/>
-        <phase duration="6"  state="rrrrryyyyyyrrrrrrrrrryyyyyrrrrr"/>
-        <phase duration="24" state="GGGggrrrrrrrrrrrGGGggrrrrrrrrrr"/>
-        <phase duration="6"  state="yyyyyrrrrrrrrrrryyyyyrrrrrrrrrr"/>
-        <phase duration="24" state="rrrrrrrrrrrGGGggrrrrrrrrrrGGGgg"/>
-        <phase duration="6"  state="rrrrrrrrrrryyyyyrrrrrrrrrryyyyy"/>
+        <phase duration="20" state="rrrrrGGGGggrrrrrrrrrrGGGggrrrrr"/>
+        <phase duration="3"  state="rrrrryyyyyyrrrrrrrrrryyyyyrrrrr"/>
+        <phase duration="20" state="GGGggrrrrrrrrrrrGGGggrrrrrrrrrr"/>
+        <phase duration="3"  state="yyyyyrrrrrrrrrrryyyyyrrrrrrrrrr"/>
+        <phase duration="20" state="rrrrrrrrrrrGGGggrrrrrrrrrrGGGgg"/>
+        <phase duration="3"  state="rrrrrrrrrrryyyyyrrrrrrrrrryyyyy"/>
     </tlLogic>
 
     <junction id="c1" type="traffic_light" x="-61.68" y="0.01" incLanes="c2_to_c1_0 c2_to_c1_1 s1_to_c1_0 s1_to_c1_1 w_to_c1_0 w_to_c1_1 n1_to_c1_0 n1_to_c1_1" intLanes=":c1_0_0 :c1_1_0 :c1_1_1 :c1_3_0 :c1_4_0 :c1_5_0 :c1_5_1 :c1_15_0 :c1_8_0 :c1_9_0 :c1_10_0 :c1_11_0 :c1_12_0 :c1_12_1 :c1_16_0" shape="-45.69,12.01 -45.69,-5.99 -47.92,-7.11 -48.70,-8.50 -49.25,-10.46 -49.59,-12.97 -49.71,-16.04 -73.71,-15.99 -74.15,-13.77 -74.70,-12.99 -75.48,-12.44 -76.48,-12.10 -77.70,-11.99 -77.70,12.01 -75.48,12.45 -74.70,13.01 -74.15,13.79 -73.82,14.79 -73.71,16.01 -49.71,16.05 -49.26,13.81 -48.70,13.02 -47.92,12.46 -46.92,12.12">

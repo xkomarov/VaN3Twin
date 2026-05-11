@@ -1,4 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ -->
 
 <!-- generated on 2023-07-14 16:13:32 by Eclipse SUMO netedit Version 1.18.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/neteditConfiguration.xsd">

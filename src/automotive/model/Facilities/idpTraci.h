@@ -1,3 +1,23 @@
+/* ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ */
 #ifndef IDPTRACI_H
 #define IDPTRACI_H
 
@@ -7,23 +27,12 @@
 
 namespace ns3 {
 
-/**
- * \ingroup automotive
- *
- * \brief This class is used to represent a IDP object that gathers information from TraCI.
- *
- */
+
 class IDPTraCI : public IDP
 {
 public:
 
-  /**
-     * @brief Constructor
-     *
-     * This constructor initializes the IDPTraCI object.
-     * @param traci_client The TraCI client object.
-     * @param node_id The node ID of the SUMO vehicle.
-     */
+  
   IDPTraCI ();
   IDPTraCI (Ptr<TraciClient> traci_client, std::string node_id, std::string tls_id = "");
 
@@ -44,38 +53,17 @@ public:
     m_tls_ids = tls_ids;
   }
 
-  /**
-   * @brief This function returns the mandatory data of the SPATEM message for all traffic lights.
-   * @return The mandatory data of the SPATEM message for all traffic lights.
-   */
+  
   std::vector<SPATEM_mandatory_data_t> getSPATEMMandatoryData ();
 
-  // Added for GeoNet functionalities
-  /**
-     * @brief This function returns the vehicle's position in lat/lon coordinates.
-     * @return
-     */
+  
+  
   IDP_position_latlon_t getPosition ();
-  /**
-     * @brief This function returns the vehicle's position in cartesian coordinates.
-     * @return
-     */
+  
   IDP_position_cartesian_t getPositionXY ();
-  /**
-     * @brief This function converts the vehicle's position in lat/lon coordinates to cartesian coordinates.
-     * @param lon The vehicle's longitude.
-     * @param lat The vehicle's latitude.
-     * @return
-     */
+  
   IDP_position_cartesian_t getXY (double lon, double lat);
-  /**
-     * @brief This function returns the distance between two points in lat/lon coordinates.
-     * @param lon1
-     * @param lat1
-     * @param lon2
-     * @param lat2
-     * @return
-     */
+  
   double getCartesianDist (double lon1, double lat1, double lon2, double lat2);
 
 private:
@@ -87,6 +75,6 @@ private:
   std::unordered_map<std::string, uint8_t> m_tls_revisions;
   
 };
-} // namespace ns3
+} 
 
-#endif // IDPTRACI_H
+#endif 

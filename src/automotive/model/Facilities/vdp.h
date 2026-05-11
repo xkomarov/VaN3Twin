@@ -1,3 +1,23 @@
+/* ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ */
 #ifndef VDP_H
 #define VDP_H
 
@@ -12,7 +32,6 @@
 
 extern "C" {
   #include "ns3/CAM.h"
-  // #include "ns3/BIT_STRING.h"
 }
 
 namespace ns3
@@ -216,40 +235,9 @@ namespace ns3
           VDPDataItem<uint8_t> Class;
       } VDP_AdvisorySpeed_t;
 
-      // typedef struct SPATEM_SignalGroupState {
-      //     uint8_t signalGroupID;      
-      //     uint8_t eventState;         
-      //     uint16_t minEndTime;        
-      //     VDPDataItem<std::string> movementName;
-      //     VDPDataItem<std::vector<VDP_ConnectionManeuverAssist_t>> maneuverAssistList;
-      //     VDPDataItem<uint16_t> startTime;
-      //     VDPDataItem<uint16_t> maxEndTime;
-      //     VDPDataItem<uint16_t> likelyTime;
-      //     VDPDataItem<uint8_t> confidence;
-      //     VDPDataItem<uint16_t> nextTime;
-      //     VDPDataItem<std::vector<VDP_AdvisorySpeed_t>> speeds;
-      //     //VDPDataItem<uint16_t> regionalExtension; 
-      // } SPATEM_SignalGroupState_t;
-
-      // typedef struct SPATEM_mandatory_data {
-      //     uint16_t intersectionId;            
-      //     BIT_STRING_t status;
-      //     uint8_t revision; 
-      //     //VDPDataItem<uint16_t> regionId;           
-      //     VDPDataItem<uint32_t> moy;              
-      //     VDPDataItem<uint16_t> timeStamp;
-      //     VDPDataItem<std::string> name;
-      //     VDPDataItem<std::vector<VDP_ConnectionManeuverAssist_t>> maneuverAssistList;
-      //     VDPDataItem<uint32_t> spatTimeStamp;
-      //     VDPDataItem<std::string> spatName;
-      //     std::vector<SPATEM_SignalGroupState_t> states; 
-      //     VDPDataItem<uint16_t> regionalExtension; 
-      //     VDPDataItem<std::vector<uint8_t>> enabledLanes;
-      // } SPATEM_mandatory_data_t;
 
       virtual CAM_mandatory_data_t getCAMMandatoryData() = 0;
       virtual CPM_mandatory_data_t getCPMMandatoryData() = 0;
-      // virtual std::vector<SPATEM_mandatory_data_t> getSPATEMMandatoryData() = 0;
 
       // These methods are used by the CAM generation frequency management mechanism,
       // as mandated by ETSI, and they should return values which are not already

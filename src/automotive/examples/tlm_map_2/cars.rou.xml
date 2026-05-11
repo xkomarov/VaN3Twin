@@ -1,4 +1,24 @@
 <?xml version='1.0' encoding='UTF-8'?>
+<!-- ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ -->
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
     <vType id="Car0" minGap="2.50" maxSpeed="13.89" speedFactor="normc(1.00,0.00)" accel="2.6" decel="4.5" emergencyDecel="7.5" />
     <route id="0" edges="w_to_c1 c1_to_c2 c2_to_e" />
@@ -38,11 +58,18 @@
     <vehicle id="veh3" type="Car0" depart="1.25" route="13" />
     <vehicle id="veh4" type="Car0" depart="1.57" route="24" />
     <vehicle id="veh5" type="Car0" depart="1.91" route="1" />
-    <vehicle id="veh11" type="Car0" depart="2.00" route="30" />
-    <vehicle id="veh6" type="Car0" depart="2.94" route="23" />
-    <vehicle id="veh7" type="Car0" depart="3.18" route="12" />
-    <vehicle id="veh12" type="Car0" depart="4.00" route="31" />
-    <vehicle id="veh8" type="Car0" depart="4.49" route="11" />
-    <vehicle id="veh9" type="Car0" depart="6.10" route="6" />
-    <vehicle id="veh10" type="Car0" depart="7.15" route="17" />
+    <vehicle id="veh6" type="Car0" depart="2.00" route="30" />
+    <vehicle id="veh7" type="Car0" depart="2.94" route="23" />
+    <vehicle id="veh8" type="Car0" depart="3.18" route="12" />
+    <!-- <vehicle id="veh9" type="Car0" depart="4.00" route="31" />
+    <vehicle id="veh10" type="Car0" depart="4.49" route="11" />
+    <vehicle id="veh11" type="Car0" depart="6.10" route="6" />
+    <vehicle id="veh12" type="Car0" depart="7.15" route="17" />
+    <vehicle id="veh13" type="Car0" depart="8.00" route="30" />
+    <vehicle id="veh14" type="Car0" depart="9.00" route="31" />
+    <vehicle id="veh15" type="Car0" depart="10.00" route="25" />
+    <vehicle id="veh16" type="Car0" depart="11.00" route="26" />
+    <vehicle id="veh17" type="Car0" depart="12.00" route="27" />
+    <vehicle id="veh18" type="Car0" depart="13.00" route="28" />
+    <vehicle id="veh19" type="Car0" depart="14.00" route="29" /> -->
 </routes>

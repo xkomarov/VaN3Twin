@@ -1,3 +1,23 @@
+# ============================================================================
+# Research Project: Data communication in the environment of
+# intelligent cars
+# Author: Kirill Komarov
+# Date: 2026
+# 
+# Description:
+# This file contains source code developed (or modified) as part of the 
+# research for the paper: "Data communication in the environment of
+# intelligent cars".
+# 
+# DISCLAIMER & ACKNOWLEDGEMENT:
+# Please note that this file contains or may contain code fragments, 
+# algorithms, or architectural solutions that were previously implemented 
+# in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+# 
+# The borrowed code has been adapted and is used strictly for academic 
+# and research purposes. All rights to the original code segments belong 
+# to their respective original authors.
+# ============================================================================
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 link_libraries(${OpenCV_LIBS})
@@ -8,16 +28,12 @@ Set(source_files
     helper/areaSpeedAdvisorServer80211p-helper.cc
     helper/areaSpeedAdvisorClientLTE-helper.cc
     helper/areaSpeedAdvisorServerLTE-helper.cc
-    helper/tlmClient80211p-helper.cc
-    helper/tlmServer80211p-helper.cc
-    helper/tlmClientLTE-helper.cc
-    helper/tlmServerLTE-helper.cc
-    helper/glosaClient-helper.cc
-    helper/glosaServer-helper.cc
-    helper/bglosaClient-helper.cc
-    helper/bglosaServer-helper.cc
-    helper/ecoGlosaClient-helper.cc
-    helper/ecoGlosaServer-helper.cc
+    helper/greenWindowClient-helper.cc
+    helper/greenWindowServer-helper.cc
+    helper/bGlosaClient-helper.cc
+    helper/bGlosaServer-helper.cc
+    helper/ecoDrivingClient-helper.cc
+    helper/ecoDrivingServer-helper.cc
     helper/emergencyVehicleAlert-helper.cc
     helper/v2xEmulator-helper.cc
     helper/simpleCAMSender-helper.cc
@@ -38,16 +54,12 @@ Set(source_files
     model/Applications/areaSpeedAdvisorServer80211p.cc
     model/Applications/areaSpeedAdvisorClientLTE.cc
     model/Applications/areaSpeedAdvisorServerLTE.cc
-    model/Applications/tlmClient80211p.cc
-    model/Applications/tlmServer80211p.cc
-    model/Applications/tlmClientLTE.cc
-    model/Applications/tlmServerLTE.cc
-    model/Applications/glosaClient.cc
-    model/Applications/glosaServer.cc
-    model/Applications/bglosaClient.cc
-    model/Applications/bglosaServer.cc
-    model/Applications/ecoGlosaClient.cc
-    model/Applications/ecoGlosaServer.cc
+    model/Applications/greenWindowClient.cc
+    model/Applications/greenWindowServer.cc
+    model/Applications/bGlosaClient.cc
+    model/Applications/bGlosaServer.cc
+    model/Applications/ecoDrivingClient.cc
+    model/Applications/ecoDrivingServer.cc
     model/Applications/simpleCAMSender-gps-tc.cc
     model/Applications/simpleVAMSender-gps-tc.cc
     model/Applications/trafficManagerClient80211p.cc
@@ -1353,16 +1365,12 @@ set(header_files
     helper/areaSpeedAdvisorServerLTE-helper.h
     helper/areaSpeedAdvisorClient80211p-helper.h
     helper/areaSpeedAdvisorServer80211p-helper.h
-    helper/tlmClient80211p-helper.h
-    helper/tlmServer80211p-helper.h
-    helper/tlmClientLTE-helper.h
-    helper/tlmServerLTE-helper.h
-    helper/glosaClient-helper.h
-    helper/glosaServer-helper.h
-    helper/bglosaClient-helper.h
-    helper/bglosaServer-helper.h
-    helper/ecoGlosaClient-helper.h
-    helper/ecoGlosaServer-helper.h
+    helper/greenWindowClient-helper.h
+    helper/greenWindowServer-helper.h
+    helper/bGlosaClient-helper.h
+    helper/bGlosaServer-helper.h
+    helper/ecoDrivingClient-helper.h
+    helper/ecoDrivingServer-helper.h
     helper/emergencyVehicleAlert-helper.h
     helper/v2xEmulator-helper.h
     helper/simpleCAMSender-helper.h
@@ -1378,16 +1386,12 @@ set(header_files
     model/Applications/areaSpeedAdvisorServer80211p.h
     model/Applications/areaSpeedAdvisorClientLTE.h
     model/Applications/areaSpeedAdvisorServerLTE.h
-    model/Applications/tlmClient80211p.h
-    model/Applications/tlmServer80211p.h
-    model/Applications/tlmClientLTE.h
-    model/Applications/tlmServerLTE.h
-    model/Applications/glosaClient.h
-    model/Applications/glosaServer.h
-    model/Applications/bglosaClient.h
-    model/Applications/bglosaServer.h
-    model/Applications/ecoGlosaClient.h
-    model/Applications/ecoGlosaServer.h
+    model/Applications/greenWindowClient.h
+    model/Applications/greenWindowServer.h
+    model/Applications/bGlosaClient.h
+    model/Applications/bGlosaServer.h
+    model/Applications/ecoDrivingClient.h
+    model/Applications/ecoDrivingServer.h
     model/Applications/emergencyVehicleAlert.h
     model/Applications/simpleCAMSender-gps-tc.h
     model/Applications/simpleVAMSender-gps-tc.h

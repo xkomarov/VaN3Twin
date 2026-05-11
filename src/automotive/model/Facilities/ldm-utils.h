@@ -1,3 +1,23 @@
+/* ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ */
 #ifndef LDMUTILS_H
 #define LDMUTILS_H
 
@@ -164,32 +184,16 @@ namespace ns3 {
    * @brief Structure to store the data of a Traffic Light (SPATEM + static position) in the LDM
    */
   typedef struct _trafficLightData {
-      uint64_t intersectionID;     // ID of the intersection
-      double lat;                  // Latitude
-      double lon;                  // Longitude
-
-      // Dictionary of signal group states:
-      // key: signalGroup ID, value: eventState (from SPATEM)
+      uint64_t intersectionID;     
+      double lat;                  
+      double lon;                  
       std::unordered_map<long, long> signalGroupStates;
-
-      // Lane-to-signal-group mapping (simulates MAPEM lane topology):
-      // key: SUMO lane ID, value: signalGroup ID (tlIndex + 1)
       std::unordered_map<std::string, long> laneToSignalGroup;
-
-      // Per-lane stop-line position for distance computation:
-      // key: SUMO lane ID, value: stop-line XY coordinates + lane length
       std::unordered_map<std::string, laneStopLinePos_t> laneStopLines;
-
-      // Dictionary of signal group timing data (minEndTime from SPATEM):
-      // key: signalGroup ID, value: minEndTime in tenths of seconds
       std::unordered_map<long, double> signalGroupTimings;
-
-      // Dictionary of next-phase duration (nextTime from SPATEM):
-      // key: signalGroup ID, value: nextTime in tenths of seconds
       std::unordered_map<long, double> signalGroupNextTimings;
-
-      uint64_t timestamp_us;       // Last update timestamp for SPATEM data
-      bool isStaticLoaded;         // Flag to identify if topology was loaded from SUMO
+      uint64_t timestamp_us;       
+      bool isStaticLoaded;        
   } trafficLightData_t;
 
   typedef enum {

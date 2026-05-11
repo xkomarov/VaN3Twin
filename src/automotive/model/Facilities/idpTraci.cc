@@ -1,12 +1,32 @@
+/* ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ */
 #include "idpTraci.h"
 #include <functional> 
 #include <vector>
 #include <cmath>
-// #include <algorithm>
+
 #include <set>
 
 extern "C" {
-  // #include "ns3/CAM.h"
+  
   #include "ns3/BIT_STRING.h"
 }
 
@@ -105,30 +125,30 @@ namespace ns3
                 spatData.intersectionId = 0;
               }
 
-          spatData.status.size = 2; // IntersectionStatusObject is exactly 16 bits (2 bytes)
+          spatData.status.size = 2; 
           spatData.status.bits_unused = 0;
           spatData.status.buf = (uint8_t*)calloc(2, sizeof(uint8_t));
           spatData.status.buf[0] = 0x00; 
           
           std::string stateString = m_traci_client->TraCIAPI::trafficlights.getRedYellowGreenState(target_id);
 
-          // Логика вычисления поля revision 
+          
           if (m_tls_prev_states.find(target_id) == m_tls_prev_states.end() || m_tls_prev_states[target_id] != stateString) {
               m_tls_prev_states[target_id] = stateString;
-              // Закольцовываем инкремент до 127 по стандарту (0..127)
+              
               m_tls_revisions[target_id] = (m_tls_revisions[target_id] + 1) % 128; 
           }
           spatData.revision = m_tls_revisions[target_id];
 
-          // Заполняем время (DSecond и Moy) и имя перекрёстка
+          
           double simTime = m_traci_client->TraCIAPI::simulation.getTime();
           spatData.moy = IDPDataItem<uint32_t>((uint32_t)(simTime / 60.0));
           spatData.timeStamp = IDPDataItem<uint16_t>((uint16_t)(std::fmod(simTime, 60.0) * 1000.0));
           spatData.name = IDPDataItem<std::string>(target_id);
 
-          // Извлекаем полосы и хэшируем ID-шники в uint8_t
-          // SUMO возвращает одну полосу на каждое «подключение» (connection),
-          // поэтому одна и та же полоса может повторяться. Дедуплицируем.
+          
+          
+          
           std::vector<std::string> controlledLanes = m_traci_client->TraCIAPI::trafficlights.getControlledLanes(target_id);
           std::vector<uint8_t> laneIDs;
           std::set<uint8_t> seenLaneIDs;
@@ -138,7 +158,7 @@ namespace ns3
                   laneIDs.push_back(lid);
               }
           }
-          // ASN.1 EnabledLaneList имеет ограничение SIZE(1..16)
+          
           if (laneIDs.size() > 16) {
               laneIDs.resize(16);
           }
@@ -154,7 +174,7 @@ namespace ns3
               groupState.signalGroupID = (int)i + 1; 
               groupState.minEndTime = timeLeftDeciSeconds;
               
-              // Заполняем предположительные временные рамки (.setData ставит флаг m_available = true)
+              
               groupState.maxEndTime = IDPDataItem<uint16_t>(timeLeftDeciSeconds);
               groupState.likelyTime = IDPDataItem<uint16_t>(timeLeftDeciSeconds);
               
@@ -163,49 +183,49 @@ namespace ns3
               switch (s) {
                   case 'r': 
                   case 'R': 
-                      groupState.eventState = 3; // stop-And-Remain
+                      groupState.eventState = 3; 
                       break;
                   case 'y': 
                   case 'Y': 
-                      groupState.eventState = 7; // intersection-clearance
+                      groupState.eventState = 7; 
                       break;
                   case 'g': 
-                      groupState.eventState = 5; // permissive-Movement-Allowed
+                      groupState.eventState = 5; 
                       break;
                   case 'G': 
-                      groupState.eventState = 6; // protected-Movement-Allowed
+                      groupState.eventState = 6; 
                       break;
                   case 'u': 
                       groupState.eventState = 3; 
                       break; 
                   case 'o': 
-                      groupState.eventState = 1; // unavailable / off
+                      groupState.eventState = 1; 
                       break;
                   default:
-                      groupState.eventState = 1; // unavailable
+                      groupState.eventState = 1; 
                       break;
               }
 
-              // Заполнение AdvisorySpeed и ManeuverAssist
-              // Индексы StateString и controlledLanes взаимосвязаны
+              
+              
               if (i < controlledLanes.size()) {
-                  // Извлекаем Advisory Speed на полосе
+                  
                   double maxSpeed = m_traci_client->TraCIAPI::lane.getMaxSpeed(controlledLanes[i]);
                   IDP_AdvisorySpeed_t advSpeed;
-                  advSpeed.type = 0; // none/base advisory
-                  advSpeed.speed = (uint16_t)(std::round(maxSpeed * 10.0)); // Конвертация в 0.1 м/с
-                  advSpeed.confidence = IDPDataItem<uint8_t>(100); // 100% уверенности
+                  advSpeed.type = 0; 
+                  advSpeed.speed = (uint16_t)(std::round(maxSpeed * 10.0)); 
+                  advSpeed.confidence = IDPDataItem<uint8_t>(100); 
 
                   std::vector<IDP_AdvisorySpeed_t> speedsVec{advSpeed};
                   groupState.speeds = IDPDataItem<std::vector<IDP_AdvisorySpeed_t>>(speedsVec);
 
-                  // ManeuverAssist (расчёт очереди)
+                  
                   int halted = m_traci_client->TraCIAPI::lane.getLastStepHaltingNumber(controlledLanes[i]);
                   
                   IDP_ConnectionManeuverAssist_t maneuver;
                   maneuver.connectionID = groupState.signalGroupID;
-                  // В ASN.1 queueLength исчисляется в единицах 0.1 м
-                  // 1 ТС в среднем занимает ~5 метров. 5м * 10 = 50 единиц (0.1m) на ТС.
+                  
+                  
                   maneuver.queueLength = IDPDataItem<uint16_t>((uint16_t)(halted * 50));
                   
                   std::vector<IDP_ConnectionManeuverAssist_t> maneuverAssistList{maneuver};

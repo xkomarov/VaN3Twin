@@ -1,36 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ -->
 
-<!-- generated on 2026-03-31 18:32:44 by Eclipse SUMO netedit Version 1.18.0
-<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/neteditConfiguration.xsd">
 
-    <input>
-        <sumo-net-file value="/home/kirill/VaN3Twin/ns-3-dev/src/automotive/examples/first_tlm_map/map.net.xml"/>
-    </input>
-
-    <output>
-        <output-file value="/home/kirill/VaN3Twin/ns-3-dev/src/automotive/examples/first_tlm_map/map.net.xml"/>
-    </output>
-
-    <processing>
-        <geometry.min-radius.fix.railways value="false"/>
-        <geometry.max-grade.fix value="false"/>
-        <offset.disable-normalization value="true"/>
-        <lefthand value="0"/>
-    </processing>
-
-    <junctions>
-        <no-turnarounds value="true"/>
-        <junctions.corner-detail value="5"/>
-        <junctions.limit-turn-speed value="5.50"/>
-        <rectangular-lane-cut value="0"/>
-    </junctions>
-
-    <pedestrian>
-        <walkingareas value="0"/>
-    </pedestrian>
-
-</configuration>
--->
 
 <net version="1.16" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
 
@@ -315,18 +305,18 @@
     </edge>
 
     <tlLogic id="c1" type="static" programID="0" offset="0">
-        <phase duration="14" state="GGGrrrGGGrrrr"/>
+        <phase duration="20" state="GGGrrrGGGrrrr"/>
         <phase duration="3"  state="yyyrrryyyrrrr"/>
         <phase duration="3"  state="rrryyyrrryyyr"/>
-        <phase duration="14" state="rrrGGGrrrGGGr"/>
+        <phase duration="20" state="rrrGGGrrrGGGr"/>
         <phase duration="3"  state="rrryyyrrryyyr"/>
         <phase duration="3"  state="yyyrrryyyrrrr"/>
     </tlLogic>
     <tlLogic id="c2" type="static" programID="0" offset="0">
-        <phase duration="14" state="rrrGGGrrrGGG"/>
+        <phase duration="20" state="rrrGGGrrrGGG"/>
         <phase duration="3"  state="rrryyyrrryyy"/>
         <phase duration="3"  state="yyyrrryyyrrr"/>
-        <phase duration="14" state="GGGrrrGGGrrr"/>
+        <phase duration="20" state="GGGrrrGGGrrr"/>
         <phase duration="3"  state="yyyrrryyyrrr"/>
         <phase duration="3"  state="rrryyyrrryyy"/>
     </tlLogic>

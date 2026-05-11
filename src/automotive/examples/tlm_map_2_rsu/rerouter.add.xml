@@ -1,4 +1,24 @@
 <?xml version='1.0' encoding='UTF-8'?>
+<!-- ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ -->
 <additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
     <route id="00" edges="w_to_c1 c1_to_c2 c2_to_e" />
     <route id="01" edges="n1_to_c1 c1_to_s1" />
@@ -367,6 +387,22 @@
             <routeProbReroute id="162" probability="33.33" />
             <routeProbReroute id="163" probability="33.33" />
             <routeProbReroute id="164" probability="33.33" />
+        </interval>
+    </rerouter>
+    <route id="200" edges="ne_to_e e_to_c2" />
+    <route id="201" edges="ne_to_e e_to_s2" />
+    <route id="202" edges="ne_to_n2 n2_to_c2" />
+    <route id="203" edges="ne_to_n2 n2_to_n1" />
+    <rerouter id="rerouter_104" edges="ne_to_e" pos="0,0" probability="100.00">
+        <interval begin="0.00" end="1000000.00">
+            <routeProbReroute id="200" probability="50.00" />
+            <routeProbReroute id="201" probability="50.00" />
+        </interval>
+    </rerouter>
+    <rerouter id="rerouter_105" edges="ne_to_n2" pos="0,0" probability="100.00">
+        <interval begin="0.00" end="1000000.00">
+            <routeProbReroute id="202" probability="50.00" />
+            <routeProbReroute id="203" probability="50.00" />
         </interval>
     </rerouter>
 </additional>

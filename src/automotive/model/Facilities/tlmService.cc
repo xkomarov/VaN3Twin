@@ -1,12 +1,32 @@
+/* ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ */
 #include "tlmService.h"
 #include "ns3/Seq.hpp"
-// #include "ns3/Getter.hpp"
+
 #include "ns3/Setter.hpp"
 #include "ns3/Encoding.hpp"
 #include "ns3/SetOf.hpp"
-// #include "ns3/SequenceOf.hpp"
-// #include "ns3/BitString.hpp"
-// #include "ns3/vdp.h"
+
+
+
 #include "ns3/idp.h"
 #include "asn_utils.h"
 #include <cmath>
@@ -29,7 +49,7 @@ TLMService::TLMService ()
   m_btp = NULL;
   receivedSPATEM = 0;
   m_spatem_sent = 0;
-  // Setting a default value of m_T_CheckCpmGen_ms equal to 100 ms (i.e. T_GenCpmMin_ms)
+  
   m_T_CheckSpatemGen_ms = T_GenSpatemMin_ms;
   m_T_GenSpatem_ms = T_GenSpatemMax_ms;
   m_N_GenSpatemMax = 1000;
@@ -144,7 +164,7 @@ TLMService::doGenerateAndEncodeSPATEM ()
   int64_t now, now_centi;
   now = computeTimestampUInt64 () / NANO_TO_MILLI;
 
-  /* Collect data for mandatory containers */
+  
   auto spatem = asn1cpp::makeSeq (SPATEM);
 
   if (bool (spatem) == false)
@@ -157,7 +177,7 @@ TLMService::doGenerateAndEncodeSPATEM ()
   asn1cpp::setField (spatem->header.stationId, m_station_id);
 
   std::vector<IDP::SPATEM_mandatory_data_t> spatem_mandatory_data_list = m_idp->getSPATEMMandatoryData ();
-  // std::vector<VDP::SPATEM_mandatory_data_t> spatem_mandatory_data_list = m_vdp->getSPATEMMandatoryData ();
+  
 
   if (!spatem_mandatory_data_list.empty ())
     {
@@ -177,13 +197,13 @@ TLMService::doGenerateAndEncodeSPATEM ()
 
       auto intersectionState = asn1cpp::makeSeq (IntersectionState);
       intersectionState->id.id = spatem_mandatory_data.intersectionId;
-      // asn1cpp::setField(intersectionState->id.id, spatem_mandatory_data.intersectionId);
+      
 
-      // if (spatem_mandatory_data.regionId.isAvailable()) {
-      //     auto regId = (RoadRegulatorID_t*)calloc(1, sizeof(RoadRegulatorID_t));
-      //     *regId = spatem_mandatory_data.regionId.getData();
-      //     intersectionState->id.region = regId;
-      // }
+      
+      
+      
+      
+      
 
       intersectionState->status.buf = (uint8_t *) calloc (1, spatem_mandatory_data.status.size);
       if (intersectionState->status.buf == nullptr)
@@ -199,12 +219,12 @@ TLMService::doGenerateAndEncodeSPATEM ()
       if (intersectionState->status.buf == nullptr)
         {
           NS_LOG_ERROR ("Warning: memory allocation failed for intersectionState->status.buf");
-          return SPATEM_ALLOC_ERROR; // Или другой подходящий код ошибки
+          return SPATEM_ALLOC_ERROR; 
         }
 
       asn1cpp::setField (intersectionState->revision, spatem_mandatory_data.revision);
 
-      // Pushing scalar lane pointers into the Sequence. Memory is managed by asn1c once pushed.
+      
       if (spatem_mandatory_data.enabledLanes.isAvailable ())
         {
           auto elList = asn1cpp::makeSeq (EnabledLaneList);
@@ -215,24 +235,24 @@ TLMService::doGenerateAndEncodeSPATEM ()
           asn1cpp::setField (intersectionState->enabledLanes, elList);
         }
 
-      // if (spatem_mandatory_data.regionalExtension.isAvailable()) {
-      //     // Выделяем память под структуру-обертку списка
-      //     intersectionState->regional = (decltype(intersectionState->regional))calloc(1, sizeof(*intersectionState->regional));
+      
+      
+      
 
-      //     // Выделяем память под сам элемент RegionalExtension
-      //     RegionalExtension_369P0_t* regExtElement = (RegionalExtension_369P0_t*)calloc(1, sizeof(RegionalExtension_369P0_t));
+      
+      
 
-      //     // Заполняем ID региона
-      //     regExtElement->regionId = spatem_mandatory_data.regionalExtension.getData();
+      
+      
 
-      //     // Указываем, что payload'а нет, так как сгенерированный выбор пуст (PR_NOTHING)
-      //     regExtElement->regExtValue.present = RegionalExtension_369P0__regExtValue_PR_NOTHING;
+      
+      
 
-      //     // Добавляем элемент в массив asn1c
-      //     asn_sequence_add(&(intersectionState->regional->list), regExtElement);
-      // }
+      
+      
+      
 
-      //option
+      
       if (spatem_mandatory_data.name.isAvailable ())
         {
           asn1cpp::setField (intersectionState->name, spatem_mandatory_data.name.getData ());
@@ -271,7 +291,7 @@ TLMService::doGenerateAndEncodeSPATEM ()
         {
           auto movementState = asn1cpp::makeSeq (MovementState);
           asn1cpp::setField (movementState->signalGroup, state.signalGroupID);
-          //option
+          
           if (state.movementName.isAvailable ())
             {
               asn1cpp::setField (movementState->movementName, state.movementName.getData ());
@@ -305,7 +325,7 @@ TLMService::doGenerateAndEncodeSPATEM ()
 
           auto timing = asn1cpp::makeSeq (TimeChangeDetails);
           asn1cpp::setField (timing->minEndTime, state.minEndTime);
-          //option
+          
           if (state.startTime.isAvailable ())
             asn1cpp::setField (timing->startTime, state.startTime.getData ());
           if (state.maxEndTime.isAvailable ())
@@ -319,7 +339,7 @@ TLMService::doGenerateAndEncodeSPATEM ()
 
           asn1cpp::setField (movementEvent->timing, timing);
 
-          //option
+          
           if (state.speeds.isAvailable ())
             {
               for (const auto &advisorySpeed : state.speeds.getData ())
@@ -345,10 +365,10 @@ TLMService::doGenerateAndEncodeSPATEM ()
       asn1cpp::sequenceof::pushList (spatem->spat.intersections, intersectionState);
     }
 
-  // if (spatem_mandatory_data.status.buf != nullptr) {
-  //     free(spatem_mandatory_data.status.buf);
-  //     spatem_mandatory_data.status.buf = nullptr;
-  // }
+  
+  
+  
+  
 
   encode_result = asn1cpp::uper::encode (spatem);
   if (encode_result.size () < 1)
@@ -359,7 +379,7 @@ TLMService::doGenerateAndEncodeSPATEM ()
 
   packet = Create<Packet> ((uint8_t *) encode_result.c_str (), encode_result.size ());
 
-  dataRequest.BTPType = BTP_B; //!< BTP-B
+  dataRequest.BTPType = BTP_B; 
   dataRequest.destPort = SPATEM_PORT;
   dataRequest.destPInfo = 0;
   dataRequest.GNType = GBC;
@@ -370,24 +390,24 @@ TLMService::doGenerateAndEncodeSPATEM ()
   dataRequest.GNMaxLife = 1;
   dataRequest.GNMaxHL = 1;
   dataRequest.GNTraClass =
-      0x02; // Store carry foward: no - Channel offload: no - Traffic Class ID: 2
+      0x02; 
   dataRequest.lenght = packet->GetSize ();
   dataRequest.data = packet;
   std::tuple<GNDataConfirm_t, MessageId_t> status =
       m_btp->sendBTP (dataRequest, 0, MessageId_spatem);
   GNDataConfirm_t dataConfirm = std::get<0> (status);
   MessageId_t message_id = std::get<1> (status);
-  /* Update the CAM statistics */
+  
   if (dataConfirm == ACCEPTED)
     {
       if (message_id == MessageId_spatem)
         m_spatem_sent++;
     }
 
-  // Estimation of the transmission time
+  
   m_last_transmission = (double) Simulator::Now ().GetMilliSeconds ();
 
-  // Store the time in which the last SPATEM (i.e. this one) has been generated and successfully sent
+  
   m_T_GenSpatem_ms = now - lastSpatemGen;
   lastSpatemGen = now;
 
@@ -466,14 +486,14 @@ TLMService::receiveSPATEM (BTPDataIndication_t dataIndication, Address from)
 
   SetSignalInfo (timestamp.Get (), size.Get (), rssi.Get (), snr.Get (), sinr.Get (), rsrp.Get ());
 
-  // if (buffer[1]!=FIX_SPATEMID)
-  // {
-  //   NS_LOG_ERROR("Warning: received a message which has messageID '"<<buffer[1]<<"' but '2' was expected.");
-  //   free(buffer);
-  //   return;
-  // }
+  
+  
+  
+  
+  
+  
 
-  //free(buffer);
+  
 
   decoded_spatem = asn1cpp::uper::decodeASN (packetContent, SPATEM);
 
@@ -514,4 +534,4 @@ TLMService::computeTimestampUInt64 ()
   return int_tstamp;
 }
 
-} // namespace ns3
+} 

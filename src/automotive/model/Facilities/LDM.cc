@@ -1,3 +1,23 @@
+/* ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ */
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
  * This program is free software; you can redistribute it and/or modify
@@ -268,9 +288,8 @@ namespace ns3 {
             }
     }
     m_count++;
-    //writeAllContents();
+
     
-    // TLM cleanup: do not delete static coordinates, just clear signal group states
     for (auto it = m_TrafficLights.begin(); it != m_TrafficLights.end(); ++it) {
         if (!it->second.signalGroupStates.empty()) {
             if (((double)(now - it->second.timestamp_us)) / 1000.0 > DB_DELETE_OLDER_THAN_SECONDS * 1000) {
@@ -324,7 +343,6 @@ namespace ns3 {
             }
     }
 
-    // TLM cleanup: do not delete static coordinates, just clear signal group states
     for (auto it = m_TrafficLights.begin(); it != m_TrafficLights.end(); ++it) {
         if (!it->second.signalGroupStates.empty()) {
             if (((double)(now - it->second.timestamp_us)) / 1000.0 > DB_DELETE_OLDER_THAN_SECONDS * 1000) {
@@ -555,7 +573,6 @@ namespace ns3 {
   {
       auto it = m_TrafficLights.find(intersectionID);
       if (it == m_TrafficLights.end()) {
-          // If we receive SPATEM but no static data is available
           return LDM_ITEM_NOT_FOUND; 
       }
       

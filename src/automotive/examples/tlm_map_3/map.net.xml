@@ -1,38 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- ============================================================================
+ * Research Project: Data communication in the environment of
+intelligent cars
+ * Author: Kirill Komarov
+ * Date: 2026
+ * 
+ * Description:
+ * This file contains source code developed (or modified) as part of the 
+ * research for the paper: "Data communication in the environment of
+intelligent cars".
+ * 
+ * DISCLAIMER & ACKNOWLEDGEMENT:
+ * Please note that this file contains or may contain code fragments, 
+ * algorithms, or architectural solutions that were previously implemented 
+ * in the "VaN3Twin" project https://github.com/DriveX-devs/VaN3Twin.git.
+ * 
+ * The borrowed code has been adapted and is used strictly for academic 
+ * and research purposes. All rights to the original code segments belong 
+ * to their respective original authors.
+ * ============================================================================ -->
 
-<!-- generated on 2026-04-19 00:47:38 by Eclipse SUMO netedit Version 1.18.0
-<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/neteditConfiguration.xsd">
 
-    <input>
-        <additional-files value="/home/kirill/VaN3Twin/ns-3-dev/src/automotive/examples/tlm_map_1_rsu copy/rerouter.add.xml"/>
-        <route-files value="/home/kirill/VaN3Twin/ns-3-dev/src/automotive/examples/tlm_map_1_rsu copy/cars.rou.xml"/>
-        <sumo-net-file value="/home/kirill/VaN3Twin/ns-3-dev/src/automotive/examples/tlm_map_1_rsu copy/map.net.xml"/>
-    </input>
 
-    <output>
-        <output-file value="/home/kirill/VaN3Twin/ns-3-dev/src/automotive/examples/tlm_map_1_rsu copy/map.net.xml"/>
-    </output>
-
-    <processing>
-        <geometry.min-radius.fix.railways value="false"/>
-        <geometry.max-grade.fix value="false"/>
-        <offset.disable-normalization value="true"/>
-        <lefthand value="0"/>
-    </processing>
-
-    <junctions>
-        <no-turnarounds value="true"/>
-        <junctions.corner-detail value="5"/>
-        <junctions.limit-turn-speed value="5.50"/>
-        <rectangular-lane-cut value="0"/>
-    </junctions>
-
-    <pedestrian>
-        <walkingareas value="0"/>
-    </pedestrian>
-
-</configuration>
--->
 
 <net version="1.16" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
 
@@ -281,24 +270,24 @@
     </edge>
 
     <tlLogic id="c" type="static" programID="0" offset="0">
-        <phase duration="24" state="rrrrGGggrrrrrrrrGGGg"/>
-        <phase duration="6"  state="rrrryyyyrrrrrrrryyyy"/>
-        <phase duration="24" state="GGggrrrrrrrrggGgrrrr"/>
-        <phase duration="6"  state="yyyyrrrrrrrryyyyrrrr"/>
-        <phase duration="24" state="rrrrrrrrGGGGGrrrrrrr"/>
-        <phase duration="6"  state="rrrrrrrryyyyyrrrrrrr"/>
+        <phase duration="20" state="rrrrGGggrrrrrrrrGGGg"/>
+        <phase duration="3"  state="rrrryyyyrrrrrrrryyyy"/>
+        <phase duration="20" state="GGggrrrrrrrrggGgrrrr"/>
+        <phase duration="3"  state="yyyyrrrrrrrryyyyrrrr"/>
+        <phase duration="20" state="rrrrrrrrGGGGGrrrrrrr"/>
+        <phase duration="3"  state="rrrrrrrryyyyyrrrrrrr"/>
     </tlLogic>
     <tlLogic id="e" type="static" programID="0" offset="0">
-        <phase duration="39" state="GgrrGG"/>
-        <phase duration="6"  state="yyrryy"/>
-        <phase duration="39" state="rrGGGr"/>
-        <phase duration="6"  state="rryyyr"/>
+        <phase duration="20" state="GgrrGG"/>
+        <phase duration="3"  state="yyrryy"/>
+        <phase duration="20" state="rrGGGr"/>
+        <phase duration="3"  state="rryyyr"/>
     </tlLogic>
     <tlLogic id="w" type="static" programID="0" offset="0">
-        <phase duration="39" state="GgrrGG"/>
-        <phase duration="6"  state="yyrryy"/>
-        <phase duration="39" state="rrGGGr"/>
-        <phase duration="6"  state="rryyyr"/>
+        <phase duration="20" state="GgrrGG"/>
+        <phase duration="3"  state="yyrryy"/>
+        <phase duration="20" state="rrGGGr"/>
+        <phase duration="3"  state="rryyyr"/>
     </tlLogic>
 
     <junction id="c" type="traffic_light" x="0.40" y="2.43" incLanes="n_to_c_0 e_to_c_0 s2_to_c_0 s1_to_c_0 w_to_c_0" intLanes=":c_0_0 :c_1_0 :c_2_0 :c_20_0 :c_4_0 :c_5_0 :c_21_0 :c_22_0 :c_8_0 :c_9_0 :c_10_0 :c_11_0 :c_12_0 :c_13_0 :c_14_0 :c_23_0 :c_16_0 :c_17_0 :c_18_0 :c_24_0" shape="-5.40,12.56 6.59,12.33 7.41,10.09 8.47,9.30 9.96,8.72 11.88,8.36 14.24,8.21 14.05,-3.79 12.14,-4.41 11.76,-5.22 11.76,-6.35 12.14,-7.82 12.90,-9.62 2.10,-14.85 0.94,-13.25 0.35,-13.05 -0.23,-13.24 -0.82,-13.84 -1.41,-14.84 -12.18,-9.54 -11.03,-6.32 -11.03,-5.20 -11.41,-4.40 -12.17,-3.93 -13.32,-3.79 -13.51,8.21 -11.06,8.36 -9.04,8.75 -7.47,9.36 -6.34,10.20 -5.65,11.27">
